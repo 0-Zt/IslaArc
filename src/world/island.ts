@@ -12,6 +12,9 @@ export interface Tile {
   wx: number; wz: number;
   tree?: any; rock?: THREE.Mesh | null; building?: any; ancient?: any; mound?: any;
   proxy?: THREE.Mesh;
+  forest?: boolean;   // inside a forest zone: trees regrow and spread here on their own
+  sprout?: any;       // a seedling still growing into a tree
+  mark?: any;         // a planting or path order waiting for a figure
 }
 
 export let island: (Tile | null)[][] = [];
@@ -24,6 +27,7 @@ export const tileUnder = (x: number, z: number) => tileAt(Math.floor(x + N / 2),
 export const topY = (t: Tile) => t.h * LEVEL;
 export function landTiles() { const a: Tile[] = []; for (const row of island) for (const t of row) if (t) a.push(t); return a; }
 export const blocked = (t: Tile | null) => !t || !!t.tree || !!t.rock || !!t.building || !!t.ancient || !!t.mound;
+export const GRASS = ['pasto', 'matas', 'flores', 'trebol'];
 export const walkable = (t: Tile | null) => !blocked(t);
 export const DIRS: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 export const tileWorld = (i: number, j: number): [number, number] => [i - N / 2 + 0.5, j - N / 2 + 0.5];

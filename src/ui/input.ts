@@ -4,10 +4,11 @@ import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
 import { tileProxies, topY, type Tile } from '../world/island';
 import { pickTree } from '../world/trees';
 import { rocks } from '../world/rocks';
-import { crew, selected, select, order, type JobKind } from '../game/crew';
+import { crew, selected, select, order, tileOf, type JobKind } from '../game/crew';
 import { buildings, place, movePlace, rotatePlace, cancelPlace, confirmPlace } from '../game/buildings';
 import { ancients, mound } from '../game/grove';
-import { stumps } from '../game/forest';
+import { stumps, sproutMeshes, growing, growthProgress } from '../game/forest';
+import { marks, markMode, toggleMark, exitMarkMode, nearestMark, type MarkKind } from '../game/marks';
 import { sites, expandMode, pickCell, exitExpandMode } from '../game/expansion';
 import { S } from '../game/state';
 import { $, toast, refreshHUD } from './hud';
@@ -29,7 +30,7 @@ export function centreTile(): Tile | null {
   return h ? h.object.userData.tile : null;
 }
 
-type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'site' | 'tile'; tile?: Tile; id?: CharId; b?: any };
+type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'sprout' | 'mark' | 'site' | 'tile'; mk?: MarkKind; tile?: Tile; id?: CharId; b?: any };
 function pick(): Hit | null {
   const hits: Hit[] = [];
   const up = (o: THREE.Object3D | null, key: string) => { while (o && o.userData[key] === undefined) o = o.parent; return o ? o.userData[key] : undefined; };
@@ -41,6 +42,8 @@ function pick(): Hit | null {
   if (mound) { const mh = ray.intersectObject(mound.group, true)[0]; if (mh) hits.push({ d: mh.distance - 0.2, kind: 'mound', tile: mound.tile }); }
   const sh = ray.intersectObjects([...stumps.values()], true)[0]; if (sh) hits.push({ d: sh.distance - 0.15, kind: 'stump', tile: up(sh.object, 'stumpTile') });
   const xh = ray.intersectObjects(sites.map(s => s.group), true)[0]; if (xh) { const s = up(xh.object, 'site'); if (s) hits.push({ d: xh.distance - 0.6, kind: 'site', tile: s.tile }); }
+  const ph = ray.intersectObjects(sproutMeshes(), true)[0]; if (ph) hits.push({ d: ph.distance - 0.3, kind: 'sprout', tile: up(ph.object, 'sproutTile') });
+  const mh2 = ray.intersectObjects(marks.map(m => m.group), true)[0]; if (mh2) { const m = up(mh2.object, 'mark'); if (m) hits.push({ d: mh2.distance - 0.3, kind: 'mark', tile: m.tile, mk: m.kind }); }
   const gh = ray.intersectObjects(tileProxies, false)[0]; if (gh) hits.push({ d: gh.distance + 0.05, kind: 'tile', tile: gh.object.userData.tile });
   hits.sort((a, b) => a.d - b.d);
   // with a figure selected, tapping "through" it at a job behind it gives the order instead of deselecting
@@ -73,6 +76,13 @@ export function onTap(x: number, y: number) {
     if (cell) openSheet('expandir', null, cell); else toast('Toca una de las casillas de agua marcadas');
     return;
   }
+  if (markMode) {
+    const g = ray.intersectObjects(tileProxies, false)[0];
+    if (!g) return;
+    const r = toggleMark(g.object.userData.tile, markMode.kind, markMode.type);
+    if (r) toast(r);
+    return;
+  }
   if (sheetOpen()) { closeSheet(); return; }
   const h = pick();
   if (!h) { select(null); return; }
@@ -82,15 +92,17 @@ export function onTap(x: number, y: number) {
   const c = selected && crew.find(q => q.id === selected);
   const t = h.tile!;
   const kind: JobKind = h.kind === 'tree' ? 'tree' : h.kind === 'rock' ? 'rock' : h.kind === 'ancient' ? 'ancient' : h.kind === 'mound' ? 'dig'
-    : h.kind === 'stump' ? 'stump' : h.kind === 'site' ? 'fill' : t.type === 'arena' ? 'sand' : t.type === 'tierra' || (t.type === 'piedras' && !t.rock) ? 'soil' : 'walk';
-  if (!c) { if (kind !== 'walk' && !(h.kind === 'ancient' || h.kind === 'mound')) toast(h.kind === 'site' ? 'Toca una figura y luego la parcela para rellenarla' : crew.length > 1 ? 'Primero toca a una figura' : 'Primero toca a Arci'); return; }
-  if ((kind === 'tree' || kind === 'fill' || kind === 'stump') && crew.some(o => o !== c && o.job?.tile === t)) { toast('Otra figura ya está trabajando ahí'); return; }
+    : h.kind === 'stump' || h.kind === 'sprout' ? 'stump' : h.kind === 'mark' ? h.mk! : h.kind === 'site' ? 'fill' : t.type === 'arena' ? 'sand' : t.type === 'tierra' || (t.type === 'piedras' && !t.rock) ? 'soil' : 'walk';
+  if (!c && h.kind === 'sprout') { const g = growing.get(t); if (g) toast(`Retoño de ${g.type}: ${Math.round(growthProgress(g) * 100)}% crecido. Con una figura puedes arrancarlo y recuperar la semilla.`); return; }
+  if (!c) { if (kind !== 'walk' && !(h.kind === 'ancient' || h.kind === 'mound')) toast(h.kind === 'site' ? 'Toca una figura y luego la parcela para rellenarla' : h.kind === 'mark' ? 'Toca una figura y luego una marca para que empiece' : crew.length > 1 ? 'Primero toca a una figura' : 'Primero toca a Arci'); return; }
+  if ((kind === 'tree' || kind === 'fill' || kind === 'stump' || kind === 'plant' || kind === 'path') && crew.some(o => o !== c && o.job?.tile === t)) { toast('Otra figura ya está trabajando ahí'); return; }
   const r = order(c, t, kind);
   if (r !== true) { toast(r); return; }
   marker.position.set(t.wx, topY(t) + 0.03, t.wz); marker.visible = true; markerT = 1;
   select(null);
 }
 
+let lastMode: MarkKind = 'plant';
 export function initInput() {
   const el = renderer.domElement;
   let down: { x: number; y: number; t: number; multi: boolean } | null = null;
@@ -109,10 +121,26 @@ export function initInput() {
     if (typeof r === 'string') { toast(r); return; }
     toast(`${r.type === 'casa' ? 'Casa construida' : 'Horno construido'}`); emit('changed');
   });
-  $('xExit').addEventListener('click', () => exitExpandMode());
+  $('xExit').addEventListener('click', () => { exitExpandMode(); exitMarkMode(); });
+  on('markMode', (m: { kind: MarkKind } | null) => {
+    $('bottom').hidden = !!m; $('expandBar').hidden = !m;
+    if (m) { $('expandBar').querySelector('span')!.textContent = m.kind === 'plant' ? 'Toca el pasto donde quieras un árbol. Toca una marca para quitarla.' : 'Toca el pasto para trazar el sendero. Toca una marca para quitarla.'; return; }
+    refreshHUD();
+    // the nearest idle figure gets to work on the new marks
+    const kind: MarkKind = lastMode;
+    if (!marks.some(q => q.kind === kind) || crew.some(c => c.job?.kind === kind)) return;
+    const idle = crew.filter(c => !c.job && !c.path.length);
+    for (const c of idle) {
+      const here = tileOf(c); const mk = here && nearestMark(here, kind, () => false, 99);
+      if (mk && order(c, mk.tile, kind) === true) { toast(`${c.def.name} va a ${kind === 'plant' ? 'plantar' : 'hacer el sendero'}`); return; }
+    }
+    toast('Toca una figura y luego una marca para que empiece');
+  });
+  on('markMode', (m: { kind: MarkKind } | null) => { if (m) lastMode = m.kind; });
   let before: { target: THREE.Vector3; zoom: number } | null = null;
   on('expandMode', (on_: boolean) => {
     $('bottom').hidden = on_; $('expandBar').hidden = !on_; refreshHUD();
+    if (on_) $('expandBar').querySelector('span')!.textContent = 'Toca una casilla de agua marcada para expandir la isla';
     if (on_) { before = { target: controls.target.clone(), zoom: camera.zoom }; flyTo(new THREE.Vector3(0, 0.5, 0), Math.min(camera.zoom, innerWidth < innerHeight ? 0.5 : 0.8)); }
     else if (before) { flyTo(before.target, before.zoom); before = null; }
   });

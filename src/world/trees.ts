@@ -89,7 +89,9 @@ function comboFor(t: Tree) {
   return c;
 }
 
-export function addTree(tile: Tile, type: TreeType, si: number, grow = false) {
+/** `grow` animates the tree in from nothing; `from` (0..1) starts it at that fraction of its size, for a tree stepping up a size. */
+export function addTree(tile: Tile, type: TreeType, si: number, grow = false, from = 0) {
+  const old: Tree | undefined = tile.tree;
   removeTree(tile);
   const t: Tree = {
     tile, type, si, v: Math.random() < 0.5 ? 0 : 1,
@@ -97,6 +99,8 @@ export function addTree(tile: Tile, type: TreeType, si: number, grow = false) {
     rotY: Math.floor(Math.random() * 4) * Math.PI / 2, sc: 0.94 + Math.random() * 0.12, ph: Math.random() * 6.28,
     shake: 0, falling: 0, fallDir: 0, grow: grow ? 0 : 1, hp: null, regrow: 40,
   };
+  if (from > 0) t.grow = 1 - Math.cbrt(1 - Math.min(0.99, from)); // matches the eased scale in tickTrees
+  if (old) { t.x = old.x; t.z = old.z; t.rotY = old.rotY; t.sc = old.sc; t.v = old.v; }
   comboFor(t).list.push(t); trees.push(t); tile.tree = t; dirty = true;
   return t;
 }

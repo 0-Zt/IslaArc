@@ -18,5 +18,9 @@
   "lingote": {
     "name": "Lingote",
     "hiddenUntil": "horno"
+  },
+  "semilla": {
+    "name": "Semillas",
+    "hidden": true
   }
 }

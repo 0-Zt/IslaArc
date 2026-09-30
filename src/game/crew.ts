@@ -9,11 +9,12 @@ import { puff } from '../world/particles';
 import { buildFigure, type CharId, type Figure, type ToolKey } from '../assets/characters';
 import { hitAncient, digMound, type Ancient } from './grove';
 import { removeStump } from './forest';
+import { completeMark, nearestMark, type Mark, type MarkKind } from './marks';
 import { fillHit, type Site } from './expansion';
 import { S, DATA, gain } from './state';
 import type { Building } from './buildings';
 
-export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'walk';
+export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'plant' | 'path' | 'walk';
 export interface Job { kind: JobKind; tile: Tile }
 export interface Crew extends Figure {
   job: Job | null; path: Tile[]; anim: 'idle' | 'walk' | 'work' | 'wave';
@@ -72,7 +73,7 @@ export function bfs(start: Tile, goal: (t: Tile) => boolean): Tile[] | null {
 /** Sends a figure to work on (or walk to) a tile. Returns a reason when it cannot. */
 export function order(c: Crew, tile: Tile, kind: JobKind): true | string {
   const here = tileOf(c); if (!here) return 'No hay camino hasta ahí';
-  const standOn = kind === 'walk' || kind === 'sand' || kind === 'soil';
+  const standOn = kind === 'walk' || kind === 'sand' || kind === 'soil' || kind === 'path';
   const reach = standOn ? (t: Tile) => t === tile : (t: Tile) => adjacent(t, tile) && Math.abs(t.h - tile.h) <= 1;
   const path = bfs(here, reach);
   if (!path) return kind === 'dig' ? 'Los árboles antiguos no dejan pasar' : 'No hay camino hasta ahí';
@@ -85,7 +86,7 @@ function arrive(c: Crew) {
   const j = c.job;
   if (!j || j.kind === 'walk') { c.job = null; setAnim(c, 'idle'); emit('changed'); return; }
   const p = c.root.position;
-  if (j.kind !== 'sand' && j.kind !== 'soil') c.dir = Math.atan2(j.tile.wx - p.x, j.tile.wz - p.z);
+  if (j.kind !== 'sand' && j.kind !== 'soil' && j.kind !== 'path') c.dir = Math.atan2(j.tile.wx - p.x, j.tile.wz - p.z);
   setTool(c, j.kind); setAnim(c, 'work'); emit('changed');
 }
 function stop(c: Crew) { c.job = null; c.path = []; setAnim(c, 'idle'); emit('changed'); }
@@ -93,7 +94,7 @@ function stop(c: Crew) { c.job = null; c.path = []; setAnim(c, 'idle'); emit('ch
 export function statusOf(c: Crew) {
   if (c.path.length) return 'Caminando';
   const j = c.job; if (!j) return 'Esperando órdenes';
-  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', walk: 'Esperando' } as const)[j.kind];
+  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', plant: 'Plantando', path: 'Haciendo sendero', walk: 'Esperando' } as const)[j.kind];
 }
 
 function nearestTile(c: Crew, test: (t: Tile) => boolean, max = 6) {
@@ -101,6 +102,12 @@ function nearestTile(c: Crew, test: (t: Tile) => boolean, max = 6) {
   let best: Tile | null = null, bd = 1e9;
   for (const t of landTiles()) { if (!test(t)) continue; const d = Math.abs(t.i - here.i) + Math.abs(t.j - here.j); if (d < bd && d <= max) { bd = d; best = t; } }
   return best;
+}
+/** After finishing a mark, the figure moves on to the nearest open mark of the same kind. */
+function nextMark(c: Crew, kind: MarkKind) {
+  const here = tileOf(c);
+  const m = here && nearestMark(here, kind, t => crew.some(o => o !== c && o.job?.tile === t));
+  if (!m || order(c, m.tile, kind) !== true) stop(c);
 }
 function nextTree(c: Crew) {
   const t = nearestTile(c, t => !!t.tree && !t.tree.falling && !crew.some(o => o !== c && o.job?.tile === t));
@@ -146,7 +153,12 @@ function onWorkHit(c: Crew) {
       break;
     }
     case 'stump': {
-      if (c.hits >= B.stumpDigHits) { if (removeStump(j.tile)) { gain('tierra', 1, headPos(c)); emit('toast', 'Tocón arrancado: ahí ya no volverá a crecer un árbol'); } stop(c); }
+      if (c.hits >= B.stumpDigHits) {
+        const r = removeStump(j.tile);
+        if (r === 'stump') { gain('tierra', 1, headPos(c)); emit('toast', 'Tocón arrancado: ahí ya no volverá a crecer un árbol'); }
+        if (r === 'sprout') { gain('semilla', 1, headPos(c)); emit('toast', 'Retoño arrancado: recuperas la semilla'); }
+        stop(c);
+      }
       else puff(j.tile.wx, topY(j.tile) + 0.1, j.tile.wz, '#7a5030', 5, 1.4, 1.2, topY(j.tile));
       break;
     }
@@ -154,6 +166,18 @@ function onWorkHit(c: Crew) {
       const s: Site | undefined = (j.tile as any).site;
       if (!s || !s.group.parent) { stop(c); return; }
       if (fillHit(s)) { stop(c); emit('toast', 'La isla creció una casilla'); }
+      break;
+    }
+    case 'plant': case 'path': {
+      const m: Mark | undefined = j.tile.mark;
+      if (!m || m.kind !== j.kind) { nextMark(c, j.kind); return; }
+      const p = c.root.position;
+      puff(j.kind === 'path' ? p.x + Math.sin(c.root.rotation.y) * 0.3 : j.tile.wx, topY(j.tile) + 0.06, j.kind === 'path' ? p.z + Math.cos(c.root.rotation.y) * 0.3 : j.tile.wz, '#7a5030', 5, 1.4, 1.1, topY(j.tile));
+      if (c.hits >= (j.kind === 'plant' ? B.plantHits : B.pathHits)) {
+        completeMark(m);
+        if (j.kind === 'plant' && !S.flags.plantHint) { S.flags.plantHint = true; emit('toast', 'Semilla plantada. Crecerá sola con el tiempo.'); }
+        c.hits = 0; nextMark(c, j.kind);
+      }
       break;
     }
     case 'ancient': {
@@ -188,7 +212,7 @@ export function updateCrew(dt: number, T: number) {
 function updateOne(c: Crew, dt: number, T: number) {
   c.t += dt; const p = c.root.position;
   if (c.path.length) {
-    const t = c.path[0], tx = t.wx + c.off, tz = t.wz + c.offz, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz), sp = DATA.BALANCE.walkSpeed * dt;
+    const t = c.path[0], tx = t.wx + c.off, tz = t.wz + c.offz, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz), sp = DATA.BALANCE.walkSpeed * dt * (tileOf(c)?.type === 'sendero' ? DATA.BALANCE.pathSpeed : 1);
     if (d <= sp) { p.x = tx; p.z = tz; c.path.shift(); if (!c.path.length) arrive(c); }
     else { p.x += dx / d * sp; p.z += dz / d * sp; c.dir = Math.atan2(dx, dz); if (c.anim !== 'walk') setAnim(c, 'walk'); }
   }
@@ -217,7 +241,7 @@ function updateOne(c: Crew, dt: number, T: number) {
     if (q >= 0.66 && !c.workHit) {
       c.workHit = true;
       const fx = p.x + Math.sin(c.root.rotation.y) * 0.4, fz = p.z + Math.cos(c.root.rotation.y) * 0.4, k = c.job?.kind;
-      if (k !== 'sand' && k !== 'dig' && k !== 'soil' && k !== 'fill') puff(fx, p.y + 0.25, fz, k === 'rock' ? '#b8b2a8' : '#c9a06a', 6, 1.8, 1.4, p.y);
+      if (k !== 'sand' && k !== 'dig' && k !== 'soil' && k !== 'fill' && k !== 'plant' && k !== 'path') puff(fx, p.y + 0.25, fz, k === 'rock' ? '#b8b2a8' : '#c9a06a', 6, 1.8, 1.4, p.y);
       onWorkHit(c);
     }
     if (q < 0.3) c.workHit = false;

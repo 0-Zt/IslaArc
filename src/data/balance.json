@@ -7,7 +7,7 @@
   "sandEveryHits": 2,
   "mineralChance": 0.35,
   "mineralChanceMetal": 0.65,
-  "treeRegrowSeconds": 40,
+  "treeRegrowSeconds": 30,
   "treeRegrowSecondsMusgo": 12,
   "ancientTreeHits": 10,
   "moundDigHits": 8,
@@ -16,5 +16,16 @@
   "stumpDigHits": 3,
   "fillHits": 8,
   "expandBaseCost": 3,
-  "expandCostStep": 1
+  "expandCostStep": 1,
+  "seedChance": [
+    0.3,
+    0.5,
+    0.75
+  ],
+  "saplingStageSeconds": 30,
+  "forestSpreadSeconds": 20,
+  "forestMaxDensity": 0.6,
+  "plantHits": 2,
+  "pathHits": 3,
+  "pathSpeed": 1.35
 }

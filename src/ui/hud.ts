@@ -16,6 +16,7 @@ export const ICON: Record<ResKey, string> = {
   mineral: mkIcon(['.......', '..GGG..', '.GHBGG.', 'GHGGBDG', 'GBGGGDG', '.GGDDD.'], { G: '#8a8f9a', H: '#c8d0d8', D: '#5a606a', B: '#5ab8ff' }),
   arena: mkIcon(['.......', '.......', '...S...', '..SSL..', '.SSLSS.', 'SSSSSSS'], { S: '#f0d890', L: '#c8a860' }),
   tierra: mkIcon(['.......', '.......', '...D...', '..DLD..', '.DDDLD.', 'DDDDDDD'], { D: '#7a5030', L: '#a8764a' }),
+  semilla: mkIcon(['.......', '...L...', '..LGL..', '..SSS..', '.SSHSS.', '..SSS..'], { L: '#8ad96b', G: '#4ea33c', S: '#a8763a', H: '#e0b070' }),
   lingote: mkIcon(['.......', '.......', '..MMMMM', '.MHMMMD', 'MMMMMD.', 'MDDDD..'], { M: '#b8c0cc', H: '#ffffff', D: '#6a7280' }),
 };
 export const img = (k: ResKey) => `<img src="${ICON[k]}" alt="">`;
@@ -41,7 +42,7 @@ const bumps: Partial<Record<ResKey, number>> = {};
 let resSig = '';
 export function refreshHUD(dt = 0) {
   for (const k in bumps) bumps[k as ResKey]! -= dt;
-  const keys = RES_KEYS.filter(k => !(DATA.RESOURCES as any)[k].hiddenUntil || S.got[k] > 0 || has((DATA.RESOURCES as any)[k].hiddenUntil));
+  const keys = RES_KEYS.filter(k => { const d = (DATA.RESOURCES as any)[k]; return (!d.hiddenUntil && !d.hidden) || S.got[k] > 0 || (d.hiddenUntil && has(d.hiddenUntil)); });
   const sig = keys.join();
   if (sig !== resSig) { resSig = sig; $('res').innerHTML = keys.map(k => `<span class="chip" data-r="${k}" title="${(DATA.RESOURCES as any)[k].name}">${img(k)}<b>0</b></span>`).join(''); }
   for (const k of keys) {

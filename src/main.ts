@@ -12,7 +12,8 @@ import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected 
 import * as THREE from 'three';
 import { buildings, createBuilding, clearBuildings, tickBuildings, cancelPlace, saved, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, place } from './game/buildings';
 import { spawnGrove, tickGrove, ancients, mound } from './game/grove';
-import { onTreeFallen, tickForest, clearForest, setOccupiedTest, restoreForest } from './game/forest';
+import { onTreeFallen, tickForest, clearForest, setOccupiedTest, restoreForest, markForestZone, buildForestEdge, forestStats, growing } from './game/forest';
+import { restorePaths, restoreMarks, clearMarks, exitMarkMode, marks } from './game/marks';
 import { restoreExpansions, restoreSites, clearSites, exitExpandMode, pulseMarkers, sites } from './game/expansion';
 import { checkGoals } from './game/goals';
 import { $, initHUD, refreshHUD } from './ui/hud';
@@ -27,7 +28,7 @@ renderer.info.autoReset = false;
 setOccupiedTest(occupied);
 
 function newGame(state: typeof S | null) {
-  cancelPlace(); closeSheet(); exitExpandMode(); clearSites();
+  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearSites(); clearMarks();
   clearCrew(); clearBuildings(); clearForest(); clearLabels();
   while (worldGroup.children.length) worldGroup.remove(worldGroup.children[0]);
   clearTrees();
@@ -36,10 +37,14 @@ function newGame(state: typeof S | null) {
   plantIsland(SEED);
   spawnGrove();
   placeRocks(SEED);
+  markForestZone(SEED);      // before paths change tile types, so the zone is always the same
+  restorePaths();
   restoreForest(T);          // felled trees stay felled, cleared stumps stay cleared
   restoreExpansions();       // land the player added
   buildTerrain();
   restoreSites();
+  restoreMarks();
+  buildForestEdge();
   for (const b of S.buildings) createBuilding(b.type, b.i, b.j, b.rot, false, b);
   rebuildDeco();
   // start near the centre, on open flat ground
@@ -68,6 +73,8 @@ on('built', () => persist());
 on('expanded', () => persist());
 on('forestChanged', () => persist());
 on('siteChanged', () => persist());
+on('marksChanged', () => persist());
+on('pathsChanged', () => { buildTerrain(); rebuildDeco(); buildForestEdge(); persist(); });
 on('goalAdvanced', () => persist());
 
 $('tContinue').hidden = !hasSave();
@@ -134,6 +141,6 @@ if (location.hash === '#debug') {
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
     step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
-    scene, sites, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid,
+    scene, sites, marks, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid,
   };
 }

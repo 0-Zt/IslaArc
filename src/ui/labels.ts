@@ -4,6 +4,7 @@ import { camera } from '../render/renderer';
 import { buildings, smokePoint, type Building } from '../game/buildings';
 import { crew, select, selected, type Crew } from '../game/crew';
 import { sites } from '../game/expansion';
+import { marks } from '../game/marks';
 import { S, DATA, afford } from '../game/state';
 import { ICON } from './hud';
 import { openSheet, sheetOpen } from './sheets';
@@ -50,6 +51,9 @@ const idleSince = new Map<Crew, number>();
 const HAMMER = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="4" width="11" height="6" rx="1.5" fill="#8a5a2e"/><rect x="11" y="9" width="3" height="12" rx="1" fill="#c9a06a"/></svg>';
 const SHOVEL = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="11" y="2" width="2.5" height="13" fill="#c9a06a"/><path d="M7 14h10v4a5 5 0 0 1-10 0z" fill="#b9c2cc"/></svg>';
 
+const KEYS = { plant: {}, path: {} };
+const SEED = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 14Q5 14 4 7Q11 6 12 14Z" fill="#6fc955"/><path d="M12 12Q18 11 20 5Q14 4 12 12Z" fill="#8ad96b"/><rect x="11" y="12" width="2" height="6" fill="#6a4a2a"/><rect x="6" y="18" width="12" height="4" rx="2" fill="#7a5030"/></svg>';
+
 export function tickLabels() {
   const now = performance.now();
   for (const b of bubbles.values()) b.seen = false;
@@ -89,6 +93,14 @@ export function tickLabels() {
     else show(s, at.clone(), `${SHOVEL}<small>Envía una figura</small>`, 'wait', 'Parcela esperando una figura', () => emit('toast', 'Toca una figura y luego la parcela para rellenarla'));
   }
 
-  for (const [k, b] of bubbles) if (!b.seen) { if (buildings.includes(k as any) || crew.includes(k as any) || sites.includes(k as any)) b.el.hidden = true; else { b.el.remove(); bubbles.delete(k); } }
+  // marks nobody is working on: one bubble per kind, on the first mark
+  for (const kind of ['plant', 'path'] as const) {
+    const m = marks.find(q => q.kind === kind);
+    if (!m || crew.some(c => c.job?.kind === kind)) continue;
+    const n = marks.filter(q => q.kind === kind).length;
+    show(KEYS[kind], _v.set(m.tile.wx, m.tile.h * 0.5 + 0.75, m.tile.wz).clone(), `${kind === 'plant' ? SEED : SHOVEL}<small>${n} ${kind === 'plant' ? (n === 1 ? 'semilla' : 'semillas') : (n === 1 ? 'tramo' : 'tramos')} · envía una figura</small>`, 'wait', 'Marcas esperando una figura', () => emit('toast', 'Toca una figura y luego una marca para que empiece'));
+  }
+
+  for (const [k, b] of bubbles) if (!b.seen) { if (buildings.includes(k as any) || crew.includes(k as any) || sites.includes(k as any) || k === KEYS.plant || k === KEYS.path) b.el.hidden = true; else { b.el.remove(); bubbles.delete(k); } }
 }
 export function clearLabels() { for (const b of bubbles.values()) b.el.remove(); bubbles.clear(); idleSince.clear(); doneUntil.clear(); }

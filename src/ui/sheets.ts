@@ -4,13 +4,14 @@ import { S, DATA, afford, pay, type Cost, type ResKey } from '../game/state';
 import { buildings, has, smelt, startPlace, buildingDef, type Building } from '../game/buildings';
 import { refreshTools } from '../game/crew';
 import { KINDS, expandCost, startSite, enterExpandMode, exitExpandMode, type ExpandKind } from '../game/expansion';
+import { enterMarkMode } from '../game/marks';
 import { ICONS } from '../assets/buildings';
 import { $, img, toast } from './hud';
 import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'expandir' | 'fin';
+type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'fin';
 let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {};
@@ -38,6 +39,9 @@ function render() {
     }
     const cheapest = Math.min(...(Object.keys(KINDS) as ExpandKind[]).map(k => expandCost(k).tierra || 0));
     h += `<div class="row"><div class="thumb">${ICONS.expandir}</div><div class="info"><b>Expandir la isla</b><small>Rellena una casilla de mar junto a la costa. Desde ${cheapest} de tierra; la tierra se saca cavando en suelo café.</small></div><button class="btn main" data-act="expand">Elegir lugar</button></div>`;
+    h += '<h3>Jardín</h3>';
+    h += `<div class="row"><div class="thumb">${ICONS.plantar}</div><div class="info"><b>Plantar semillas</b><small>${S.res.semilla > 0 ? `Tienes ${S.res.semilla}. Elige la especie y dónde plantar; crece sola.` : 'Las semillas salen al talar árboles grandes.'}</small></div><button class="btn${S.res.semilla > 0 ? ' main' : ''}" data-act="plant" ${S.res.semilla > 0 ? '' : 'disabled'}>Plantar</button></div>`;
+    h += `<div class="row"><div class="thumb">${ICONS.sendero}</div><div class="info"><b>Senderos</b><small>Una figura cava el pasto con la pala. Ahí no crecen árboles y se camina más rápido.</small></div><button class="btn main" data-act="path">Trazar</button></div>`;
   } else if (type === 'casa') {
     h += '<h2>Casa · Taller</h2><p>Con lingotes del horno se fabrican herramientas de metal. Cambian lo que rinde cada figura.</p>';
     for (const [k, d] of Object.entries(DATA.TOOLS) as [string, any][]) {
@@ -76,10 +80,14 @@ function render() {
       const d = KINDS[k], c = expandCost(k);
       h += `<div class="row"><div class="info"><b>${d.name}</b><small>${d.desc}</small>${costHTML(c)}</div><button class="btn${afford(c) ? ' main' : ''}" data-expand="${k}" ${afford(c) ? '' : 'disabled'}>Marcar</button></div>`;
     }
+  } else if (type === 'plantar') {
+    h += `<h2>Plantar semillas</h2><p>Tienes ${S.res.semilla} ${S.res.semilla === 1 ? 'semilla' : 'semillas'}. Cada una se vuelve un retoño y luego un árbol. Dentro del bosque (borde verde) los árboles también se esparcen solos; fuera, solo crece lo que plantas.</p>`;
+    const SP: [string, string, string][] = [['roble', 'Roble', 'Copa ancha y redonda.'], ['pino', 'Pino', 'Alto y oscuro, bueno para bordes.'], ['abedul', 'Abedul', 'Tronco blanco y hojas claras.']];
+    for (const [k, n, d] of SP) h += `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${n}</b><small>${d}</small></div><button class="btn main" data-species="${k}" ${S.res.semilla > 0 ? '' : 'disabled'}>Elegir</button></div>`;
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
     h += `<h2>¡La isla despierta!</h2><p>Fundiste metal, abriste el claro, desenterraste a Musgo e hiciste crecer la isla en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}.</p>`
-      + '<p>Sigue expandiendo y ordenando tu isla. Lo que viene: semillas y zonas de bosque, caminos, decoración, la cueva del volcán y el secreto de Brasa.</p>'
+      + '<p>Sigue expandiendo y ordenando tu isla: planta semillas, traza senderos y deja espacio para lo que viene: decoración, la cueva del volcán y el secreto de Brasa.</p>'
       + '<button class="btn main" data-act="close" style="width:100%">Seguir jugando</button>';
   }
   $('sheet').innerHTML = h;
@@ -107,6 +115,9 @@ export function initSheetEvents() {
     if (b.dataset.act === 'smelt' && arg) { smelt(arg); render(); return; }
     if (b.dataset.act === 'gfx') { openSheet('gfx'); return; }
     if (b.dataset.act === 'expand') { closeSheet(); enterExpandMode(); return; }
+    if (b.dataset.act === 'plant') { openSheet('plantar'); return; }
+    if (b.dataset.act === 'path') { closeSheet(); enterMarkMode('path'); return; }
+    if (b.dataset.species) { closeSheet(); enterMarkMode('plant', b.dataset.species as any); return; }
     if (b.dataset.expand && cell) {
       const r = startSite(cell[0], cell[1], b.dataset.expand as ExpandKind);
       if (typeof r === 'string') { toast(r); return; }

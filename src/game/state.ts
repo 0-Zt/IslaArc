@@ -27,13 +27,16 @@ export interface State {
   stumps: string[];                    // tiles that still hold a stump (the tree will regrow)
   sites: { i: number; j: number; kind: string; hits: number }[];   // expansion plots being filled
   expanded: { i: number; j: number; kind: string }[];              // finished expansions
+  grown: { i: number; j: number; type: string; stage: number; at: number }[]; // seedlings and trees that were not on the original island
+  paths: string[];                     // grass tiles turned into dirt paths ("i,j")
+  marks: { i: number; j: number; kind: 'plant' | 'path'; type?: string }[];  // orders waiting for a figure
   time: number;
   done: boolean;
 }
 
 const zero = () => Object.fromEntries(RES_KEYS.map(k => [k, 0])) as Record<ResKey, number>;
 export function freshState(): State {
-  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], time: 0, done: false };
+  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], grown: [], paths: [], marks: [], time: 0, done: false };
 }
 export let S: State = freshState();
 export function setState(s: State) { S = s; }
@@ -48,7 +51,7 @@ export function loadSave(): State | null {
     const s = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!s) return null;
     const f = freshState();
-    return { ...f, ...s, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags }, gone: s.gone || [], stumps: s.stumps || [], sites: s.sites || [], expanded: s.expanded || [] };
+    return { ...f, ...s, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags }, gone: s.gone || [], stumps: s.stumps || [], sites: s.sites || [], expanded: s.expanded || [], grown: s.grown || [], paths: s.paths || [], marks: s.marks || [] };
   } catch { return null; }
 }
 export function clearSave() { try { localStorage.removeItem(KEY); } catch { /* ignore */ } }

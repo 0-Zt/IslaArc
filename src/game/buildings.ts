@@ -7,6 +7,7 @@ import { rocks } from '../world/rocks';
 import { puff, smoke } from '../world/particles';
 import { MODELS } from '../assets/buildings';
 import { S, DATA, afford, pay, gain, type Cost, type SavedBuilding } from './state';
+import { stumps } from './forest';
 
 export interface Building {
   type: string; i: number; j: number; rot: number; tiles: Tile[];
@@ -27,7 +28,7 @@ export function footprint(type: string, i: number, j: number, rot: number) {
 export function footprintValid(tiles: (Tile | null)[]) {
   if (tiles.some(t => !t)) return false;
   const h = tiles[0]!.h;
-  return tiles.every(t => t!.h === h && !blocked(t) && t!.type !== 'musgo');
+  return tiles.every(t => t!.h === h && !blocked(t) && t!.type !== 'musgo' && !t!.sprout && !t!.mark && !stumps.has(t!));
 }
 const centre = (tiles: Tile[]): [number, number, number] => {
   let x = 0, z = 0; tiles.forEach(t => { x += t.wx; z += t.wz; });

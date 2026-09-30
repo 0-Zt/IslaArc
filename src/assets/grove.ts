@@ -46,3 +46,31 @@ export function modelStump(bark = '#6a3f22') {
   vbox(P, 0, 0.145, 0, 0.16, 0.012, 0.16, '#e0b878'); vbox(P, 0, 0.15, 0, 0.06, 0.01, 0.06, '#c89858');
   return group({ bark: B, plank: P });
 }
+
+/** A seedling: a thin stem with a couple of leaves (needles for a pine). */
+export function modelSprout(type: 'pino' | 'roble' | 'abedul', big = false) {
+  const S: THREE.BufferGeometry[] = [], L: THREE.BufferGeometry[] = [], D: THREE.BufferGeometry[] = [];
+  const k = big ? 2.4 : 1.7;
+  vbox(D, 0, 0.025, 0, 0.3, 0.05, 0.3, '#6a4428');
+  vbox(S, 0, 0.1 * k, 0, 0.035, 0.2 * k, 0.035, type === 'abedul' ? '#e8e0d0' : '#7a5030');
+  const leaf = type === 'pino' ? '#3f8a4a' : type === 'abedul' ? '#b8d860' : '#5fb84a';
+  if (type === 'pino') { vbox(L, 0, 0.16 * k, 0, 0.14 * k, 0.07 * k, 0.14 * k, leaf); vbox(L, 0, 0.23 * k, 0, 0.08 * k, 0.07 * k, 0.08 * k, leaf); }
+  else { vbox(L, 0.06 * k, 0.19 * k, 0, 0.1 * k, 0.04 * k, 0.07 * k, leaf); vbox(L, -0.06 * k, 0.15 * k, 0.01, 0.1 * k, 0.04 * k, 0.07 * k, leaf); vbox(L, 0, 0.23 * k, 0, 0.06 * k, 0.05 * k, 0.06 * k, leaf); }
+  return group({ bark: S, leaf: L, plank: D });
+}
+
+/** A planting order: a little dug hole and a stake with a green tag. */
+export function modelPlantMark() {
+  const D: THREE.BufferGeometry[] = [], P: THREE.BufferGeometry[] = [];
+  vbox(D, 0, 0.025, 0, 0.3, 0.05, 0.3, '#7a5030'); vbox(D, 0, 0.05, 0, 0.14, 0.02, 0.14, '#4a2e18');
+  vbox(P, 0.2, 0.18, 0.2, 0.04, 0.36, 0.04, '#c9a06a'); vbox(P, 0.2, 0.33, 0.255, 0.04, 0.07, 0.07, '#8ad96b');
+  return group({ plank: D.concat(P) });
+}
+
+/** A path order: four pegs and a string outline on the grass. */
+export function modelPathMark() {
+  const P: THREE.BufferGeometry[] = [];
+  for (const [x, z] of [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]]) vbox(P, x, 0.08, z, 0.05, 0.16, 0.05, '#c9a06a');
+  for (const s of [-1, 1]) { vbox(P, 0, 0.12, s * 0.4, 0.8, 0.015, 0.015, '#f0e0b0'); vbox(P, s * 0.4, 0.12, 0, 0.015, 0.015, 0.8, '#f0e0b0'); }
+  return group({ plank: P });
+}
