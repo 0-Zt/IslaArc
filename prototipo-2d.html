@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body style="margin:0">
+<title>Isla Arcilla</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one-screen game. Resource strip on top, pixel island canvas in the middle, crew bar at the bottom; panels float over the island. */
+:root{
+  --sea:#0d2131; --panel:#172b3b; --panel2:#213a4e; --line:#3a5c75; --text:#f4ecd8; --muted:#9fb4c3;
+  --sun:#f2c14e; --clay:#d08a5a; --good:#8fdc6a; --bad:#ff8a6a; --rune:#b58bff;
+  --font:"Pixelify Sans", ui-monospace, "Courier New", monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--sea);color:var(--text);font-family:var(--font);overflow:hidden;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+#app{height:100%;display:flex;flex-direction:column;gap:8px;padding-inline:16px;padding-block:8px;box-sizing:border-box;max-width:1200px;margin:0 auto}
+#hud{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;min-height:30px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--panel);border:2px solid var(--line);padding:1px 7px 1px 3px;font-size:15px;font-variant-numeric:tabular-nums;line-height:22px}
+.chip img{width:21px;height:21px;image-rendering:pixelated}
+.chip.bump{border-color:var(--sun)}
+.chip.tide{margin-left:auto;color:var(--muted);padding-left:7px}
+#stage{flex:1;min-height:0;position:relative;display:grid;place-items:center}
+canvas#world{image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:manipulation;border:2px solid var(--line);box-shadow:0 4px 0 #0007}
+#toast{position:absolute;bottom:10px;z-index:7;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;align-items:center;pointer-events:none;z-index:5;width:calc(100% - 32px)}
+.toast{background:var(--panel);border:2px solid var(--sun);padding:4px 10px;font-size:15px;text-align:center;animation:tin .25s ease-out;max-width:100%}
+@keyframes tin{from{transform:translateY(-6px);opacity:0}}
+#bar{display:flex;gap:6px;align-items:stretch;flex-wrap:wrap}
+#crew{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.wcard{display:flex;gap:6px;align-items:center;background:var(--panel);border:2px solid var(--line);padding:4px 8px 4px 4px;text-align:left;min-width:0;box-shadow:0 3px 0 #0007}
+.wcard img{width:21px;height:33px;image-rendering:pixelated;flex:none}
+.wcard b{display:block;font-size:15px}
+.wcard span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.wcard.sel{border-color:var(--sun);background:var(--panel2)}
+.tools{display:flex;gap:6px}
+.btn{background:var(--panel2);border:2px solid var(--line);padding:6px 12px;font-size:15px;box-shadow:0 3px 0 #0007}
+.btn:hover{border-color:var(--muted)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0007}
+.btn.main{background:var(--sun);color:#2a1a08;border-color:#b0822a;font-weight:700}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn .dot{display:inline-block;width:8px;height:8px;background:var(--sun);margin-left:6px;vertical-align:middle}
+
+#panel{position:absolute;z-index:6;width:min(540px,calc(100% - 16px));max-height:calc(100% - 16px);overflow:auto;background:var(--panel);border:2px solid var(--line);box-shadow:0 6px 0 #000a;padding:14px 16px 16px;box-sizing:border-box}
+#panel h2{margin:0 0 2px;font-size:24px;color:var(--sun);text-wrap:balance}
+#panel h3{margin:14px 0 6px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#panel p{margin:6px 0;font-size:15px;line-height:1.35;max-width:62ch}
+#panel .x{position:absolute;top:8px;right:8px;background:none;border:2px solid var(--line);width:32px;height:32px;font-size:18px;line-height:1}
+.tabs{display:flex;gap:4px;margin:10px 0 4px;flex-wrap:wrap}
+.tabs button{background:none;border:2px solid var(--line);padding:4px 10px;font-size:14px}
+.tabs button.on{background:var(--panel2);border-color:var(--sun);color:var(--sun)}
+.row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:2px solid var(--panel2)}
+.row:first-of-type{border-top:0}
+.row .info{flex:1;min-width:0}
+.row .info b{font-size:16px}
+.row .info small{display:block;color:var(--muted);font-size:13px;line-height:1.3}
+.cost{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.cost span{display:inline-flex;align-items:center;gap:2px;font-size:13px;background:var(--panel2);padding:0 5px 0 2px;font-variant-numeric:tabular-nums}
+.cost span img{width:14px;height:14px;image-rendering:pixelated}
+.cost span.no{color:var(--bad)}
+.done{color:var(--good);font-size:14px}
+.inv{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.inv div{display:flex;align-items:center;gap:6px;background:var(--panel2);padding:4px 8px 4px 4px;font-size:14px}
+.inv img{width:28px;height:28px;image-rendering:pixelated}
+.inv b{margin-left:auto;font-variant-numeric:tabular-nums}
+.pick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pick button{background:var(--panel2);border:2px solid var(--line);padding:6px 2px;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.pick button img{width:28px;height:28px;image-rendering:pixelated}
+.pick button.on{border-color:var(--sun);background:#3a3420}
+.pick button[disabled]{opacity:.4}
+.book div{display:flex;align-items:center;gap:6px;font-size:14px;padding:4px 0}
+.book img{width:21px;height:21px;image-rendering:pixelated}
+.book .q{color:var(--muted)}
+.result{min-height:24px;margin-top:8px;font-size:16px}
+.runes{display:grid;grid-template-columns:repeat(3,64px);gap:8px;justify-content:center;margin:12px 0}
+.runes button{width:64px;height:64px;background:#4a5058;border:3px solid #2e3238;font-size:28px;color:#6d747c;box-shadow:0 4px 0 #0008}
+.runes button.lit{background:#3b2a5a;border-color:var(--rune);color:#e6d8ff;text-shadow:0 0 8px var(--rune)}
+.runes button[disabled]{cursor:not-allowed}
+.goals li{font-size:15px;padding:4px 0;list-style:none;display:flex;gap:8px}
+.goals{padding:0;margin:6px 0}
+.goals .ck{width:14px;height:14px;border:2px solid var(--line);flex:none;margin-top:2px}
+.goals .ok .ck{background:var(--good);border-color:var(--good)}
+.goals .ok span{color:var(--muted);text-decoration:line-through}
+.goals .hid span{color:var(--muted)}
+.letter{background:#efe2bf;color:#3a2a14;padding:14px 16px;border:2px solid #b89a5a;font-size:16px;line-height:1.4;margin:10px 0}
+
+#title{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:linear-gradient(#0d2131cc,#0d2131ee);padding-inline:16px}
+#title .box{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;width:min(360px,100%)}
+#title h1{font-size:clamp(44px,11vw,76px);line-height:.9;margin:0;color:var(--sun);text-shadow:0 4px 0 #8a5a1a,0 8px 0 #0008;letter-spacing:.02em}
+#title .sub{color:var(--muted);font-size:16px;margin:0 0 12px}
+#title .btn{width:100%;font-size:18px;padding:10px}
+#title .ver{color:var(--muted);font-size:12px;margin-top:8px}
+@media (max-width:520px){
+  .chip{font-size:13px;padding-right:5px}.chip img{width:18px;height:18px}
+  .wcard span{max-width:96px}
+  .btn{padding:6px 9px;font-size:14px}
+  .pick{grid-template-columns:repeat(4,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.toast{animation:none}}
+</style>
+
+<div id="app">
+  <div id="hud" aria-label="Recursos"></div>
+  <div id="stage">
+    <canvas id="world" width="320" height="200" aria-label="Mapa de la isla"></canvas>
+    <div id="toast" aria-live="polite"></div>
+    <div id="panel" hidden role="dialog"></div>
+  </div>
+  <div id="bar">
+    <div id="crew"></div>
+    <div class="tools">
+      <button class="btn" id="bHouse">Casa</button>
+      <button class="btn" id="bGoals">Objetivos</button>
+      <button class="btn" id="bMenu">Menú</button>
+    </div>
+  </div>
+</div>
+
+<div id="title">
+  <div class="box">
+    <h1>ISLA<br>ARCILLA</h1>
+    <p class="sub">Una figura de barro, una isla entera por despertar.</p>
+    <button class="btn main" id="tContinue">Continuar</button>
+    <button class="btn" id="tNew">Nueva partida</button>
+    <button class="btn" id="tHelp">Cómo jugar</button>
+    <div class="ver">versión 0.1 · la partida se guarda en este navegador</div>
+  </div>
+</div>
+
+<script>
+(()=>{
+const W=320,H=200;
+const cv=document.getElementById('world'),ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const $=id=>document.getElementById(id);
+const rnd=Math.random;
+
+/* ---------- sprites ---------- */
+function mk(rows,pal){const w=Math.max(...rows.map(r=>r.length)),h=rows.length;const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');rows.forEach((r,j)=>{for(let i=0;i<r.length;i++){const p=pal[r[i]];if(p){x.fillStyle=p;x.fillRect(i,j,1,1)}}});return c}
+function flip(c){const o=document.createElement('canvas');o.width=c.width;o.height=c.height;const x=o.getContext('2d');x.translate(c.width,0);x.scale(-1,1);x.drawImage(c,0,0);return o}
+
+const TREE=mk([
+'....GGGG....','..GGHGGGGG..','.GGHHGGGGGG.','GGHGGGGGGDGG','GGGGGGGGGDGG','GGHGGGGGDDGG','.GGGGGGDDGG.','..GGDDDDGG..','....DTTD....','.....TT.....','.....TT.....','....TTTT....'],
+{G:'#3fae4a',H:'#8fe070',D:'#2a7a3a',T:'#7a4a2a'});
+const TREE2=mk([
+'.....GG.....','....GHGG....','...GHGGDG...','..GHGGGGDG..','...GGGGDG...','..GHGGGGDG..','.GHGGGGGGDG.','..GGGGGGDD..','.GHGGGGGGDDG','..GGDDDDDD..','.....TT.....','....TTTT....'],
+{G:'#35a050',H:'#7fd67a',D:'#23704a',T:'#6a3e24'});
+const FRUITTREE=mk([
+'....GGGG....','..GGHGRGGG..','.GGHHGGGGGG.','GRHGGGGGRDGG','GGGGGGGGGDGG','GGHGRGGGDDGG','.GGGGGGDDGG.','..GGDDDDGG..','....DTTD....','.....TT.....','.....TT.....','....TTTT....'],
+{G:'#3fae4a',H:'#8fe070',D:'#2a7a3a',T:'#7a4a2a',R:'#ff5a4a'});
+const HOUSE=mk([
+'......RRRRRR......','....RRYYYYYYRR....','...RYWWYYYYYYYR...','..RYWYYYYYYYYYYR..','.RYYWYYYYYYYYYYYR.','.RYYYYYYYYYYYYYSR.','RYYYYYYYYYYYYYYSSR','RYYYYYKKKKKYYYYSSR','RYYYYKKKKKKKYYYSSR','RYYYYKKOOKKKYYYSSR','RYYYYKKOOKKKYYYSSR','RRRRRRRRRRRRRRRRRR'],
+{Y:'#f2c14e',W:'#fff0a8',S:'#d89a34',R:'#a0602a',K:'#4a2616',O:'#ffcf5a'});
+const RUIN_P=['.PP.......PP........','.PHP......PHP...PP..','.PGP..PP..PGP..PHP..','.PPP..PHP.PPP..PGP..','.PDP..PGP.PDP..PPP..','.PPP..PPP.PPP..PDP..','.PDP..PDP.PPP..PPP..','PPPPPPPPPPPPPPPPPPPP','.DDDDDDDDDDDDDDDDDD.'];
+const RUIN_OFF=mk(RUIN_P,{P:'#9aa0a8',H:'#c8ced6',D:'#6a7078',G:'#5a6068'});
+const RUIN_ON=mk(RUIN_P,{P:'#9aa0a8',H:'#c8ced6',D:'#6a7078',G:'#c9a0ff'});
+const ROCKS=mk([
+'......GGG.......','....GGHGGGD.....','...GHGGBGGD.GG..','..GHGGGGGDDGHGD.','.GGGGBGGGDDGGGGD','GGHGGGGGDDGGBGDD','GGGGGGGDDGGGGGDD','.GGGGGDDDDGGGDD.'],
+{G:'#9aa3ad',H:'#d0d8e0',D:'#6a737d',B:'#5ab8ff'});
+const SHEEP=mk(['.WWWW...','WWHWWWKK','WWWWWWKE','.WWWWW..','.K..K...'],{W:'#f4f1ea',H:'#ffffff',K:'#3a3a44',E:'#ffffff'});
+const SHEEP_L=flip(SHEEP);
+const ITEM={
+  shell:mk(['..P..','.PQP.','PQPQP','.PPP.'],{P:'#ff9ab8',Q:'#ffd6e2'}),
+  bottle:mk(['..K..','..G..','.GWG.','.GGG.','.GGG.'],{K:'#8a5a2a',G:'#6fd0c8',W:'#f4ecd8'}),
+  crate:mk(['BBBBB','BLBLB','BBBBB','BLBLB','BBBBB'],{B:'#a0703a',L:'#6a4420'}),
+  algae:mk(['.G.G.','GG.GG','.GGG.','..G..'],{G:'#2f9a6a'}),
+};
+const RAFT=mk(['.....M........','.....MSSS.....','.....MSSSS....','LLLLLLLLLLLLLL','.DDDDDDDDDDDD.'],{M:'#6a4420',S:'#f4f1ea',L:'#b07a40',D:'#7a5028'});
+
+const WPAL={
+  arci:{C:'#d08a5a',H:'#f0b890',S:'#9c5e3a',E:'#2a1a14'},
+  brasa:{C:'#c24a2c',H:'#ff9050',S:'#7a2418',E:'#ffe04a'},
+  musgo:{C:'#7aa25a',H:'#b2d488',S:'#4f7038',E:'#1e2a14'},
+};
+const WF=[
+['..HHC..','.HCCCS.','.CECES.','.CCCCS.','..SSS..','.CCCCC.','C.CCC.S','C.CCC.S','..CCC..','..C.S..','..C.S..'],
+['..HHC..','.HCCCS.','.CECES.','.CCCCS.','..SSS..','.CCCCC.','C.CCC.S','C.CCC.S','..CCC..','.C...S.','.C...S.'],
+['C.HHC.S','CHCCCSS','.CECES.','.CCCCS.','..SSS..','.CCCCC.','..CCC..','..CCC..','..CCC..','..C.S..','..C.S..'],
+];
+const WSPR={};for(const k in WPAL){WSPR[k]=WF.map(f=>mk(f,WPAL[k]));WSPR[k+'_L']=WSPR[k].map(flip)}
+
+/* resource icons 7x7 */
+const IC={
+ madera:[['.......','.WBBBB.','WLWBBBB','WWWBBBB','.WBBBB.'],{W:'#e0b070',L:'#8a5a2a',B:'#7a4a2a'}],
+ hojas:[['....GG.','..GGHG.','.GGHGG.','.GHGG..','GHGG...','G......'],{G:'#3fae4a',H:'#9ae880'}],
+ fruta:[['...G...','..RRR..','.RWRRR.','.RRRRR.','.RRRRD.','..RDD..'],{G:'#3fae4a',R:'#ff5a4a',W:'#ffc0b0',D:'#b02a2a'}],
+ arena:[['.......','.......','...S...','..SSL..','.SSLSS.','SSSSSSS'],{S:'#f0d890',L:'#c8a860'}],
+ conchas:[['...P...','..PQP..','.PQPQP.','PQPQPQP','.PPPPP.','..PPP..'],{P:'#ff9ab8',Q:'#ffd6e2'}],
+ piedra:[['.......','..GGG..','.GHGGG.','GHGGGDG','GGGGGDG','.GGDDD.'],{G:'#9aa3ad',H:'#d0d8e0',D:'#6a737d'}],
+ mineral:[['.......','..GGG..','.GHBGG.','GHGGBDG','GBGGGDG','.GGDDD.'],{G:'#8a8f9a',H:'#c8d0d8',D:'#5a606a',B:'#5ab8ff'}],
+ lana:[['.......','.WW.WW.','WWWWWWW','WLWWWWW','.WWWWLW','..WWW..'],{W:'#f4f1ea',L:'#c8c2b8'}],
+ metal:[['.......','.......','..MMMMM','.MHMMMD','MMMMMD.','MDDDD..'],{M:'#b8c0cc',H:'#ffffff',D:'#6a7280'}],
+ vidrio:[['...C...','..CWC..','.CWCCC.','CCCCCCD','.CCCCD.','..CCD..','...D...'],{C:'#8fe0ff',W:'#ffffff',D:'#3a9ac0'}],
+ abono:[['..T.T..','..SSS..','.SSSSS.','SSLSSSS','SSSSSSD','.SSSDD.'],{T:'#3fae4a',S:'#8a6a3a',L:'#b08a50',D:'#5a4020'}],
+ cal:[['.......','.WWWWW.','WHWWWWD','WWWWWWD','WWWWWWD','.DDDDD.'],{W:'#eeeae0',H:'#ffffff',D:'#b8b0a0'}],
+ obsidiana:[['...K...','..KPK..','..KKPK.','.KPKKK.','.KKKKK.','..KKK..'],{K:'#1e1428',P:'#9a6aff'}],
+};
+const ICON={};for(const k in IC)ICON[k]=mk(IC[k][0],IC[k][1]).toDataURL();
+const PORT={};for(const k in WPAL)PORT[k]=WSPR[k][0].toDataURL();
+
+/* ---------- data ---------- */
+const RES={madera:'Madera',hojas:'Hojas',fruta:'Fruta',arena:'Arena',conchas:'Conchas',piedra:'Piedra',mineral:'Mineral',lana:'Lana',metal:'Metal',vidrio:'Vidrio',abono:'Abono',cal:'Cal',obsidiana:'Obsidiana'};
+const BASE=['madera','hojas','fruta','arena','conchas','piedra','mineral','lana'];
+const REFINED=['metal','vidrio','abono','cal','obsidiana'];
+const RECIPES=[
+ {a:'madera',b:'mineral',out:'metal',q:2,hint:'Algo que arde con algo que brilla dentro de la roca.'},
+ {a:'arena',b:'madera',out:'vidrio',q:2,hint:'Grano fino de la orilla y leña para el fuego.'},
+ {a:'hojas',b:'fruta',out:'abono',q:2,hint:'Todo lo verde con algo dulce.'},
+ {a:'conchas',b:'piedra',out:'cal',q:2,hint:'Algo del mar con algo de la montaña.'},
+];
+const CRAFTS=[
+ {id:'hacha',n:'Hacha de piedra',d:'Talas el doble de madera en el bosque.',cost:{madera:8,piedra:5}},
+ {id:'pala',n:'Pala de concha',d:'Sacas el doble de arena en la playa.',cost:{madera:6,conchas:5}},
+ {id:'pico',n:'Pico de metal',d:'Más piedra y mucho más mineral en la cantera.',cost:{madera:5,metal:3}},
+ {id:'catalejo',n:'Catalejo',d:'La marea llega más seguido. Y algo brilla en el horizonte…',cost:{vidrio:4,metal:2}},
+ {id:'choza',n:'Choza de Musgo',d:'Nuevo trabajador: Musgo, jardinero del bosque.',cost:{madera:20,hojas:15,cal:4,abono:3}},
+ {id:'balsa',n:'Balsa',d:'Se amarra en el muelle. Permite zarpar a la siguiente isla.',cost:{madera:30,lana:8,metal:4,obsidiana:3}},
+];
+const WDEF={
+ arci:{name:'Arci',ab:'Todoterreno. Trabaja en cualquier zona de la isla.'},
+ brasa:{name:'Brasa',ab:'Arcilla cocida. Aguanta el calor del cráter y es la única que extrae obsidiana.'},
+ musgo:{name:'Musgo',ab:'Jardinero. En el bosque junta doble hoja y siempre encuentra fruta.'},
+};
+
+/* ---------- terrain ---------- */
+const SEED=11;
+function hash(i,j){let h=Math.imul(i,374761393)^Math.imul(j,668265263)^Math.imul(SEED,982451653);h=Math.imul(h^(h>>>13),1274126177);h^=h>>>16;return (h>>>0)/4294967295}
+function vnoise(x,y,s){const i=Math.floor(x/s),j=Math.floor(y/s),fx=x/s-i,fy=y/s-j,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);const a=hash(i,j),b=hash(i+1,j),c=hash(i,j+1),d=hash(i+1,j+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+const LIFT=7;
+const ELL=[[160,103,134,66],[250,82,46,38],[66,152,46,24],[112,52,34,22]];
+const base=new Uint8Array(W*H);
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){let m=9;for(const e of ELL){const v=((x-e[0])/e[2])**2+((y-e[1])/e[3])**2;if(v<m)m=v}m+=(vnoise(x,y,16)-.5)*.3+(vnoise(x,y,6)-.5)*.08;base[y*W+x]=m<1?1:0}
+const isBase=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&base[y*W+x]===1;
+const isTop=(x,y)=>isBase(x,y+LIFT)&&y>=0;
+const isSand=(x,y)=>isTop(x,y)&&((x-64)/50)**2+((y-146)/26)**2<1&&y>128;
+function isGrass(x,y){return isTop(x,y)&&!isSand(x,y)}
+// water distance
+const wd=new Uint8Array(W*H).fill(255);{const q=[];for(let i=0;i<W*H;i++)if(base[i]){wd[i]=0;q.push(i)}let h=0;while(h<q.length){const i=q[h++],d=wd[i];if(d>=12)continue;const x=i%W,y=(i/W)|0;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const n=ny*W+nx;if(wd[n]>d+1){wd[n]=d+1;q.push(n)}}}}
+
+const ZONES={
+ bosque:{name:'Bosque',x:78,y:74,r:30,spot:[98,92],verb:'Talando en el bosque',cycle:3},
+ playa:{name:'Playa',x:62,y:144,r:22,spot:[66,146],verb:'Buscando en la playa',cycle:3},
+ cantera:{name:'Cantera',x:214,y:118,r:16,spot:[204,128],verb:'Picando en la cantera',cycle:3.5},
+ prado:{name:'Prado',x:152,y:140,r:18,spot:[146,148],verb:'Esquilando ovejas',cycle:4},
+ volcan:{name:'Volcán',x:250,y:56,r:28,spot:[236,98],verb:'En el cráter',cycle:6},
+ casa:{name:'Casa',x:160,y:88,r:14,spot:[160,104],verb:'Descansando en casa',cycle:99},
+ ruinas:{name:'Ruinas',x:112,y:36,r:13,spot:[112,48],verb:'Examinando las runas',cycle:99},
+ muelle:{name:'Muelle',x:0,y:120,r:13,spot:[0,122],verb:'Esperando en el muelle',cycle:99},
+};
+// dock position: rightmost top pixel around row 120
+let dockX=280;for(let x=W-1;x>0;x--){if(isTop(x,120)){dockX=x;break}}
+ZONES.muelle.x=dockX+8;ZONES.muelle.spot=[dockX-4,124];
+const VOL={x:250,top:26,base:96};
+
+// static layer
+const bg=document.createElement('canvas');bg.width=W;bg.height=H;const bx=bg.getContext('2d');
+const foam=[];const sandPts=[];
+(function bake(){
+ const img=bx.createImageData(W,H),d=img.data;
+ const put=(x,y,hex)=>{const i=(y*W+x)*4;d[i]=parseInt(hex.slice(1,3),16);d[i+1]=parseInt(hex.slice(3,5),16);d[i+2]=parseInt(hex.slice(5,7),16);d[i+3]=255};
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+  const r=hash(x*7+3,y*13+1);
+  if(isTop(x,y)){
+   const edge=!isTop(x+1,y)||!isTop(x-1,y)||!isTop(x,y-1)||!isTop(x,y+1);
+   if(isSand(x,y)){put(x,y,edge?'#d8b868':r<.12?'#e2c474':r>.96?'#fff0c0':'#f0d890');if(y>150&&!edge)sandPts.push([x,y])}
+   else{const n=vnoise(x,y,10);put(x,y,edge?'#2f8a3a':r<.08?'#4aa83e':r>.95?'#86dc6a':n>.62?'#62c44e':'#58b848')}
+  }else if(isBase(x,y)){
+   let k=0;while(k<LIFT+2&&!isTop(x,y-k))k++;
+   const bottom=!isBase(x,y+1);
+   put(x,y,bottom?'#5a3018':k<=1?'#d09a5a':((y+(x>>2))%4===0)?'#8a5230':(x%9===0?'#96582f':'#a8683a'));
+  }else{
+   const w=wd[y*W+x];
+   put(x,y,w<=2?'#72c4ee':w<=5?'#4aa0e2':w<=9?'#3c8ed8':(r<.01?'#5aa8e8':'#3584d0'));
+   if(w>=1&&w<=3)foam.push([x,y,w]);
+  }
+ }
+ bx.putImageData(img,0,0);
+ // paths
+ const [hx,hy]=ZONES.casa.spot;
+ for(const k of ['bosque','playa','cantera','prado','volcan','ruinas','muelle']){const[tx,ty]=ZONES[k].spot;const n=Math.hypot(tx-hx,ty-hy)|0;for(let i=0;i<=n;i++){const t=i/n;const x=Math.round(hx+(tx-hx)*t+Math.sin(t*6+k.length)*3),y=Math.round(hy+(ty-hy)*t);for(const[ox,oy]of[[0,0],[1,0],[0,1],[1,1]]){if(isGrass(x+ox,y+oy)){bx.fillStyle=hash(x+ox,y+oy)<.2?'#b89058':'#cfa66a';bx.fillRect(x+ox,y+oy,1,1)}}}}
+ // flowers & tufts
+ for(let i=0;i<260;i++){const x=(hash(i,91)*W)|0,y=(hash(i,37)*H)|0;if(!isGrass(x,y)||!isGrass(x,y+2))continue;let near=false;for(const z of Object.values(ZONES))if(Math.hypot(z.spot[0]-x,z.spot[1]-y)<8)near=true;if(near)continue;const c=hash(i,5);bx.fillStyle=c<.25?'#ffe070':c<.45?'#ff8ab0':c<.6?'#ffffff':'#3f9a3a';if(c<.6){bx.fillRect(x,y,1,1)}else{bx.fillRect(x,y,1,1);bx.fillRect(x+1,y-1,1,1);bx.fillRect(x+2,y,1,1)}}
+ // volcano cone
+ for(let y=VOL.top;y<=VOL.base;y++){const hw=5+(y-VOL.top)*.55;for(let x=Math.round(VOL.x-hw);x<=Math.round(VOL.x+hw);x++){const f=(x-(VOL.x-hw))/(2*hw);const r=hash(x*3,y*5);let c=f<.18?'#c88450':f<.6?'#a86a40':f<.85?'#8a5232':'#6e3e24';if(r<.05)c='#5e3420';if(y===Math.round(VOL.base)||x===Math.round(VOL.x-hw)||x===Math.round(VOL.x+hw))c='#5a3018';bx.fillStyle=c;bx.fillRect(x,y,1,1)}}
+ // lava streaks
+ bx.fillStyle='#e8662c';for(const[sx,len]of[[-2,16],[3,24],[-6,10]]){for(let i=0;i<len;i++){bx.fillRect(Math.round(VOL.x+sx+Math.sin(i*.5)*1.2+(sx>0?i*.15:-i*.12)),VOL.top+3+i,1,1)}}
+ // crater rim
+ bx.fillStyle='#4a2616';bx.fillRect(VOL.x-6,VOL.top-1,13,3);
+})();
+// shore points for tide items
+const shore=sandPts.filter(([x,y])=>!isTop(x,y+3)||!isTop(x,y+5));
+
+// trees
+const TREES=[];
+(function(){let tries=0;const [bxz,byz]=[78,72];while(TREES.length<18&&tries<900){tries++;const a=hash(tries,3)*6.283,r=Math.sqrt(hash(tries,9))*32;const x=Math.round(bxz+Math.cos(a)*r),y=Math.round(byz+Math.sin(a)*r*.8);if(!isGrass(x,y)||!isGrass(x-5,y)||!isGrass(x+5,y))continue;if(Math.hypot(x-ZONES.bosque.spot[0],y-ZONES.bosque.spot[1])<11)continue;if(TREES.some(t=>Math.hypot(t.x-x,t.y-y)<9))continue;TREES.push({x,y,k:hash(tries,1)<.35?1:hash(tries,2)<.2?2:0})}
+ for(const[x,y]of[[190,70],[128,122],[42,108],[196,150],[228,138],[150,52]]){if(isGrass(x,y))TREES.push({x,y,k:(x%3===0)?1:0})}
+})();
+
+/* ---------- state ---------- */
+const KEY='isla-arcilla-v1';
+function fresh(){return{res:Object.fromEntries(Object.keys(RES).map(k=>[k,0])),tools:{},recipes:{},goals:{},workers:[{id:'arci',x:ZONES.casa.spot[0],y:ZONES.casa.spot[1],zone:'casa',state:'work',tx:0,ty:0,t:0,face:1}],items:[],tideT:25,tides:0,bottle:{spawned:false,read:false},puzzle:{solved:false,board:[0,0,0,0,1,0,0,0,1]},ruinsSeen:false,tideCount:0,time:0}}
+let S=fresh();
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(!s)return false;const f=fresh();S=Object.assign(f,s);S.res=Object.assign(f.res,s.res||{});S.workers.forEach(w=>{if(w.state==='pickup'||w.after==='pickup'){w.state='walk';w.tx=ZONES[w.zone].spot[0]+w.off;w.ty=ZONES[w.zone].spot[1];w.after=null}});S.items.forEach(i=>i.claimed=null);return true}catch(e){return false}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function hasSave(){try{return !!localStorage.getItem(KEY)}catch(e){return false}}
+
+/* ---------- ui helpers ---------- */
+let selected=null,hover=null,running=false,panel=null;
+const floats=[],smoke=[],sheep=[];
+for(let i=0;i<4;i++)sheep.push({x:ZONES.prado.x+(i-1.5)*8,y:ZONES.prado.y-6+(i%2)*6,tx:0,ty:0,t:rnd()*3,f:1});
+
+function toast(msg){const el=document.createElement('div');el.className='toast';el.textContent=msg;$('toast').appendChild(el);setTimeout(()=>el.remove(),2800);while($('toast').children.length>3)$('toast').firstChild.remove()}
+function floatTxt(x,y,txt,col){floats.push({x,y,txt,col:col||'#fff4c0',life:1.6})}
+function gain(k,n,w){if(n<=0)return;S.res[k]+=n;if(w)floatTxt(w.x,w.y-14-floats.filter(f=>f.life>1.3&&Math.abs(f.x-w.x)<4).length*7,`+${n} ${RES[k].toLowerCase()}`);bump(k)}
+const bumps={};function bump(k){bumps[k]=0.6}
+const img=k=>`<img src="${ICON[k]}" alt="">`;
+
+function renderHUD(){
+ const keys=BASE.concat(REFINED.filter(k=>S.res[k]>0));
+ const tide=Math.max(0,Math.ceil(S.tideT));
+ let h=keys.map(k=>`<span class="chip${bumps[k]>0?' bump':''}" title="${RES[k]}">${img(k)}${S.res[k]}</span>`).join('');
+ h+=`<span class="chip tide" title="Próxima marea">Marea ${Math.floor(tide/60)}:${String(tide%60).padStart(2,'0')}</span>`;
+ $('hud').innerHTML=h;
+}
+function statusOf(w){if(w.state==='walk')return w.after==='pickup'?'Recogiendo algo en la orilla':`Caminando a ${ZONES[w.zone].name.toLowerCase()}`;if(w.state==='pickup')return 'Recogiendo algo en la orilla';if(w.zone==='volcan'&&w.id==='brasa')return 'Extrayendo obsidiana';return ZONES[w.zone].verb}
+function renderCrew(){
+ $('crew').innerHTML=S.workers.map(w=>`<button class="wcard${selected===w.id?' sel':''}" data-w="${w.id}" aria-pressed="${selected===w.id}"><img src="${PORT[w.id]}" alt=""><div style="min-width:0"><b>${WDEF[w.id].name}</b><span>${selected===w.id?'Toca una zona para enviarle':statusOf(w)}</span></div></button>`).join('');
+ const g=GOALS.some(g=>!S.goals[g.id]&&g.ok());$('bGoals').innerHTML='Objetivos'+(g?'<span class="dot"></span>':'');
+}
+$('crew').addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(!b)return;selected=selected===b.dataset.w?null:b.dataset.w;renderCrew()});
+
+/* ---------- goals ---------- */
+const GOALS=[
+ {id:'g1',t:'Envía a Arci al bosque y junta 10 de madera',ok:()=>S.res.madera>=10||S.tools.hacha},
+ {id:'g2',t:'Fabrica el hacha de piedra en la casa',ok:()=>!!S.tools.hacha},
+ {id:'g3',t:'Recoge algo que haya traído la marea',ok:()=>S.tideCount>0},
+ {id:'g4',t:'Descubre una receta en el cráter del volcán',ok:()=>Object.keys(S.recipes).length>0},
+ {id:'g5',t:'Despierta las runas de las ruinas',ok:()=>S.puzzle.solved,secret:()=>!(S.bottle.read||S.ruinsSeen)},
+ {id:'g6',t:'Construye la choza de Musgo',ok:()=>!!S.tools.choza},
+ {id:'g7',t:'Reúne 3 de obsidiana',ok:()=>S.res.obsidiana>=3||S.tools.balsa,secret:()=>!S.puzzle.solved},
+ {id:'g8',t:'Construye la balsa y zarpa desde el muelle',ok:()=>!!S.tools.balsa},
+];
+function checkGoals(){for(const g of GOALS){if(!S.goals[g.id]&&g.ok()){S.goals[g.id]=true;toast('Objetivo cumplido: '+g.t)}}}
+
+/* ---------- workers ---------- */
+function W_(id){return S.workers.find(w=>w.id===id)}
+function sendTo(w,zone){
+ const idx=S.workers.filter(o=>o.zone===zone&&o!==w).length;
+ w.off=(idx%2?1:-1)*Math.ceil(idx/2)*9;
+ if(w.zone===zone&&w.state==='work'){onArrive(w);return}
+ if(w.claim){const it=S.items.find(i=>i.id===w.claim);if(it)it.claimed=null;w.claim=null}
+ w.zone=zone;w.state='walk';w.after=null;w.tx=ZONES[zone].spot[0]+w.off;w.ty=ZONES[zone].spot[1];w.t=0;
+ toast(`${WDEF[w.id].name} va ${zone==='casa'?'a casa':zone==='volcan'?'al volcán':zone==='bosque'?'al bosque':zone==='muelle'?'al muelle':'a la '+ZONES[zone].name.toLowerCase()}`);
+}
+function onArrive(w){
+ if(w.zone==='volcan')openPanel('lab');
+ else if(w.zone==='ruinas'){S.ruinsSeen=true;openPanel('ruins')}
+ else if(w.zone==='muelle')openPanel('dock');
+}
+function tick(w,dt){
+ w.anim=(w.anim||0)+dt;
+ if(w.state==='walk'){const dx=w.tx-w.x,dy=w.ty-w.y,d=Math.hypot(dx,dy),sp=36*dt;if(Math.abs(dx)>.5)w.face=dx<0?-1:1;if(d<=sp){w.x=w.tx;w.y=w.ty;if(w.after==='pickup'){w.state='pickup';w.t=0}else{const back=w.after==='back';w.after=null;w.state='work';w.t=0;if(!back)onArrive(w)}}else{w.x+=dx/d*sp;w.y+=dy/d*sp}return}
+ if(w.state==='pickup'){w.t+=dt;if(w.t>.9){const it=S.items.find(i=>i.id===w.claim);w.claim=null;if(it){S.items=S.items.filter(i=>i!==it);collect(it,w)}w.state='walk';w.after='back';w.tx=ZONES.playa.spot[0]+(w.off||0);w.ty=ZONES.playa.spot[1]}return}
+ if(w.state!=='work')return;
+ const z=ZONES[w.zone];
+ if(w.zone==='playa'){const free=S.items.filter(i=>!i.claimed);if(free.length){free.sort((a,b)=>Math.hypot(a.x-w.x,a.y-w.y)-Math.hypot(b.x-w.x,b.y-w.y));const it=free[0];it.claimed=w.id;w.claim=it.id;w.state='walk';w.after='pickup';w.tx=it.x;w.ty=it.y+2;return}}
+ if(z.cycle>50)return;
+ if(w.zone==='volcan'&&w.id!=='brasa')return;
+ w.t+=dt;
+ if(w.t>=z.cycle){w.t=0;produce(w)}
+}
+function produce(w){
+ const T=S.tools;
+ switch(w.zone){
+  case'bosque':gain('madera',T.hacha?2:1,w);gain('hojas',w.id==='musgo'?2:1,w);if(w.id==='musgo'||rnd()<.3)gain('fruta',1,w);break;
+  case'playa':gain('arena',T.pala?2:1,w);if(rnd()<.4)gain('conchas',1,w);break;
+  case'cantera':gain('piedra',T.pico?2:1,w);if(rnd()<(T.pico?.6:.25))gain('mineral',1,w);break;
+  case'prado':gain('lana',1,w);break;
+  case'volcan':if(w.id==='brasa')gain('obsidiana',1,w);break;
+ }
+ for(let i=0;i<4;i++)smoke.push({x:w.x+(rnd()-.5)*6,y:w.y-6,vx:(rnd()-.5)*10,vy:-10-rnd()*10,life:.5,c:w.zone==='bosque'?'#8fe070':w.zone==='cantera'?'#c8d0d8':w.zone==='prado'?'#ffffff':w.zone==='volcan'?'#ff9050':'#f0d890'});
+}
+function collect(it,w){
+ S.tideCount++;
+ if(it.type==='shell')gain('conchas',3,w);
+ else if(it.type==='algae')gain('hojas',3,w);
+ else if(it.type==='crate'){gain('madera',4,w);if(rnd()<.4)gain('metal',1,w);toast('Una caja arrastrada por el mar')}
+ else if(it.type==='bottle'){S.bottle.read=true;openPanel('bottle')}
+}
+function tide(){
+ const n=2+(rnd()<.5?1:0);S.tides++;
+ for(let i=0;i<n&&S.items.length<7;i++){
+  let type=rnd()<.4?'shell':rnd()<.5?'crate':'algae';
+  if(!S.bottle.spawned&&S.tides>=2&&i===0){type='bottle';S.bottle.spawned=true}
+  const p=shore[(rnd()*shore.length)|0]||[60,160];
+  S.items.push({id:Math.random().toString(36).slice(2,8),type,x:p[0],y:p[1]-1,claimed:null});
+ }
+ toast('La marea dejó cosas en la playa');
+}
+
+/* ---------- sheep ---------- */
+function tickSheep(s,dt){s.t-=dt;if(s.t<=0){s.t=2+rnd()*3;const a=rnd()*6.28,r=rnd()*ZONES.prado.r;const x=ZONES.prado.x+Math.cos(a)*r,y=ZONES.prado.y+Math.sin(a)*r*.6;if(isGrass(Math.round(x),Math.round(y))){s.tx=x;s.ty=y}}if(s.tx){const dx=s.tx-s.x,dy=s.ty-s.y,d=Math.hypot(dx,dy);if(d>.5){s.x+=dx/d*8*dt;s.y+=dy/d*8*dt;s.f=dx<0?-1:1}}}
+
+/* ---------- drawing ---------- */
+let T=0;
+function draw(){
+ ctx.drawImage(bg,0,0);
+ // foam & sparkles
+ for(const[x,y,w]of foam){const v=Math.sin(T*2.2-w*1.3+(x+y)*.15);if(v>.55){ctx.fillStyle=w===1?'#ffffff':'#bfe6ff';ctx.fillRect(x,y,1,1)}}
+ ctx.fillStyle='#8cc8f4';for(let i=0;i<22;i++){const x=((hash(i,4)*W+T*(4+hash(i,8)*6))%W)|0,y=(hash(i,6)*H)|0;if(wd[y*W+x]>8&&Math.sin(T*1.5+i)>0)ctx.fillRect(x,y,3,1)}
+ // lava glow + smoke
+ const g=.5+.5*Math.sin(T*3);ctx.fillStyle=g>.5?'#ffb03a':'#ff6a2a';ctx.fillRect(VOL.x-4,VOL.top-1,9,1);ctx.fillStyle='#ff5020';ctx.fillRect(VOL.x-3,VOL.top,7,1);
+ if(rnd()<.08)smoke.push({x:VOL.x+(rnd()-.5)*6,y:VOL.top-2,vx:(rnd()-.3)*3,vy:-5-rnd()*4,life:4,c:'volc'});
+ // dock
+ ctx.fillStyle='#8a5a2a';for(let x=dockX-3;x<dockX+20;x++){ctx.fillRect(x,118,1,1)}ctx.fillStyle='#b07a40';for(let x=dockX-3;x<dockX+20;x+=1){ctx.fillRect(x,117,1,1);ctx.fillRect(x,119,1,1)}ctx.fillStyle='#5a3a18';for(let x=dockX-3;x<dockX+20;x+=3)ctx.fillRect(x,117,1,3);ctx.fillRect(dockX+18,116,2,7);ctx.fillRect(dockX+8,119,2,5);
+ // zone rings when choosing a destination
+ if(selected){for(const[k,z]of Object.entries(ZONES)){const pulse=hover===k?1:.5+.5*Math.sin(T*4);ctx.fillStyle=hover===k?'#fff4c0':`rgba(255,240,180,${.35+pulse*.4})`;const n=Math.max(16,z.r*2);for(let i=0;i<n;i++){if((i+Math.floor(T*6))%3===0)continue;const a=i/n*6.283;ctx.fillRect(Math.round(z.x+Math.cos(a)*z.r),Math.round(z.y+Math.sin(a)*z.r*.55),1,1)}}}
+ // y-sorted objects
+ const objs=[];
+ for(const t of TREES)objs.push({y:t.y,d:()=>ctx.drawImage([TREE,TREE2,FRUITTREE][t.k],t.x-6,t.y-11)});
+ objs.push({y:96,d:()=>ctx.drawImage(HOUSE,152,85)});
+ objs.push({y:43,d:()=>{ctx.drawImage(S.puzzle.solved?RUIN_ON:RUIN_OFF,102,34);if(S.puzzle.solved&&Math.sin(T*3)>0){ctx.fillStyle='#e6d8ff';ctx.fillRect(104,37,1,1);ctx.fillRect(113,38,1,1)}}});
+ objs.push({y:122,d:()=>ctx.drawImage(ROCKS,206,114)});
+ for(const s of sheep)objs.push({y:s.y,d:()=>ctx.drawImage(s.f<0?SHEEP_L:SHEEP,Math.round(s.x)-4,Math.round(s.y)-4)});
+ for(const it of S.items)objs.push({y:it.y,d:()=>{ctx.drawImage(ITEM[it.type],it.x-2,it.y-4+(Math.sin(T*2+it.x)>.7?-1:0));if(it.type==='bottle'&&Math.sin(T*5)>.6){ctx.fillStyle='#fff';ctx.fillRect(it.x+2,it.y-6,1,1)}}});
+ if(S.tools.balsa)objs.push({y:124,d:()=>ctx.drawImage(RAFT,dockX+4,120+(Math.sin(T*2)>0?0:1))});
+ for(const w of S.workers)objs.push({y:w.y,d:()=>drawWorker(w)});
+ objs.sort((a,b)=>a.y-b.y).forEach(o=>o.d());
+ // smoke / particles
+ for(const p of smoke){if(p.c==='volc'){const s=Math.min(4,1+(4-p.life));ctx.fillStyle=`rgba(${p.life>3?'90,80,80':'200,196,190'},${Math.min(1,p.life/2)*.7})`;ctx.fillRect(Math.round(p.x),Math.round(p.y),Math.round(s),Math.round(s))}else{ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x),Math.round(p.y),1,1)}}
+ // horizon island (catalejo)
+ if(S.tools.catalejo){ctx.fillStyle='#8a7ad8';ctx.fillRect(300,12,12,2);ctx.fillRect(303,10,5,2);ctx.fillStyle='#c0b4ff';if(Math.sin(T*2)>0)ctx.fillRect(305,9,1,1)}
+ // floats
+ ctx.font='8px "Pixelify Sans", monospace';ctx.textBaseline='top';ctx.textAlign='center';
+ for(const f of floats){const a=Math.min(1,f.life);ctx.globalAlpha=a;ctx.fillStyle='#1a1008';ctx.fillText(f.txt,Math.round(f.x)+1,Math.round(f.y)+1);ctx.fillStyle=f.col;ctx.fillText(f.txt,Math.round(f.x),Math.round(f.y))}
+ ctx.globalAlpha=1;
+ // hover label
+ if(hover&&running){const z=ZONES[hover];const t=z.name;const w=Math.ceil(ctx.measureText(t).width)+6;const x=Math.round(z.x-w/2),y=Math.round(z.y-z.r*.55-13);ctx.fillStyle='#172b3b';ctx.fillRect(x,y,w,11);ctx.fillStyle='#f2c14e';ctx.fillRect(x,y+10,w,1);ctx.fillStyle='#f4ecd8';ctx.fillText(t,z.x,y+1)}
+}
+function drawWorker(w){
+ const fr=w.state==='walk'?(Math.floor(w.anim*6)%2):w.state==='work'&&ZONES[w.zone].cycle<50&&!(w.zone==='volcan'&&w.id!=='brasa')?(Math.floor(w.anim*3)%2?2:0):w.state==='pickup'?2:0;
+ const hop=w.state==='work'&&fr===2?-1:0;
+ const sp=WSPR[w.id+(w.face<0?'_L':'')][fr];
+ const x=Math.round(w.x)-3,y=Math.round(w.y)-11+hop;
+ ctx.fillStyle='rgba(20,40,20,.35)';ctx.fillRect(x+1,Math.round(w.y),5,1);
+ if(w.id==='brasa'&&Math.sin(T*6)>.3){ctx.fillStyle='rgba(255,140,60,.35)';ctx.fillRect(x-1,y+1,9,9)}
+ ctx.drawImage(sp,x,y);
+ if(selected===w.id){const b=Math.sin(T*6)>0?0:1;ctx.fillStyle='#f2c14e';ctx.fillRect(x+2,y-6+b,3,1);ctx.fillRect(x+3,y-5+b,1,1);ctx.fillStyle='#fff4c0';ctx.fillRect(x+1,y-7+b,5,1)}
+ if(w.state==='work'&&ZONES[w.zone].cycle<50&&!(w.zone==='volcan'&&w.id!=='brasa')){const p=w.t/ZONES[w.zone].cycle;ctx.fillStyle='#172b3b';ctx.fillRect(x-1,y-3,9,2);ctx.fillStyle='#8fdc6a';ctx.fillRect(x-1,y-3,Math.round(9*p),2)}
+}
+
+/* ---------- loop ---------- */
+let last=performance.now(),acc=0,saveAcc=0;
+function frame(now){
+ const dt=Math.min(.1,(now-last)/1000);last=now;T+=dt;
+ for(const s of sheep)tickSheep(s,dt);
+ if(running){
+  S.time+=dt;
+  S.tideT-=dt;if(S.tideT<=0){tide();S.tideT=S.tools.catalejo?30:45}
+  for(const w of S.workers)tick(w,dt);
+  for(const k in bumps)bumps[k]-=dt;
+  acc+=dt;if(acc>=.25){acc=0;renderHUD();renderCrew();checkGoals();if(panel&&panel.live)renderPanel()}
+  saveAcc+=dt;if(saveAcc>5){saveAcc=0;save()}
+ }
+ for(const f of floats){f.life-=dt;f.y-=dt*8}
+ for(let i=floats.length-1;i>=0;i--)if(floats[i].life<=0)floats.splice(i,1);
+ for(const p of smoke){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.c!=='volc')p.vy+=40*dt}
+ for(let i=smoke.length-1;i>=0;i--)if(smoke[i].life<=0)smoke.splice(i,1);
+ draw();
+ requestAnimationFrame(frame);
+}
+
+/* ---------- input ---------- */
+function toLogical(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H]}
+function zoneAt(x,y){let best=null,bd=1e9;for(const[k,z]of Object.entries(ZONES)){const d=Math.hypot((x-z.x),(y-z.y)/.62);if(d<z.r+4&&d<bd){bd=d;best=k}}return best}
+function workerAt(x,y){let best=null,bd=9;for(const w of S.workers){const d=Math.hypot(x-w.x,y-(w.y-5));if(d<bd){bd=d;best=w}}return best}
+cv.addEventListener('pointermove',e=>{if(!running)return;const[x,y]=toLogical(e);hover=zoneAt(x,y);cv.style.cursor=(workerAt(x,y)||hover)?'pointer':'default'});
+cv.addEventListener('pointerleave',()=>hover=null);
+cv.addEventListener('pointerdown',e=>{
+ if(!running)return;const[x,y]=toLogical(e);
+ const w=workerAt(x,y);
+ if(w){selected=selected===w.id?null:w.id;renderCrew();return}
+ const z=zoneAt(x,y);
+ if(e.pointerType!=='mouse')hover=z;
+ if(!z){selected=null;renderCrew();return}
+ if(selected){const wk=W_(selected);selected=null;sendTo(wk,z);if(z==='casa')openPanel('house');renderCrew();return}
+ zoneInfo(z);
+});
+function zoneInfo(z){
+ if(z==='casa')return openPanel('house');
+ if(z==='volcan')return openPanel('lab');
+ if(z==='ruinas')return openPanel('ruins');
+ if(z==='muelle')return openPanel('dock');
+ openPanel('zone',z);
+}
+
+/* ---------- panels ---------- */
+let houseTab='taller',labSel=[],labMsg='';
+function openPanel(type,arg){panel={type,arg,live:['house','lab','zone','dock'].includes(type)};renderPanel();$('panel').hidden=false}
+function closePanel(){panel=null;$('panel').hidden=true;labMsg=''}
+function afford(c){return Object.entries(c).every(([k,v])=>S.res[k]>=v)}
+function costHTML(c){return `<div class="cost">${Object.entries(c).map(([k,v])=>`<span class="${S.res[k]>=v?'':'no'}">${img(k)}${S.res[k]}/${v}</span>`).join('')}</div>`}
+function here(z){return S.workers.filter(w=>w.zone===z&&w.state!=='walk'||w.zone===z&&w.state==='walk'&&w.after)}
+function renderPanel(){
+ if(!panel)return;const P=$('panel');let h=`<button class="x" data-act="close" aria-label="Cerrar">×</button>`;
+ const t=panel.type;
+ if(t==='house'){
+  h+=`<h2>La casa</h2><p>Aquí guardas lo que juntas y fabricas herramientas.</p><div class="tabs">${[['taller','Taller'],['inv','Inventario'],['crew','Equipo']].map(([k,n])=>`<button class="${houseTab===k?'on':''}" data-tab="${k}">${n}</button>`).join('')}</div>`;
+  if(houseTab==='taller'){
+   const vis=CRAFTS.filter(c=>c.id!=='choza'||S.puzzle.solved||S.tools.choza||Object.keys(S.recipes).length>=2).filter(c=>c.id!=='balsa'||S.puzzle.solved);
+   h+=vis.map(c=>`<div class="row"><div class="info"><b>${c.n}</b><small>${c.d}</small>${S.tools[c.id]?'':costHTML(c.cost)}</div>${S.tools[c.id]?'<span class="done">Hecho</span>':`<button class="btn${afford(c.cost)?' main':''}" data-craft="${c.id}" ${afford(c.cost)?'':'disabled'}>Fabricar</button>`}</div>`).join('');
+   if(vis.length<CRAFTS.length)h+=`<p style="color:var(--muted);font-size:13px">Hay más planos por descubrir en la isla.</p>`;
+  }else if(houseTab==='inv'){
+   h+=`<h3>Materiales</h3><div class="inv">${BASE.map(k=>`<div>${img(k)}${RES[k]}<b>${S.res[k]}</b></div>`).join('')}</div><h3>Refinados</h3><div class="inv">${REFINED.map(k=>`<div>${img(k)}${S.res[k]||S.recipes[k]||k==='obsidiana'&&S.puzzle.solved?RES[k]:'???'}<b>${S.res[k]}</b></div>`).join('')}</div>`;
+  }else{
+   h+=S.workers.map(w=>`<div class="row"><img src="${PORT[w.id]}" alt="" style="width:28px;height:44px;image-rendering:pixelated"><div class="info"><b>${WDEF[w.id].name}</b><small>${WDEF[w.id].ab}</small><small style="color:var(--sun)">${statusOf(w)}</small></div></div>`).join('');
+   const miss=3-S.workers.length;if(miss>0)h+=`<p style="color:var(--muted);font-size:13px">${miss} ${miss>1?'lugares vacíos':'lugar vacío'} en el equipo. Algunos se ganan resolviendo secretos.</p>`;
+  }
+ }else if(t==='zone'){
+  const z=ZONES[panel.arg];const who=S.workers.filter(w=>w.zone===panel.arg);
+  const info={bosque:['Madera y hojas en cada ciclo; a veces fruta.','Con hacha: doble madera. Musgo junta doble hoja y siempre fruta.'],playa:['Arena y a veces conchas. Quien esté aquí recoge solo lo que trae la marea.','Con pala: doble arena.'],cantera:['Piedra y, con suerte, mineral.','Con pico: más piedra y mucho más mineral.'],prado:['Las ovejas dan lana.','La lana sirve para la vela de la balsa.']}[panel.arg];
+  h+=`<h2>${z.name}</h2><p>${info[0]}</p><p style="color:var(--muted)">${info[1]}</p><h3>Trabajando aquí</h3><p>${who.length?who.map(w=>WDEF[w.id].name).join(', '):'Nadie todavía. Toca a un trabajador y luego esta zona.'}</p>`;
+ }else if(t==='lab'){
+  const who=S.workers.filter(w=>w.zone==='volcan'&&w.state==='work');
+  h+=`<h2>Cráter del volcán</h2>`;
+  h+=who.length?`<p>${who.map(w=>WDEF[w.id].name).join(' y ')} ${who.length>1?'están':'está'} junto al cráter. Elige dos materiales; se usan 3 de cada uno.</p>`:`<p>Nadie está junto al cráter. Toca a un trabajador y luego el volcán.</p>`;
+  if(W_('brasa'))h+=`<p style="color:var(--sun)">${W_('brasa').zone==='volcan'?'Brasa extrae obsidiana del cráter (+1 cada 6 s).':'Envía a Brasa al volcán para extraer obsidiana.'}</p>`;
+  h+=`<div class="pick">${BASE.map(k=>`<button data-mat="${k}" class="${labSel.includes(k)?'on':''}" ${!who.length||S.res[k]<3?'disabled':''}>${img(k)}${RES[k]} · ${S.res[k]}</button>`).join('')}</div>`;
+  h+=`<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn main" data-act="mix" ${who.length&&labSel.length===2?'':'disabled'}>Mezclar en el cráter</button><span style="color:var(--muted);font-size:13px">${labSel.map(k=>RES[k]).join(' + ')||'Nada elegido'}</span></div><div class="result">${labMsg}</div>`;
+  h+=`<h3>Recetario</h3><div class="book">${RECIPES.map(r=>S.recipes[r.out]?`<div>${img(r.a)}+${img(r.b)}→${img(r.out)} <b>${RES[r.out]}</b></div>`:`<div class="q">??? · ${r.hint}</div>`).join('')}</div>`;
+ }else if(t==='ruins'){
+  const who=S.workers.filter(w=>w.zone==='ruinas'&&w.state==='work');const P2=S.puzzle;
+  h+=`<h2>Ruinas antiguas</h2>`;
+  if(P2.solved){h+=`<p>Las nueve runas brillan. Algo despertó en el volcán.</p>`}
+  else h+=who.length?`<p>Nueve piedras con runas. Algunas brillan débilmente. ¿Podrás encenderlas todas?</p>`:`<p>Nueve piedras con runas talladas. Envía a alguien a examinarlas de cerca.</p>`;
+  const G=['◆','●','▲','✚','◉','■','✦','◇','▼'];
+  h+=`<div class="runes">${P2.board.map((v,i)=>`<button data-rune="${i}" class="${v?'lit':''}" ${!who.length||P2.solved?'disabled':''} aria-label="Runa ${i+1}${v?' encendida':''}">${G[i]}</button>`).join('')}</div>`;
+  if(!P2.solved&&who.length)h+=`<div style="display:flex;gap:8px;justify-content:center"><button class="btn" data-act="resetRunes">Reiniciar piedras</button></div>`;
+  if(!P2.solved&&!S.bottle.read)h+=`<p style="color:var(--muted);font-size:13px;text-align:center">Quizás el mar traiga alguna pista.</p>`;
+ }else if(t==='bottle'){
+  h+=`<h2>Botella con mensaje</h2><div class="letter">«Quien pise las piedras antiguas sabrá esto: ninguna despierta sola. Al tocar una, sus vecinas de arriba, abajo y a los lados responden con ella. Enciéndelas todas y el fuego del volcán te dará una mano.»</div><p style="color:var(--muted)">Las ruinas están al norte, entre el bosque y la casa.</p>`;
+ }else if(t==='dock'){
+  h+=`<h2>Muelle</h2>`;
+  if(S.tools.balsa)h+=`<p>La balsa está amarrada y lista. La vela de lana se infla con el viento.</p><button class="btn main" data-act="sail">Zarpar</button>`;
+  else{const c=CRAFTS.find(c=>c.id==='balsa');h+=`<p>Un muelle viejo que mira al este. Aquí podría amarrarse una balsa.</p>${S.puzzle.solved?`<h3>Balsa</h3>${costHTML(c.cost)}<p style="color:var(--muted);font-size:13px">Se fabrica en la casa.</p>`:`<p style="color:var(--muted)">Todavía no sabes cómo construir una. La isla guarda secretos.</p>`}`}
+ }else if(t==='goals'){
+  h+=`<h2>Objetivos</h2><ul class="goals">${GOALS.map(g=>{const ok=S.goals[g.id];const hid=!ok&&g.secret&&g.secret();return `<li class="${ok?'ok':''}${hid?' hid':''}"><i class="ck"></i><span>${hid?'??? · un secreto por descubrir':g.t}</span></li>`}).join('')}</ul>`;
+ }else if(t==='help'){
+  h+=`<h2>Cómo jugar</h2><p><b>1.</b> Toca a Arci (en la isla o en la barra de abajo) para seleccionarle.</p><p><b>2.</b> Toca una zona: bosque, playa, cantera, prado, volcán o ruinas. Camina hasta allá y trabaja solo, ciclo tras ciclo.</p><p><b>3.</b> Toca la casa para abrir el taller y el inventario. Las herramientas mejoran lo que junta cada zona.</p><p><b>4.</b> Cada cierto tiempo la marea deja cosas en la playa. Quien esté ahí las recoge.</p><p><b>5.</b> En el cráter del volcán mezclas dos materiales para descubrir otros nuevos.</p><p><b>6.</b> Algunos lugares esconden acertijos. Resolverlos suma trabajadores con habilidades únicas.</p>`;
+ }else if(t==='sail'){
+  h+=`<h2>Isla Cristal</h2><p>La balsa se aleja de Isla Arcilla. En el horizonte aparece una isla de roca violeta que brilla con el sol.</p><p>Cristales, corales y un faro apagado esperan en la siguiente versión del juego.</p><p style="color:var(--muted)">Tiempo jugado: ${Math.floor(S.time/60)} min · Recetas: ${Object.keys(S.recipes).length}/${RECIPES.length} · Equipo: ${S.workers.length}</p><button class="btn main" data-act="close">Volver a la isla</button>`;
+ }else if(t==='reward'){
+  h+=`<h2>¡Las runas despiertan!</h2><p>Un temblor recorre la isla. Una grieta se abre en la ladera del volcán y de ella sale una figura de arcilla cocida, todavía humeante.</p><div class="row"><img src="${PORT.brasa}" alt="" style="width:28px;height:44px;image-rendering:pixelated"><div class="info"><b>Brasa se une al equipo</b><small>${WDEF.brasa.ab}</small></div></div><p style="color:var(--muted)">También aparecieron nuevos planos en el taller: la choza de Musgo y la balsa.</p><button class="btn main" data-act="close">Seguir</button>`;
+ }
+ P.innerHTML=h;
+}
+$('panel').addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b||b.disabled)return;
+ if(b.dataset.act==='close')return closePanel();
+ if(b.dataset.tab){houseTab=b.dataset.tab;return renderPanel()}
+ if(b.dataset.craft){const c=CRAFTS.find(c=>c.id===b.dataset.craft);if(!afford(c.cost))return;for(const[k,v]of Object.entries(c.cost))S.res[k]-=v;S.tools[c.id]=true;toast(`Fabricaste: ${c.n}`);
+  if(c.id==='choza'){S.workers.push({id:'musgo',x:ZONES.casa.spot[0]+10,y:ZONES.casa.spot[1],zone:'casa',state:'work',t:0,face:1,off:10});toast('Musgo se une al equipo')}
+  if(c.id==='balsa')toast('La balsa quedó amarrada en el muelle');
+  save();return renderPanel()}
+ if(b.dataset.mat){const k=b.dataset.mat;labSel=labSel.includes(k)?labSel.filter(x=>x!==k):labSel.concat(k).slice(-2);labMsg='';return renderPanel()}
+ if(b.dataset.act==='mix'){mix();return renderPanel()}
+ if(b.dataset.rune){press(+b.dataset.rune);return}
+ if(b.dataset.act==='resetRunes'){S.puzzle.board=[0,0,0,0,1,0,0,0,1];return renderPanel()}
+ if(b.dataset.act==='sail'){openPanel('sail');return}
+});
+function mix(){
+ const[a,b]=labSel;if(!a||!b||S.res[a]<3||S.res[b]<3)return;
+ S.res[a]-=3;S.res[b]-=3;
+ const r=RECIPES.find(r=>(r.a===a&&r.b===b)||(r.a===b&&r.b===a));
+ for(let i=0;i<24;i++)smoke.push({x:VOL.x+(rnd()-.5)*8,y:VOL.top,vx:(rnd()-.5)*30,vy:-20-rnd()*30,life:1,c:r?'#ffd04a':'#9a9a9a'});
+ if(r){const neu=!S.recipes[r.out];S.recipes[r.out]=true;S.res[r.out]+=r.q;bump(r.out);floatTxt(VOL.x,VOL.top-10,`+${r.q} ${RES[r.out].toLowerCase()}`,'#ffd04a');labMsg=`${img(r.out)} ${neu?'¡Descubriste':'Obtuviste'} ${RES[r.out].toLowerCase()}! (+${r.q})`;if(neu)toast('Nueva receta: '+RES[r.out])}
+ else labMsg='Solo sale humo gris. Esa mezcla no sirve.';
+ labSel=labSel.filter(k=>S.res[k]>=3);save();
+}
+function press(i){
+ const b=S.puzzle.board;const r=(i/3)|0,c=i%3;
+ for(const[dr,dc]of[[0,0],[1,0],[-1,0],[0,1],[0,-1]]){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<3&&nc>=0&&nc<3)b[nr*3+nc]^=1}
+ if(b.every(v=>v)){S.puzzle.solved=true;
+  S.workers.push({id:'brasa',x:VOL.x-8,y:VOL.base+2,zone:'volcan',state:'walk',tx:ZONES.volcan.spot[0]+10,ty:ZONES.volcan.spot[1],after:'back',t:0,face:-1,off:10});
+  for(let k=0;k<40;k++)smoke.push({x:VOL.x+(rnd()-.5)*10,y:VOL.top+10,vx:(rnd()-.5)*40,vy:-30-rnd()*30,life:1.2,c:'#ff9050'});
+  save();openPanel('reward');return}
+ renderPanel();
+}
+
+/* ---------- buttons & menu ---------- */
+$('bHouse').onclick=()=>openPanel('house');
+$('bGoals').onclick=()=>openPanel('goals');
+$('bMenu').onclick=()=>{save();running=false;closePanel();selected=null;showTitle()};
+function showTitle(){$('title').hidden=false;$('tContinue').hidden=!hasSave();$('hud').style.visibility='hidden';$('bar').style.visibility='hidden'}
+function start(){$('title').hidden=true;$('hud').style.visibility='visible';$('bar').style.visibility='visible';running=true;renderHUD();renderCrew();fit()}
+$('tContinue').onclick=()=>{load();start()};
+$('tNew').onclick=()=>{S=fresh();save();start();openPanel('help')};
+$('tHelp').onclick=()=>{$('title').hidden=true;openPanel('help');const h=()=>{if(!panel){showTitle();clearInterval(iv)}};const iv=setInterval(h,200)};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(panel)closePanel();else{selected=null;renderCrew()}}});
+
+/* ---------- sizing ---------- */
+function fit(){const r=$('stage').getBoundingClientRect();let s=Math.min((r.width-4)/W,(r.height-4)/H);if(s>=2)s=Math.floor(s*2)/2;s=Math.max(s,.5);cv.style.width=Math.floor(W*s)+'px';cv.style.height=Math.floor(H*s)+'px'}
+new ResizeObserver(fit).observe($('stage'));
+window.addEventListener('resize',fit);
+
+showTitle();fit();
+(document.fonts&&document.fonts.ready||Promise.resolve()).then(()=>{});
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
