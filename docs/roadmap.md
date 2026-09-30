@@ -81,6 +81,14 @@ Arci empieza sola. Musgo está enterrado en un claro rodeado por cuatro árboles
 - Cada llama encendida hace correr lava por su canal hacia la estatua. Con las cinco, se levantan seis muros tallados en hexágono, se iluminan las runas, la estatua pasa de piedra a arcilla ardiente y **Brasa** se une al equipo.
 - Estilo tomado de las imágenes de referencia: losas gastadas con musgo, braseros en forma de cáliz con almenas, arco en ruinas, rocas en el agua. Brasa es de arcilla oscura, con grietas de brasa, una llama en la cabeza y ojos amarillos.
 
+## Pase visual (v0.9)
+
+Siguiendo las láminas de referencia (árboles, bloques, adornos):
+- **Copas de árbol en vóxeles densos:** cada copa se arma con miles de cubitos (1/13 de casilla) en bultos redondeados, con tonos claros arriba, oscuros abajo y salpicados, algunos cubitos que faltan o sobresalen, y sombra de contacto por esquina. Los pinos son pisos escalonados; los árboles antiguos del claro usan el mismo estilo en verde oscuro.
+- **Pasto que cae por los bordes** de los bloques en goteras irregulares, y tierra más cálida.
+- **Adornos nuevos:** arbustos redondos (algunos con flores) en pasto con matas y en bordes de bosque, rocas con musgo en suelo pedregoso, pasto más alto.
+- **Costo:** un 14 % más por cuadro que la v0.8, todavía unas 4 veces más liviano que la v0.6.
+
 ## Pendiente
 
 - **Habilidades por figura:** Brasa podría fundir sin horno o encender faroles; Musgo, hacer crecer retoños más rápido.

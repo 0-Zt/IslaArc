@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { rng, vnoise } from '../core/random';
 import { vbox, MAT } from '../assets/voxel';
+import { Voxels, meshVoxels } from '../assets/voxmesh';
 import { worldGroup, landTiles, topY, tileUnder, oi, oj, type Tile } from './island';
 import { camera, controls } from '../render/renderer';
 
@@ -9,69 +10,117 @@ export type TreeType = 'pino' | 'roble' | 'abedul';
 export const TREE_TYPES: TreeType[] = ['pino', 'roble', 'abedul'];
 export const SIZES = [0.7, 1, 1.35];
 
-/* ---------- geometry (voxel) ---------- */
-function buildTree(type: TreeType, s: number, seed: number) {
-  const r = rng(seed); const trunk: THREE.BufferGeometry[] = [], can: THREE.BufferGeometry[] = [];
-  const boxes: number[][] = []; // canopy blocks, for the leafy detail added at the end
-  const cv = (x: number, y: number, z: number, sx: number, sy: number, sz: number, col: string) => { vbox(can, x, y, z, sx, sy, sz, col); boxes.push([x, y, z, sx, sy, sz]); };
-  const jitter = (a: number) => (r() - 0.5) * a;
-  let pivot: number;
-  if (type === 'pino') {
-    const tH = 0.52 * s, w = 0.13 * s;
-    vbox(trunk, 0, tH / 2, 0, w, tH, w, '#5e3a22'); vbox(trunk, w * 0.3, tH * 0.45, 0, w * 0.45, tH * 0.8, w * 1.02, '#6f4628');
-    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) vbox(trunk, dx * w * 0.55, 0.03, dz * w * 0.55, w * 0.5, 0.06, w * 0.5, '#5e3a22');
-    pivot = tH * 0.75; const n = s < 0.8 ? 4 : s < 1.2 ? 5 : 6; const W0 = 0.86 * s, th = 0.25 * s;
-    const greens = ['#285c34', '#2f6b3a', '#3b7d44', '#24522f'];
-    for (let k = 0; k < n; k++) {
-      const Wk = W0 * (1 - k / (n + 0.7)), y = tH * 0.72 + k * th * 0.8;
-      cv(0, y + th * 0.25, 0, Wk, th * 0.5, Wk, greens[(k + 1) % 2]);
-      cv(0, y + th * 0.62, 0, Wk * 0.72, th * 0.42, Wk * 0.72, greens[k % 2 ? 1 : 2]);
-      for (let e = 0; e < 4; e++) { const side = e % 2 ? 1 : -1, along = jitter(Wk * 0.6), alongX = e < 2; const x = alongX ? side * Wk * 0.5 : along, z = alongX ? along : side * Wk * 0.5; if (r() < 0.75) cv(x, y - th * 0.02, z, 0.09 * s, th * 0.35, 0.09 * s, greens[3]); }
-      cv(jitter(Wk * 0.3), y + th * 0.9, jitter(Wk * 0.3), Wk * 0.25, th * 0.12, Wk * 0.25, '#4f9a58');
+/* ---------- geometry (voxel) ----------
+   Trunks are a few blocks; crowns are dense voxel masses (1/16 of a tile per voxel) built with the
+   voxel mesher: rounded lobes, a speckled leaf palette, some voxels knocked out and some poking out,
+   and per-corner occlusion so the foliage looks deep and bushy. */
+const QV = 1 / 13;
+const PALS: Record<TreeType, string[]> = {
+  roble: ['#8fe060', '#6fcb46', '#54b238', '#3f962e', '#2c7824'],
+  pino: ['#6cc05a', '#52a84c', '#3f9142', '#2f7a38', '#22622e'],
+  abedul: ['#c6e96e', '#a6d856', '#88c244', '#6ea838', '#56892e'],
+};
+const cols = new Map<string, THREE.Color>();
+const col = (h: string) => { let c = cols.get(h); if (!c) { c = new THREE.Color(h); cols.set(h, c); } return c; };
+
+/** Leafy crown made of rounded lobes. Lobes are [x, y, z, rx, ry, rz] in voxels; p shapes them (2 = round, 3 = boxy). */
+function crown(type: TreeType, lobes: number[][], r: () => number, p = 2.6) {
+  const P = PALS[type], v = new Voxels(QV);
+  let yMin = Infinity, yMax = -Infinity;
+  for (const [, y, , , ry] of lobes) { yMin = Math.min(yMin, y - ry); yMax = Math.max(yMax, y + ry); }
+  // each lobe is lit from the top: its upper voxels light, its underside dark (so tiers and bumps read),
+  // with a gentle darkening toward the bottom of the whole crown and a little speckle
+  const shade = (y: number, local: number) => {
+    const g = (y - yMin) / Math.max(1, yMax - yMin);
+    let k = Math.round((1 - local) * 2.4 + (1 - g) * 1.1);
+    if (r() < 0.22) k += r() < 0.5 ? -1 : 1;
+    return col(P[Math.max(0, Math.min(P.length - 1, k))]);
+  };
+  for (const [cx, cy, cz, rx, ry, rz] of lobes) {
+    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) for (let z = Math.floor(cz - rz); z <= Math.ceil(cz + rz); z++) {
+      const nx = Math.abs((x - cx) / rx), sy = (y - cy) / ry, ny = Math.abs(sy), nz = Math.abs((z - cz) / rz);
+      if (nx ** p + ny ** p + nz ** p > 1) continue;
+      v.set(x, y, z, shade(y, (sy + 1) / 2));   // later lobes paint over, so bumps keep their own light
     }
-    const top = tH * 0.72 + n * th * 0.8;
-    cv(0, top + 0.06 * s, 0, 0.12 * s, 0.14 * s, 0.12 * s, '#3b7d44'); cv(0, top + 0.16 * s, 0, 0.06 * s, 0.1 * s, 0.06 * s, '#4f9a58');
+  }
+  // leafy surface: knock a few voxels out, push a few out
+  const surf = v.surface();
+  for (const [x, y, z] of surf) {
+    const q = r();
+    if (q < 0.1) v.del(x, y, z);
+    else if (q < 0.22) {
+      const d = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, -1]][Math.floor(r() * 5)];
+      if (!v.has(x + d[0], y + d[1], z + d[2])) v.set(x + d[0], y + d[1], z + d[2], shade(y + d[1], d[1] > 0 ? 1 : 0.5));
+    }
+  }
+  return v;
+}
+
+/** A pine: stacked tiers, each a short stepped cone with a light top, a dark underside and a ragged rim. */
+function pineCrown(s: number, r: () => number) {
+  // stepped tiers, like a stack of plates: each one a dark drooping rim, a mid ring and a light top,
+  // clearly narrower than the one below so the steps read from far away
+  const P = ['#7cd06a', '#5cb454', '#44994a', '#327f3e', '#236430'], v = new Voxels(QV);
+  const n = s < 0.8 ? 3 : s < 1.2 ? 4 : 5, R0 = 0.5 * s / QV;
+  let y = 0;
+  for (let k = 0; k < n; k++) {
+    const R = Math.max(2, R0 * (1 - k / (n + 0.2)));
+    const rows: [number, number][] = [[R, 3], [R - 0.9, 2], [R - 1.9, 0]];   // [radius, palette index]
+    rows.forEach(([rr, pi], row) => {
+      for (let x = -Math.ceil(rr); x <= Math.ceil(rr); x++) for (let z = -Math.ceil(rr); z <= Math.ceil(rr); z++) {
+        const d = Math.hypot(x, z) + (r() - 0.5) * 0.7;
+        if (d > rr) continue;
+        const rim = d > rr - 1;
+        v.set(x, y + row, z, col(P[Math.min(4, pi + (rim && row === 0 ? 1 : 0) + (r() < 0.12 ? 1 : 0))]));
+      }
+    });
+    for (let q = 0; q < 12; q++) { const a = r() * Math.PI * 2; v.set(Math.round(Math.cos(a) * (R - 0.3)), y - 1, Math.round(Math.sin(a) * (R - 0.3)), col(P[4])); }
+    y += 3;
+  }
+  v.set(0, y, 0, col(P[1])); v.set(0, y + 1, 0, col(P[0])); v.set(0, y + 2, 0, col(P[0]));
+  return v;
+}
+
+function buildTree(type: TreeType, s: number, seed: number) {
+  const r = rng(seed); const trunk: THREE.BufferGeometry[] = [];
+  const jitter = (a: number) => (r() - 0.5) * a;
+  const V = (u: number) => Math.round(u / QV);        // world units → voxels
+  let pivot: number, crownV: Voxels, base: number;
+  if (type === 'pino') {
+    const tH = 0.42 * s, w = 0.13 * s;
+    vbox(trunk, 0, tH / 2, 0, w, tH, w, '#6a3a22'); vbox(trunk, w * 0.3, tH * 0.45, 0, w * 0.45, tH * 0.8, w * 1.02, '#7a4428');
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) vbox(trunk, dx * w * 0.55, 0.03, dz * w * 0.55, w * 0.5, 0.06, w * 0.5, '#5e3420');
+    pivot = tH * 0.75; base = tH * 0.55;
+    // stacked tiers, each a flat rounded disc wider at the bottom, drooping at the rim
+    crownV = pineCrown(s, r);
   } else if (type === 'roble') {
-    const tH = 0.64 * s, w = 0.18 * s;
-    vbox(trunk, 0, tH / 2, 0, w, tH, w, '#7a4a2a'); vbox(trunk, -w * 0.28, tH * 0.5, 0, w * 0.42, tH, w * 1.02, '#6a3f22');
-    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) vbox(trunk, dx * w * 0.6, 0.035, dz * w * 0.6, w * 0.55, 0.07, w * 0.55, '#6a3f22');
-    vbox(trunk, w * 0.7, tH * 0.8, 0, w * 0.9, w * 0.45, w * 0.45, '#7a4a2a'); vbox(trunk, -w * 0.3, tH * 0.92, w * 0.6, w * 0.45, w * 0.45, w * 0.8, '#6a3f22');
-    pivot = tH * 0.9; const cy = tH + 0.3 * s; const P = ['#3f8f34', '#4ea33c', '#5cb847', '#46993a'];
-    cv(0, cy, 0, 0.82 * s, 0.52 * s, 0.82 * s, P[1]);
-    const nb = 6 + Math.floor(r() * 4);
-    for (let k = 0; k < nb; k++) { const a = r() * Math.PI * 2, rad = 0.28 * s + r() * 0.14 * s, sz = (0.3 + r() * 0.2) * s; cv(Math.cos(a) * rad, cy + jitter(0.3 * s), Math.sin(a) * rad, sz, sz * 0.85, sz, P[Math.floor(r() * 4)]); }
-    for (let k = 0; k < 4; k++) cv(jitter(0.45 * s), cy + 0.26 * s + r() * 0.08 * s, jitter(0.45 * s), (0.22 + r() * 0.12) * s, 0.14 * s, (0.22 + r() * 0.12) * s, k % 2 ? '#6fc955' : '#7fd66a');
-    for (let k = 0; k < 4; k++) cv(jitter(0.5 * s), cy - 0.22 * s, jitter(0.5 * s), 0.2 * s, 0.12 * s, 0.2 * s, '#357a2e');
+    const tH = 0.5 * s, w = 0.2 * s;
+    vbox(trunk, 0, tH / 2, 0, w, tH, w, '#8b4a2b'); vbox(trunk, -w * 0.28, tH * 0.5, 0, w * 0.42, tH, w * 1.02, '#74391f');
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) vbox(trunk, dx * w * 0.62, 0.04, dz * w * 0.62, w * 0.6, 0.08, w * 0.6, '#74391f');
+    vbox(trunk, w * 0.7, tH * 0.85, 0, w * 0.9, w * 0.45, w * 0.45, '#8b4a2b'); vbox(trunk, -w * 0.3, tH * 0.95, w * 0.6, w * 0.45, w * 0.45, w * 0.8, '#74391f');
+    pivot = tH * 0.9; base = tH * 0.8;
+    // a boxy, rounded crown with bumps, like the reference oaks
+    const R = 0.46 * s, H = 0.36 * s;
+    const lobes: number[][] = [[0, V(H), 0, V(R), V(H), V(R)]];
+    const nb = 3 + Math.floor(r() * 3);
+    for (let k = 0; k < nb; k++) { const a = r() * Math.PI * 2, d = R * (0.45 + r() * 0.25), rr = R * (0.42 + r() * 0.18); lobes.push([V(Math.cos(a) * d), V(H + (r() - 0.2) * H * 0.8), V(Math.sin(a) * d), V(rr), V(rr * 0.85), V(rr)]); }
+    lobes.push([V(jitter(0.2 * s)), V(H * 1.75), V(jitter(0.2 * s)), V(R * 0.55), V(H * 0.45), V(R * 0.55)]);
+    crownV = crown('roble', lobes, r, 2.8);
   } else {
-    const tH = 0.98 * s, w = 0.11 * s;
+    const tH = 0.9 * s, w = 0.11 * s;
     vbox(trunk, 0, tH / 2, 0, w, tH, w, '#ece6da'); vbox(trunk, w * 0.28, tH / 2, 0, w * 0.45, tH, w * 1.01, '#d8d0c0');
     const marks = 4 + Math.floor(3 * s);
     for (let k = 0; k < marks; k++) { const y = 0.06 + r() * (tH - 0.12), f = Math.floor(r() * 4), L = (0.03 + r() * 0.04) * s, off = w * 0.51; const [x, z, sx, sz] = f === 0 ? [off, 0, 0.01, L] : f === 1 ? [-off, 0, 0.01, L] : f === 2 ? [0, off, L, 0.01] : [0, -off, L, 0.01]; vbox(trunk, x, y, z + (f < 2 ? jitter(w * 0.4) : 0), sx, 0.022 * s + 0.01, sz, '#2b2b2b'); }
     vbox(trunk, w * 0.9, tH * 0.62, 0, w * 1.2, w * 0.35, w * 0.35, '#ece6da'); vbox(trunk, -w * 0.7, tH * 0.78, 0, w * 0.9, w * 0.3, w * 0.3, '#d8d0c0');
-    pivot = tH * 0.75; const cy = tH + 0.18 * s; const P = ['#94c046', '#a8cf52', '#bfdc6a', '#7fae3c'];
-    [[-0.2, 0.42], [0, 0.56], [0.22, 0.5], [0.42, 0.32], [0.58, 0.16]].forEach(([dy, wd], k) => {
-      cv(jitter(0.06 * s), cy + dy * s, jitter(0.06 * s), wd * s, 0.24 * s, wd * s, P[k % 3]);
-      if (k < 4) for (let e = 0; e < 2; e++) cv(jitter(wd * s * 0.8), cy + dy * s + jitter(0.1 * s), jitter(wd * s * 0.8), 0.14 * s, 0.14 * s, 0.14 * s, P[Math.floor(r() * 4)]);
-    });
-    for (let k = 0; k < 3; k++) cv(jitter(0.3 * s), cy - 0.32 * s, jitter(0.3 * s), 0.08 * s, 0.12 * s, 0.08 * s, '#7fae3c');
+    pivot = tH * 0.75; base = tH * 0.72;
+    // a tall airy crown of stacked soft lobes
+    const lobes: number[][] = [];
+    [[0, 0.3, 0.2], [0.14, 0.26, 0.42], [-0.1, 0.22, 0.62], [0.05, 0.16, 0.8]].forEach(([dx, rr, y]) => lobes.push([V(dx * s + jitter(0.05 * s)), V(y * s), V(jitter(0.08 * s)), V(rr * s), V(rr * 0.8 * s), V(rr * s)]));
+    crownV = crown('abedul', lobes, r, 2.2);
   }
-  // leafy detail: many small cubes sprinkled over the canopy, light on top and dark underneath,
-  // so the crown reads as a clump of leaves instead of a few big blocks
-  const PAL: Record<TreeType, [string, string, string]> = { pino: ['#4f9a58', '#2f6b3a', '#1f4a2a'], roble: ['#8ae070', '#56ad42', '#2f6e2a'], abedul: ['#d4ea7a', '#a8cf52', '#6f9a34'] };
-  const [light, mid, dark] = PAL[type];
-  const big = boxes.filter(b => b[3] > 0.12 * s);
-  const count = Math.round((type === 'pino' ? 26 : 46) * s);
-  for (let k = 0; k < count && big.length; k++) {
-    const [x, y, z, sx, sy, sz] = big[Math.floor(r() * big.length)];
-    const face = r(), q = (0.06 + r() * 0.05) * Math.max(0.8, s);
-    let px = x + (r() - 0.5) * sx, py = y + (r() - 0.5) * sy, pz = z + (r() - 0.5) * sz, col = mid;
-    if (face < 0.4) { py = y + sy / 2 + q * 0.3; col = r() < 0.7 ? light : mid; }                 // top
-    else if (face < 0.55) { py = y - sy / 2 - q * 0.2; col = dark; }                                 // underside
-    else { const side = Math.floor(r() * 4); if (side < 2) px = x + (side ? 1 : -1) * (sx / 2 + q * 0.25); else pz = z + (side === 3 ? 1 : -1) * (sz / 2 + q * 0.25); col = py > y ? (r() < 0.5 ? light : mid) : (r() < 0.6 ? dark : mid); }
-    vbox(can, px, py, pz, q, q * (0.7 + r() * 0.5), q, col);
-  }
-  const tg = mergeGeometries(trunk), cg = mergeGeometries(can);
-  cg.translate(0, -pivot, 0); cg.computeBoundingBox();
+  const tg = mergeGeometries(trunk);
+  const cg = meshVoxels(crownV, 0, base, 0, 3);
+  cg.translate(0, -pivot, 0); cg.computeBoundingBox(); cg.computeBoundingSphere();
   return { tg, cg, pivot };
 }
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { rng } from '../core/random';
-import { vbox } from './voxel';
+import { vbox, MAT } from './voxel';
+import { Voxels, meshVoxels } from './voxmesh';
 import { group } from './buildings';
 
 /* Assets of the secret clearing: ancient trees, the buried figure's mound, and stumps. */
@@ -19,11 +20,16 @@ export function modelAncientTree(seed: number) {
   // the canopy leans outward (+z), leaving the clearing's centre open to the sky
   const cy = tH + 0.45, oz = 0.38, P = ['#2a5a2c', '#316633', '#3a7438', '#24502a'];
   vbox(B, 0, tH + 0.08, oz * 0.5, 0.2, 0.2, oz + 0.2, '#4e3222');
-  vbox(L, 0, cy, oz, 1.1, 0.56, 1.0, P[1]);
-  for (let k = 0; k < 10; k++) { const a = r() * Math.PI * 2, rad = 0.38 + r() * 0.2, sz = 0.32 + r() * 0.22; vbox(L, Math.cos(a) * rad, cy + jit(0.36), oz + Math.sin(a) * rad * 0.8, sz, sz * 0.8, sz, P[Math.floor(r() * 4)]); }
-  for (let k = 0; k < 5; k++) vbox(L, jit(0.6), cy + 0.32 + r() * 0.1, oz + jit(0.5), 0.28, 0.14, 0.28, k % 2 ? '#4a8a44' : '#3f7d3c');
+  // a heavy, dark voxel crown in lumps (same leafy style as the island's trees, but old and deep green)
+  const q = 1 / 13, v = new Voxels(q), pal = ['#4a8a44', '#3a7438', '#316633', '#2a5a2c', '#204a24'].map(h => new THREE.Color(h));
+  const lump = (x: number, y: number, z: number, rx: number, ry: number, rz: number) => v.ellipsoid(x / q, y / q, z / q, rx / q, ry / q, rz / q, (_x, ny) => pal[Math.max(0, Math.min(4, Math.round((1 - ny) * 1.7 + r() * 1.5)))]);
+  lump(0, cy, oz, 0.58, 0.3, 0.52);
+  for (let k = 0; k < 7; k++) { const a = r() * Math.PI * 2, rad = 0.36 + r() * 0.16, sz = 0.2 + r() * 0.1; lump(Math.cos(a) * rad, cy + jit(0.3), oz + Math.sin(a) * rad * 0.8, sz, sz * 0.8, sz); }
+  lump(jit(0.2), cy + 0.3, oz + jit(0.2), 0.32, 0.14, 0.3);
+  for (const [x, y, z] of v.surface()) if (r() < 0.1) v.del(x, y, z);
   for (let k = 0; k < 9; k++) { const a = r() * Math.PI * 2, rad = 0.52 + r() * 0.1, len = 0.18 + r() * 0.26; vbox(S, Math.cos(a) * rad, cy - 0.3 - len / 2, oz + Math.sin(a) * rad * 0.8, 0.05, len, 0.05, '#6aa84a'); }
   const g = group({ bark: B, leaf: L, thatch: S });
+  const crown = new THREE.Mesh(meshVoxels(v, 0, 0, 0, 3), MAT.leaf); crown.castShadow = true; crown.receiveShadow = true; g.add(crown);
   return g;
 }
 

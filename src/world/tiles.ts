@@ -5,8 +5,8 @@ import { rng, vnoise, pick, type Rng } from '../core/random';
 /* Ground tile textures: 16x16 pixel-art tops, 16x8 sides, three variants each. */
 
 const PAL = {
-  grass: ['#5cb847', '#54ae41', '#63c24d', '#4ea33c'], gDark: '#3c8a32', gLight: '#8ad96b',
-  dirt: ['#8b5a35', '#80522f', '#96633c', '#74482a'], dDark: '#5e3a22', dLight: '#a8764a',
+  grass: ['#62c24a', '#58b643', '#6ccf52', '#51a93e'], gDark: '#3c8a32', gLight: '#8ad96b',
+  dirt: ['#9a6038', '#8b5632', '#a86a3e', '#7c4c2c'], dDark: '#5e3a22', dLight: '#a8764a',
   path: ['#c9a36a', '#bf9860', '#d2ae76', '#b88f58'], pDark: '#a07d4a', pLight: '#e2c28e',
   sand: ['#ecd49a', '#e4ca8c', '#f2dcaa', '#dcc084'],
   stone: ['#9a948a', '#c8c2b6', '#6a645c'],
@@ -91,10 +91,16 @@ Object.keys(TILE_DEFS).forEach((k, ti) => {
 const sideTex = (seed: number, draw: (x: CanvasRenderingContext2D, r: Rng, w: number, h: number) => void) =>
   pixTex(makeCanvas(16, 8, (x, w, h) => draw(x, rng(seed), w, h)));
 const SIDE_TEX = {
+  // grass hanging over the edge in ragged drips, over warm dirt with big soft blotches
   grass: sideTex(55, (x, r, w, h) => {
-    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x, i, j, j > 5 ? '#6a4226' : pick(r, PAL.dirt));
-    for (let j = 0; j < h; j += 3) for (let i = 0; i < w; i++) if (r() < 0.25) px(x, i, j, PAL.dDark);
-    for (let i = 0; i < w; i++) { px(x, i, 0, '#6fc955'); px(x, i, 1, '#56ad42'); px(x, i, 2, PAL.gDark); const d = r(); if (d < 0.35) px(x, i, 3, PAL.gDark); if (d < 0.1) px(x, i, 4, PAL.gDark); }
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x, i, j, j > 5 ? '#74462a' : pick(r, ['#9a6038', '#8b5632', '#a86a3e', '#7c4c2c']));
+    for (let k = 0; k < 4; k++) { const X = Math.floor(r() * 14), Y = 3 + Math.floor(r() * 4); px(x, X, Y, '#b8784a'); px(x, X + 1, Y, '#b8784a'); }
+    let drip = 0;
+    for (let i = 0; i < w; i++) {
+      if (i % 2 === 0) drip = r() < 0.35 ? 3 + Math.floor(r() * 3) : 1 + Math.floor(r() * 2);
+      px(x, i, 0, '#8ee060');
+      for (let j = 1; j <= drip; j++) px(x, i, j, j === drip ? '#3f962e' : j === 1 ? '#6fcb46' : '#54b238');
+    }
   }),
   dirt: sideTex(77, (x, r, w, h) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x, i, j, j === 0 ? PAL.dLight : j > 5 ? '#6a4226' : pick(r, PAL.dirt));

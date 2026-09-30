@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { scene } from '../render/renderer';
 import { rng, hash, vnoise, pick } from '../core/random';
 import { LEVEL, topMat, sideMatFor, SIDE_MAT } from './tiles';
+import { Voxels, meshVoxels } from '../assets/voxmesh';
+import { MAT } from '../assets/voxel';
 
 export const N = 44;          // grid size: room for the sea, expansions, a bridge and the ruins islet
 // The main island is generated on a 30×30 grid (as in v0.7) and set in the middle of this one,
@@ -224,6 +226,24 @@ export function buildTerrain() {
 export const terrainDrawCalls = () => terrainMeshes.length;
 
 /* ---------- ground decoration: one instanced mesh ---------- */
+/* round leafy bushes and mossy rocks, like the reference props: a few voxel shapes drawn instanced */
+const BUSH_PAL = ['#8fe060', '#6fcb46', '#54b238', '#3f962e', '#2c7824'];
+function bushGeo(seed: number, big: boolean) {
+  const r = rng(seed), v = new Voxels(1 / 13), R = big ? 3.6 : 2.6, c = BUSH_PAL.map(h => new THREE.Color(h));
+  const lobes = [[0, R * 0.8, 0, R, R * 0.8, R], [R * 0.5, R * 0.6, R * 0.3, R * 0.7, R * 0.6, R * 0.7], [-R * 0.4, R * 0.7, -R * 0.3, R * 0.7, R * 0.65, R * 0.7]];
+  for (const [cx, cy, cz, rx, ry, rz] of lobes) v.ellipsoid(cx, cy, cz, rx, ry, rz, (_x, ny) => c[Math.max(0, Math.min(4, Math.round((1 - ny) * 1.6 + r() * 1.4)))]);
+  for (const [x, y, z] of v.surface()) if (r() < 0.12) v.del(x, y, z);
+  if (!big) for (let k = 0; k < 3; k++) { const x = Math.round((r() - 0.5) * R * 1.4), z = Math.round((r() - 0.5) * R * 1.4); v.set(x, Math.round(R * 1.5), z, new THREE.Color(k % 2 ? '#fbf8ee' : '#ff9ec4')); }
+  return meshVoxels(v, 0, 1 / 26, 0, 3);
+}
+function rockGeo(seed: number) {
+  const r = rng(seed), v = new Voxels(1 / 13), g = ['#a39d90', '#8e887c', '#7a7468'].map(h => new THREE.Color(h)), m = ['#6fb04a', '#5a9a3e'].map(h => new THREE.Color(h));
+  v.ellipsoid(0, 1.6, 0, 3, 2.2, 2.6, (_x, ny) => ny > 0.45 && r() < 0.8 ? m[r() < 0.5 ? 0 : 1] : g[Math.floor(r() * 3)]);
+  return meshVoxels(v, 0, 0, 0, 3);
+}
+const PROP_GEOS = [bushGeo(11, false), bushGeo(23, true), bushGeo(37, false), rockGeo(51)];
+let props: THREE.InstancedMesh[] = [];
+
 const decoGeo = new THREE.BoxGeometry(1, 1, 1);
 const decoMat = new THREE.MeshLambertMaterial({ color: '#ffffff' });
 let deco: THREE.InstancedMesh | null = null;
@@ -232,10 +252,16 @@ export function rebuildDeco() {
   const list: [number, number, number, number, number, number, string][] = [];
   const add = (x: number, y: number, z: number, sx: number, sy: number, sz: number, col: string) => list.push([x, y, z, sx, sy, sz, col]);
   const daisy = (x: number, y: number, z: number, r: () => number) => { const hg = 0.06 + r() * 0.05; add(x, y + hg / 2, z, 0.02, hg, 0.02, '#3f9434'); add(x, y + hg + 0.015, z, 0.07, 0.025, 0.035, '#fbf8ee'); add(x, y + hg + 0.015, z, 0.035, 0.025, 0.07, '#fbf8ee'); add(x, y + hg + 0.03, z, 0.025, 0.015, 0.025, '#ffd84a'); };
-  const tuft = (x: number, y: number, z: number, r: () => number) => { const cols = ['#3c8a32', '#4ea33c', '#63c24d']; for (let k = 0; k < 3; k++) { const hg = 0.08 + r() * 0.08; add(x + (k - 1) * 0.035, y + hg / 2, z + (r() - 0.5) * 0.04, 0.035, hg, 0.035, cols[k]); } };
+  const placed: [number, number, number, number, number][] = []; // prop kind, x, y, z, rotation
+  const tuft = (x: number, y: number, z: number, r: () => number) => { const cols = ['#3c8a32', '#4ea33c', '#63c24d', '#7fd060']; for (let k = 0; k < 4; k++) { const hg = 0.1 + r() * 0.12; add(x + (k - 1) * 0.035, y + hg / 2, z + (r() - 0.5) * 0.04, 0.035, hg, 0.035, cols[k]); } };
   for (const t of landTiles()) {
     if (t.building || t.rock || t.ancient || t.mound || t.solid) continue;
     const r = rng(Math.floor(hash(oi(t) * 31, oj(t) * 17, t.variant + t.type.length) * 1e9));
+    // a bush on thick grass and at forest edges, a mossy rock now and then (never where something stands)
+    const free = !t.tree && !t.sprout && !t.mark && !t.ruin && t.type !== 'sendero' && t.type !== 'puente';
+    const pr = hash(oi(t) * 7, oj(t) * 13, 99);
+    if (free && (t.type === 'matas' ? pr < 0.5 : (t.type === 'pasto' || t.type === 'trebol') && t.forest ? pr < 0.12 : false)) placed.push([Math.floor(pr * 300) % 3, t.wx + (r() - 0.5) * 0.3, topY(t), t.wz + (r() - 0.5) * 0.3, Math.floor(r() * 4)]);
+    else if (free && t.type === 'piedras' && pr < 0.25) placed.push([3, t.wx + (r() - 0.5) * 0.3, topY(t), t.wz + (r() - 0.5) * 0.3, Math.floor(r() * 4)]);
     const y = topY(t), spot = (): [number, number] => [t.wx + (r() - 0.5) * 0.8, t.wz + (r() - 0.5) * 0.8];
     switch (t.type) {
       case 'pasto': if (r() < 0.55) { const [x, z] = spot(); tuft(x, y, z, r); } if (r() < 0.22) { const [x, z] = spot(); daisy(x, y, z, r); } break;
@@ -256,4 +282,13 @@ export function rebuildDeco() {
   list.forEach((d, k) => { e.set(0, hash(k, 3) * Math.PI, 0); q.setFromEuler(e); m.compose(new THREE.Vector3(d[0], d[1], d[2]), q, new THREE.Vector3(d[3], d[4], d[5])); deco!.setMatrixAt(k, m); deco!.setColorAt(k, c.set(d[6])); });
   deco.count = list.length; deco.castShadow = false; deco.receiveShadow = true; // tufts are too small for their shadows to show, and cost a lot in the shadow pass
   worldGroup.add(deco);
+  for (const m of props) { worldGroup.remove(m); m.dispose(); }
+  props = PROP_GEOS.map((g, k) => {
+    const list = placed.filter(p => p[0] === k);
+    const im = new THREE.InstancedMesh(g, k === 3 ? MAT.stone : MAT.leaf, Math.max(1, list.length));
+    const mm = new THREE.Matrix4();
+    list.forEach((p, n) => { mm.makeRotationY(p[4] * Math.PI / 2); mm.setPosition(p[1], p[2], p[3]); im.setMatrixAt(n, mm); });
+    im.count = list.length; im.castShadow = true; im.receiveShadow = true;
+    worldGroup.add(im); return im;
+  });
 }
