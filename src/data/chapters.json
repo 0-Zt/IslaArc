@@ -48,6 +48,20 @@
         "id": "hacha",
         "text": "Fabrica el hacha de metal en la casa (tócala)"
       }
+    ],
+    "stages": [
+      {
+        "name": "Un techo",
+        "n": 3
+      },
+      {
+        "name": "Piedra y arena",
+        "n": 3
+      },
+      {
+        "name": "Fuego y metal",
+        "n": 3
+      }
     ]
   },
   {
@@ -76,6 +90,16 @@
         "text": "Expande la isla: Construir → Expandir la isla",
         "hint": "build"
       }
+    ],
+    "stages": [
+      {
+        "name": "Entrar al claro",
+        "n": 2
+      },
+      {
+        "name": "Lo que dormía",
+        "n": 2
+      }
     ]
   },
   {
@@ -103,6 +127,20 @@
       {
         "id": "brasa",
         "text": "Espera a que despierte lo que duerme en las ruinas"
+      }
+    ],
+    "stages": [
+      {
+        "name": "Cruzar el mar",
+        "n": 1
+      },
+      {
+        "name": "Reconstruir",
+        "n": 1
+      },
+      {
+        "name": "Encender",
+        "n": 2
       }
     ]
   },
@@ -153,7 +191,21 @@
     "reward": {
       "stars": 8,
       "text": "La entrada a la cueva del volcán (próxima versión) y +8 ★"
-    }
+    },
+    "stages": [
+      {
+        "name": "Refinar",
+        "n": 3
+      },
+      {
+        "name": "Fuego vivo",
+        "n": 3
+      },
+      {
+        "name": "Inventos",
+        "n": 3
+      }
+    ]
   },
   {
     "id": "mar",

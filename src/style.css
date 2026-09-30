@@ -200,3 +200,48 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 #sheet .lore,.lore{font-style:italic;font-size:16px;line-height:1.5;background:#f3e6c4;color:#3a2a18 !important;border-radius:10px;padding:14px 16px;box-shadow:inset 0 0 0 2px #d8c49a}
 .lore.sm{font-size:13.5px;padding:10px 12px;margin:6px 0}
 .dtabs button{font-size:12.5px}
+
+/* route: chapter blocks, stage blocks, one stage's goals */
+.chstrip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:4px 0 10px}
+.chb{position:relative;height:46px;border-radius:12px;background:var(--glass2);border:2px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-size:17px;color:var(--muted);padding:0;overflow:hidden}
+.chb.done{background:#2c4a24;border-color:#5f9a42}
+.chb.now{color:var(--sun);border-color:#f2c14e88}
+.chb.locked,.chb.next{opacity:.55}
+.chb.sel{border-color:var(--sun);box-shadow:0 0 0 2px #f2c14e44,0 0 14px #f2c14e33;opacity:1}
+.chb em{position:absolute;left:6px;right:6px;bottom:5px;height:4px;border-radius:2px;background:#0006;overflow:hidden}
+.chb em i{display:block;height:100%;background:var(--sun)}
+.chcard{background:var(--glass2);border-radius:16px;padding:14px 14px 12px;border:1.5px solid var(--line)}
+.chcard.now{border-color:#f2c14e55}
+.chnum{display:block;font-size:12px;color:var(--muted);letter-spacing:.02em}
+.chtitle{display:block;font-family:var(--display);font-size:22px;color:var(--sun);margin:2px 0 10px}
+.chdesc{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.4}
+.chlock{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);background:#0003;border-radius:10px;padding:8px 10px}
+.stgs{display:flex;gap:6px;margin-bottom:12px}
+.stg{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 4px 7px;border-radius:12px;background:#0003;border:2px solid transparent;color:var(--muted)}
+.stg small{font-size:11px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.stg.done{color:#9fcf84}
+.stg.now{color:var(--text)}
+.stg.next{opacity:.5}
+.stg.sel{border-color:var(--sun);background:#f2c14e14}
+.pips,.gp{display:flex;gap:4px}
+.pips i,.gp i{width:12px;height:12px;border-radius:3px;background:#ffffff1c;box-shadow:inset 0 0 0 1.5px #ffffff30}
+.pips i.on,.gp i.on{background:#7fc45a;box-shadow:none}
+.pips i.cur,.gp i.cur{background:transparent;box-shadow:inset 0 0 0 2px var(--sun)}
+.stname{font-size:13px;color:var(--muted);margin-bottom:8px}
+.stname b{color:var(--text)}
+.gls{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:6px}
+.gls li{font-size:14px;line-height:1.35;border-radius:10px;padding:8px 10px}
+.gls li.a{background:#f2c14e1f;border:1.5px solid #f2c14e88;font-size:15.5px;font-weight:600;color:var(--text)}
+.gls li.a small{display:block;font-size:11px;font-weight:700;color:var(--sun);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.gls li.d{display:flex;gap:8px;align-items:center;color:#9fcf84;padding:4px 10px}
+.gls li.d span{text-decoration:line-through;text-decoration-color:#9fcf8466;opacity:.8}
+.gls li.n{color:var(--muted);opacity:.75;padding:4px 10px;font-size:13px}
+.gls li.n span{font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.chrew{font-size:13px;color:#e8d49a;background:#0003;border-radius:10px;padding:8px 10px}
+.stnote{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+#goal{cursor:pointer}
+#goal .n{display:flex;align-items:center;gap:7px}
+#goal .gp i{width:9px;height:9px;border-radius:2px;background:#2a1a0826;box-shadow:inset 0 0 0 1.5px #2a1a0866}
+#goal .gp i.on{background:#2a1a08;box-shadow:none}
+#goal .gp i.cur{background:transparent;box-shadow:inset 0 0 0 2px #2a1a08}
+.gp{gap:3px}

@@ -172,6 +172,7 @@ export function initInput() {
   });
   $('buildBtn').addEventListener('click', () => openSheet('build'));
   $('menuBtn').addEventListener('click', () => openSheet('menu'));
+  $('goal').addEventListener('click', () => openDiario('ruta'));
   $('diarioBtn').addEventListener('click', () => openDiario(S.board.list.some(r => readyReq(r)) ? 'encargos' : 'ruta'));
   $('pCancel').addEventListener('click', () => cancelPlace());
   $('pRot').addEventListener('click', () => rotatePlace());

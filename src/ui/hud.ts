@@ -57,7 +57,8 @@ export function refreshHUD(dt = 0) {
   }
   const g = currentGoal();
   const st = chapterStep();
-  $('goalN').textContent = st ? `Cap. ${st.ch + 1} · ${st.n}/${st.of}` : 'Listo';
+  const gn = st ? `Cap. ${st.ch + 1}<span class="gp">${Array.from({ length: st.of }, (_, i) => `<i class="${i < st.done ? 'on' : i === st.done ? 'cur' : ''}"></i>`).join('')}</span>` : 'Listo';
+  if ($('goalN').innerHTML !== gn) $('goalN').innerHTML = gn;
   const gt = g ? goalText(g) : 'Sigue con los encargos del tablón. El capítulo 4 llega pronto.';
   if ($('goalT').textContent !== gt) $('goalT').textContent = gt;
   const hint = g && !place ? g.hint : undefined;

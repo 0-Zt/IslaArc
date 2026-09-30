@@ -1,5 +1,5 @@
 import { S } from '../game/state';
-import { CHAPTERS, GOALS, goalText, goalDone, currentChapter } from '../game/goals';
+import { CHAPTERS, GOALS, goalText, goalDone, currentChapter, stagesOf } from '../game/goals';
 import { LEVELS, ACHIEVEMENTS, TIER_NAMES, levelProgress, achProgress, boardSlots } from '../game/progress';
 import { boardOpen, progressOf, ready, claim, swap } from '../game/board';
 import { img } from './hud';
@@ -10,8 +10,9 @@ import { INV } from '../game/production';
 
 export type DiarioTab = 'ruta' | 'encargos' | 'logros' | 'equipo';
 let tab: DiarioTab = 'ruta';
-export function setTab(t: DiarioTab) { tab = t; }
-export const diarioSig = () => tab + JSON.stringify([S.goal, S.stars, S.board.list, S.ach, S.res, S.crew, S.lore, Math.floor(S.time / 5)]);
+let viewCh: number | null = null, viewSt: number | null = null;   // chapter / stage being looked at (null: the current one)
+export function setTab(t: DiarioTab) { tab = t; viewCh = viewSt = null; }
+export const diarioSig = () => tab + viewCh + ':' + viewSt + JSON.stringify([S.goal, S.stars, S.board.list, S.ach, S.res, S.crew, S.lore, Math.floor(S.time / 5)]);
 
 const check = '<svg viewBox="0 0 12 12" width="14" height="14" aria-hidden="true"><path d="M2 6l3 3 5-6" stroke="#8ae070" stroke-width="2" fill="none"/></svg>';
 const lock = '<svg viewBox="0 0 12 12" width="14" height="14" aria-hidden="true"><rect x="2" y="5" width="8" height="6" rx="1" fill="#8a8478"/><path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="#8a8478" stroke-width="1.5" fill="none"/></svg>';
@@ -26,23 +27,53 @@ function levelCard() {
     <small>${p.to ? `${S.stars} / ${p.to} ${STAR} · próximo: ${next.text}` : `${S.stars} ${STAR} · nivel máximo por ahora`}</small></div></div>`;
 }
 
+/* The route, kept short: a row of chapter blocks, and inside the chapter a row of stage
+   blocks. Only one stage's goals are listed at a time (3 at most). */
 function ruta() {
   const cur = currentChapter();
-  let h = '';
+  const chState = (k: number) => S.chDone.includes(CHAPTERS[k].id) ? 'done' : CHAPTERS[k].locked ? 'locked' : k === cur ? 'now' : k < cur ? 'done' : 'next';
+  const ch = viewCh ?? cur;
+  let h = levelCard() + '<div class="chstrip" role="tablist" aria-label="Capítulos">';
   CHAPTERS.forEach((c, k) => {
-    const done = S.chDone.includes(c.id), now = k === cur && !done && !c.locked;
-    const state = done ? 'done' : now ? 'now' : c.locked || k > cur ? 'locked' : '';
-    h += `<div class="dch ${state}"><div class="dnode">${done ? check : c.locked ? lock : k + 1}</div><div class="dbody">`
-      + `<b>Capítulo ${k + 1} · ${c.title}</b><small>${c.locked ? `Próximamente. ${c.desc}` : c.desc}</small>`;
-    if (now) {
-      h += '<ul class="dgoals">';
-      GOALS.forEach((g, i) => { if (g.ch !== k) return; const d = goalDone(i), a = i === S.goal; h += `<li class="${d ? 'd' : a ? 'a' : ''}">${d ? check : a ? '▸' : '·'} ${goalText(g)}</li>`; });
-      h += '</ul>';
-    }
-    if (c.reward && !c.locked) h += `<small class="drew">${done ? 'Recompensa recibida' : 'Recompensa'}: ${c.reward.text}</small>`;
-    h += '</div></div>';
+    const st = chState(k);
+    const inner = st === 'done' ? check : st === 'locked' ? lock : String(k + 1);
+    let bar = '';
+    if (st === 'now') { const all = GOALS.filter(g => g.ch === k), d = all.filter(g => goalDone(GOALS.indexOf(g))).length; bar = `<em><i style="width:${Math.round(d / all.length * 100)}%"></i></em>`; }
+    h += `<button class="chb ${st}${k === ch ? ' sel' : ''}" data-ch="${k}" role="tab" aria-selected="${k === ch}" aria-label="Capítulo ${k + 1}: ${c.title}">${inner}${bar}</button>`;
   });
-  return levelCard() + `<div class="droute">${h}</div>`;
+  h += '</div>';
+
+  const c = CHAPTERS[ch], st = chState(ch);
+  h += `<div class="chcard ${st}"><small class="chnum">Capítulo ${ch + 1}${st === 'done' ? ' · completo' : ''}</small><b class="chtitle">${c.title}</b>`;
+  if (st === 'locked' || st === 'next') {
+    h += `<p class="chdesc">${c.desc}</p><div class="chlock">${lock} ${st === 'locked' ? 'Llega en una próxima versión' : `Se abre al terminar el capítulo ${ch}`}</div>`;
+    if (c.reward) h += `<div class="chrew">${STAR} Al terminarlo: ${c.reward.text}</div>`;
+    return h + '</div>';
+  }
+  const stages = stagesOf(ch);
+  const curSt = stages.findIndex(s => S.goal < s.to);
+  const nowSt = st === 'done' ? -1 : curSt;
+  const sel = viewSt ?? (nowSt >= 0 ? nowSt : stages.length - 1);
+  h += '<div class="stgs">';
+  stages.forEach((s, i) => {
+    const done = S.goal >= s.to, now = i === nowSt;
+    let pips = '';
+    for (let g = s.from; g < s.to; g++) pips += `<i class="${goalDone(g) ? 'on' : g === S.goal ? 'cur' : ''}"></i>`;
+    h += `<button class="stg${done ? ' done' : now ? ' now' : ' next'}${i === sel ? ' sel' : ''}" data-st="${i}" ${!done && !now ? 'disabled' : ''} aria-label="Etapa ${i + 1}: ${s.name}"><span class="pips">${pips}</span><small>${done || now ? s.name : 'Etapa ' + (i + 1)}</small></button>`;
+  });
+  h += '</div>';
+  const s = stages[sel];
+  h += `<div class="stname">Etapa ${sel + 1} de ${stages.length} · <b>${s.name}</b></div><ul class="gls">`;
+  for (let i = s.from; i < s.to; i++) {
+    const d = goalDone(i), a = i === S.goal;
+    h += a ? `<li class="a"><small>Ahora</small>${goalText(GOALS[i])}</li>`
+      : d ? `<li class="d">${check}<span>${goalText(GOALS[i])}</span></li>`
+      : `<li class="n"><span>Después:</span> ${goalText(GOALS[i])}</li>`;
+  }
+  h += '</ul>';
+  if (c.reward) h += `<div class="chrew">${STAR} ${st === 'done' ? 'Recibiste' : 'Al terminar el capítulo'}: ${c.reward.text}</div>`;
+  if (st !== 'done' && sel === nowSt && sel < stages.length - 1) h += `<div class="stnote">Cada etapa completa da +1 ${STAR}</div>`;
+  return h + '</div>';
 }
 
 function encargos() {
@@ -98,7 +129,9 @@ export function diarioHTML() {
 
 /** Handles a tap inside the diary. Returns a message to show, if any. */
 export function diarioClick(b: HTMLElement): string | null | undefined {
-  if (b.dataset.tab) { tab = b.dataset.tab as DiarioTab; return null; }
+  if (b.dataset.tab) { tab = b.dataset.tab as DiarioTab; viewCh = viewSt = null; return null; }
+  if (b.dataset.ch) { const k = Number(b.dataset.ch); viewCh = k === currentChapter() ? null : k; viewSt = null; return null; }
+  if (b.dataset.st) { viewSt = Number(b.dataset.st); return null; }
   if (b.dataset.claim) return claim(Number(b.dataset.claim));
   if (b.dataset.swap) return swap(Number(b.dataset.swap));
   return undefined;

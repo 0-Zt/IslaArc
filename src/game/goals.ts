@@ -7,9 +7,26 @@ import { addStars } from './progress';
    finishing the last goal of a chapter gives its reward. The checks live here. */
 
 export interface Goal { id: string; text: string; hint?: 'crew' | 'build' }
-export interface Chapter { id: string; title: string; desc: string; locked?: boolean; reward?: { stars: number; text: string }; goals: Goal[] }
+export interface Chapter { id: string; title: string; desc: string; locked?: boolean; reward?: { stars: number; text: string }; stages?: { name: string; n: number }[]; goals: Goal[] }
 export const CHAPTERS = DATA.CHAPTERS as Chapter[];
-export const GOALS: (Goal & { ch: number })[] = CHAPTERS.flatMap((c, k) => c.goals.map(g => ({ ...g, ch: k })));
+export const GOALS: (Goal & { ch: number; st: number })[] = CHAPTERS.flatMap((c, k) => {
+  // goals are grouped in named stages (data), 3 per stage when the data gives none
+  const sizes = c.stages?.map(s => s.n) || Array.from({ length: Math.ceil(c.goals.length / 3) }, (_, i) => Math.min(3, c.goals.length - i * 3));
+  let st = 0, left = sizes[0];
+  return c.goals.map(g => { if (left === 0) { st++; left = sizes[st]; } left--; return { ...g, ch: k, st }; });
+});
+export interface Stage { name: string; ch: number; st: number; from: number; to: number }
+/** The stages of a chapter, with the global goal range each one covers [from, to). */
+export function stagesOf(ch: number): Stage[] {
+  const out: Stage[] = [];
+  GOALS.forEach((g, i) => {
+    if (g.ch !== ch) return;
+    const last = out[out.length - 1];
+    if (last && last.st === g.st) last.to = i + 1;
+    else out.push({ name: CHAPTERS[ch].stages?.[g.st]?.name || `Etapa ${g.st + 1}`, ch, st: g.st, from: i, to: i + 1 });
+  });
+  return out;
+}
 
 const CHECK: Record<string, () => boolean> = {
   talar: () => S.got.madera >= 2,
@@ -43,11 +60,11 @@ const builtBraziers = () => buildings.filter(b => b.type === 'brasero' && isDone
 
 export const currentGoal = () => GOALS[S.goal] || null;
 export const currentChapter = () => { const g = currentGoal(); return g ? g.ch : CHAPTERS.findIndex(c => c.locked); };
-/** Position of the current goal inside its chapter, e.g. 3 of 9. */
+/** Position of the current goal inside its chapter and stage. */
 export function chapterStep() {
   const g = currentGoal(); if (!g) return null;
-  const list = GOALS.filter(q => q.ch === g.ch);
-  return { n: list.indexOf(g) + 1, of: list.length, ch: g.ch };
+  const stages = stagesOf(g.ch), stage = stages[g.st];
+  return { ch: g.ch, st: g.st, stages: stages.length, name: stage.name, done: S.goal - stage.from, of: stage.to - stage.from };
 }
 /** Goal text with its live counters filled in. */
 export const goalText = (g: { text: string }) => g.text
@@ -59,8 +76,16 @@ export const goalDone = (i: number) => i < S.goal;
 export function checkGoals(quiet = false) {
   let advanced = false;
   while (S.goal < GOALS.length && CHECK[GOALS[S.goal].id]?.()) {
-    const ch = GOALS[S.goal].ch;
+    const { ch, st } = GOALS[S.goal];
     S.goal++; advanced = true;
+    // last goal of a stage (not the chapter's last one): a star
+    const next = GOALS[S.goal];
+    const sid = CHAPTERS[ch].id + ':' + st;
+    if (next?.ch === ch && next.st !== st && !S.stDone.includes(sid)) {
+      S.stDone.push(sid);
+      if (quiet) S.stars += 1;
+      else { const name = stagesOf(ch)[st].name; emit('stageDone', name); addStars(1, `Etapa completa: ${name}`); }
+    }
     // last goal of a chapter: reward
     const nextCh = GOALS[S.goal]?.ch;
     const c = CHAPTERS[ch];

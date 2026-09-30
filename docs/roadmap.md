@@ -108,6 +108,13 @@ Siguiendo las láminas de referencia (árboles, bloques, adornos):
 - **Diario → Equipo:** figuras con su habilidad (las que faltan, con una pista), inventos hechos y mensajes leídos.
 - **Sonido** generado en el momento (sin archivos): golpes de hacha, pico y pala, martillo, caída de árboles, monedas, subir de nivel, acertijos, fuego y ambiente de olas, pájaros de día y grillos de noche. Se apaga en Menú.
 
+## Ruta más simple (v0.11.1)
+
+- La pestaña Ruta ya no es una lista larga: arriba, una fila de bloques por capítulo (hecho, actual con su barra, bloqueado); al tocar uno se ve solo ese capítulo.
+- Cada capítulo se divide en **etapas con nombre** de hasta 3 metas (por ejemplo, Barro: Un techo · Piedra y arena · Fuego y metal). Se muestran como bloques con casillas, y abajo solo las metas de la etapa elegida: la actual destacada como "Ahora" y las siguientes en gris.
+- Cada etapa completa da +1 ★ (la última da la recompensa del capítulo).
+- La barra de objetivo muestra el capítulo y las casillas de la etapa; al tocarla se abre la Ruta.
+
 Ver también **docs/diseno-exploracion.md**: la visión de exploración, inventos y combates por turnos.
 
 ## Pendiente

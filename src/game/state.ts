@@ -45,6 +45,7 @@ export interface State {
   stars: number;                       // earned from chapters, requests and achievements; sets the island level
   ach: Record<string, number>;         // achievement id → tier reached (0..3)
   chDone: string[];                    // finished chapters (their reward was given)
+  stDone: string[];                    // finished stages inside chapters ('barro:0'), their star was given
   board: { list: Req[]; next: number[] };   // notice board requests; `next` = game time a slot may be swapped again
   inv: Record<string, boolean>;        // inventions made in the workshop
   beach: { next: number; items: { i: number; j: number; kind: 'caja' | 'botella' }[] };  // what the sea brought
@@ -54,7 +55,7 @@ export interface State {
 
 const zero = () => Object.fromEntries(RES_KEYS.map(k => [k, 0])) as Record<ResKey, number>;
 export function freshState(): State {
-  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], grown: [], paths: [], marks: [], time: 0, clock: 0.04, grid: 3, map: 2, ruins: { lit: [false, false, false, false, false], awake: false, seen: false }, stats: {}, stars: 0, ach: {}, chDone: [], board: { list: [], next: [] }, inv: {}, beach: { next: 45, items: [] }, lore: [], done: false };
+  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], grown: [], paths: [], marks: [], time: 0, clock: 0.04, grid: 3, map: 2, ruins: { lit: [false, false, false, false, false], awake: false, seen: false }, stats: {}, stars: 0, ach: {}, chDone: [], stDone: [], board: { list: [], next: [] }, inv: {}, beach: { next: 45, items: [] }, lore: [], done: false };
 }
 export let S: State = freshState();
 export function setState(s: State) { S = s; }
@@ -71,7 +72,7 @@ export function loadSave(): State | null {
     const f = freshState();
     if (!s.map) s.map = 1;                       // saves from before v0.10 keep the classic island
     if (s.grid !== 3) migrateGrid(s, s.grid === 2 ? 4 : 11);
-    return { ...f, ...s, ruins: { ...f.ruins, ...(s.ruins || {}) }, stats: { ...(s.stats || {}) }, ach: { ...(s.ach || {}) }, chDone: s.chDone || [], board: s.board || f.board, inv: { ...(s.inv || {}) }, beach: s.beach || f.beach, lore: s.lore || [], goal: 0, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags }, gone: s.gone || [], stumps: s.stumps || [], sites: s.sites || [], expanded: s.expanded || [], grown: s.grown || [], paths: s.paths || [], marks: s.marks || [] };
+    return { ...f, ...s, ruins: { ...f.ruins, ...(s.ruins || {}) }, stats: { ...(s.stats || {}) }, ach: { ...(s.ach || {}) }, chDone: s.chDone || [], stDone: s.stDone || [], board: s.board || f.board, inv: { ...(s.inv || {}) }, beach: s.beach || f.beach, lore: s.lore || [], goal: 0, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags }, gone: s.gone || [], stumps: s.stumps || [], sites: s.sites || [], expanded: s.expanded || [], grown: s.grown || [], paths: s.paths || [], marks: s.marks || [] };
   } catch { return null; }
 }
 /** Older saves used smaller grids (30×30 until v0.7, 44×44 in v0.8–v0.9): shift every stored cell into the 52×52 grid. */
