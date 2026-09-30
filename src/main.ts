@@ -17,6 +17,7 @@ import { checkGoals } from './game/goals';
 import { $, initHUD, refreshHUD } from './ui/hud';
 import { initSheets, initSheetEvents, refreshSheet, closeSheet } from './ui/sheets';
 import { initInput, centreTile, tickMarker } from './ui/input';
+import { tickLabels, clearLabels } from './ui/labels';
 
 const SEED = 4242;
 $('scene').appendChild(renderer.domElement);
@@ -25,7 +26,7 @@ setOccupiedTest(occupied);
 
 function newGame(state: typeof S | null) {
   cancelPlace(); closeSheet();
-  clearCrew(); clearBuildings(); clearForest();
+  clearCrew(); clearBuildings(); clearForest(); clearLabels();
   while (worldGroup.children.length) worldGroup.remove(worldGroup.children[0]);
   clearTrees();
   setState(state || freshState());
@@ -102,11 +103,12 @@ function frame(now: number) {
   tickParticles(dt);
   tickLeaves(dt);
   tickMarker(dt);
+  tickLabels();
   uiAcc += dt; if (uiAcc > 0.25) { refreshHUD(uiAcc); refreshSheet(); uiAcc = 0; }
   waterTex.offset.x = (T * 0.012) % 1; waterTex.offset.y = Math.sin(T * 0.4) * 0.01;
   controls.update(); clampCamera();
   sunAcc += dt; if (sunAcc > 0.5) { sunAcc = 0; placeSun(); }
-  const ft = focusTarget(); focusOn(ft ? ft.setY(ft.y + 0.5).project(camera).y : null, raw);
+  const ft = focusTarget(); focusOn(ft ? ft.setY(ft.y + 0.5).project(camera).y : null, raw, !!place);
   fpsAcc += raw; fpsFrames++;
   if (fpsAcc > 0.5) { const el = $('fps'); el.hidden = !gfx.fps; if (gfx.fps) el.textContent = `${Math.round(fpsFrames / fpsAcc)} fps · ${pixelRatio().toFixed(2)}x`; fpsAcc = 0; fpsFrames = 0; }
   adaptResolution(raw); // resizing clears the canvas, so it must happen before drawing

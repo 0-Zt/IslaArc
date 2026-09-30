@@ -106,7 +106,7 @@ function saveGfx() { try { localStorage.setItem(GFX_KEY, JSON.stringify(gfx)); }
 let composer: EffectComposer;
 let tilt: TiltShiftEffect | null = null;
 export const bloom = new BloomEffect({ intensity: 0.6, luminanceThreshold: 0.92, luminanceSmoothing: 0.1, mipmapBlur: true, radius: 0.6, levels: 6 });
-let focusY = 0;
+let focusY = 0, clearK = 0;
 
 function tiltParams(t: number) { const focusArea = 0.6 - 0.36 * t; return { focusArea, feather: focusArea * 0.6 }; } // the soft edge must stay narrower than the sharp band
 
@@ -152,10 +152,16 @@ export function setGfx(patch: Partial<Gfx>) {
 export function resetGfx() { setGfx({ ...GFX_DEFAULT }); }
 
 /** Moves the sharp band of the miniature effect toward a screen height (-1 bottom .. 1 top). */
-export function focusOn(ndcY: number | null, dt: number) {
+export function focusOn(ndcY: number | null, dt: number, allSharp = false) {
   const target = gfx.tiltFollow && ndcY !== null ? Math.max(-0.3, Math.min(0.3, ndcY / 2)) : 0;
   focusY += (target - focusY) * Math.min(1, dt * 4);
-  if (tilt) tilt.offset = focusY;
+  // while placing a building the whole view turns sharp, so the spot can be judged
+  clearK += ((allSharp ? 1 : 0) - clearK) * Math.min(1, dt * 6);
+  if (tilt) {
+    const fa = tiltParams(gfx.tilt).focusArea;
+    const a = fa + (1.6 - fa) * clearK;
+    tilt.offset = focusY; tilt.focusArea = a; tilt.feather = a * 0.6;
+  }
 }
 
 /* ---------- dynamic resolution: keep frames smooth before touching the look ---------- */

@@ -95,3 +95,17 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .slide input{flex:1;accent-color:var(--sun);height:32px}
 .slide output{font-family:var(--display);font-size:18px;color:var(--sun);min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
 #fps{position:fixed;right:12px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--glass);border:1.5px solid var(--line);border-radius:8px;padding:2px 8px;font-family:var(--display);font-size:13px;font-variant-numeric:tabular-nums;pointer-events:none}
+
+/* status bubbles over buildings */
+#labels{position:fixed;inset:0;pointer-events:none;z-index:3}
+.bubble{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:6px;background:var(--glass);border:2px solid var(--line);border-radius:12px;padding:4px 9px 4px 5px;font-size:12px;color:var(--text);white-space:nowrap;box-shadow:0 3px 0 #0006;will-change:transform}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-6px;border:6px solid transparent;border-top-color:var(--line);border-bottom:0}
+.bubble img{width:20px;height:20px;image-rendering:pixelated}
+.bubble .meter{width:44px;height:6px;border-radius:6px;background:var(--glass2);overflow:hidden}
+.bubble .meter i{display:block;height:100%;background:var(--sun)}
+.bubble small{font-variant-numeric:tabular-nums;color:var(--muted)}
+.bubble.done{border-color:var(--good);background:#1d3a28f0}
+.bubble.done b{color:var(--good);font-weight:600}
+.bubble.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{scale:.6}100%{scale:1}}
+@media (prefers-reduced-motion:reduce){.bubble.pop{animation:none}}

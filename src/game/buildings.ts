@@ -77,6 +77,7 @@ export function tickBuildings(dt: number) {
           const v = smokePoint(b).clone();
           puff(v.x, v.y, v.z, '#ffd04a', 10, 2.2, 1.4);
           gain('lingote', 1, v);
+          emit('smelted', b);
         }
         if (Math.random() < dt * 6) { const v = smokePoint(b); smoke(v.x, v.y, v.z, Math.random() < 0.5 ? '#c8c4be' : '#a8a49e'); }
       }
