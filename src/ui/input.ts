@@ -11,9 +11,10 @@ import { stumps, sproutMeshes, growing, growthProgress } from '../game/forest';
 import { marks, markMode, toggleMark, exitMarkMode, nearestMark, type MarkKind } from '../game/marks';
 import { sites, expandMode, pickCell, exitExpandMode, startSite, cancelSite, refreshMarkers, expandCost, expandKind, setExpandKind, KINDS, type ExpandKind } from '../game/expansion';
 import { S } from '../game/state';
+import { ready as readyReq } from '../game/board';
 import { ruinPropMeshes, shrineMeshes, slotOf, isIslet } from '../game/ruins';
 import { $, toast, refreshHUD, img } from './hud';
-import { openSheet, closeSheet, sheetOpen, openRuin, openFlame } from './sheets';
+import { openSheet, closeSheet, sheetOpen, openRuin, openFlame, openDiario } from './sheets';
 import type { CharId } from '../assets/characters';
 
 /* Touch-first input: a quick tap selects or orders; drags and pinches move the camera. */
@@ -112,6 +113,7 @@ export function onTap(x: number, y: number) {
       return;
     }
     if (b.type === 'casa' || b.type === 'horno') { select(null); openSheet(b.type, b); }
+    if (b.type === 'tablon') { select(null); openDiario('encargos'); }
     if (b.type === 'brasero') { const k = slotOf(b.tiles[0]); select(null); if (S.ruins.lit[k]) toast('Esta llama ya arde.'); else openFlame(k); }
     return;
   }
@@ -156,6 +158,7 @@ export function initInput() {
   });
   $('buildBtn').addEventListener('click', () => openSheet('build'));
   $('menuBtn').addEventListener('click', () => openSheet('menu'));
+  $('diarioBtn').addEventListener('click', () => openDiario(S.board.list.some(r => readyReq(r)) ? 'encargos' : 'ruta'));
   $('pCancel').addEventListener('click', () => cancelPlace());
   $('pRot').addEventListener('click', () => rotatePlace());
   $('pOk').addEventListener('click', () => {

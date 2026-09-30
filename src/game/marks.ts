@@ -53,7 +53,7 @@ export function removeMark(m: Mark, refund = false) {
 export function completeMark(m: Mark) {
   const t = m.tile;
   removeMark(m);
-  if (m.kind === 'plant') { startGrowth(t, m.type || 'roble', 0); emit('forestChanged'); }
+  if (m.kind === 'plant') { startGrowth(t, m.type || 'roble', 0); emit('planted'); emit('forestChanged'); }
   else { setPath(t); emit('pathsChanged', t); }
 }
 

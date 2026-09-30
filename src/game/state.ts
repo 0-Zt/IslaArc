@@ -5,13 +5,19 @@ import BUILDINGS from '../data/buildings.json';
 import TOOLS from '../data/tools.json';
 import RECIPES from '../data/recipes.json';
 import BALANCE from '../data/balance.json';
-import GOALS from '../data/goals.json';
+import CHAPTERS from '../data/chapters.json';
+import LEVELS from '../data/levels.json';
+import ACHIEVEMENTS from '../data/achievements.json';
 
-export const DATA = { RESOURCES, BUILDINGS, TOOLS, RECIPES, BALANCE, GOALS };
+export const DATA = { RESOURCES, BUILDINGS, TOOLS, RECIPES, BALANCE, CHAPTERS, LEVELS, ACHIEVEMENTS };
 export type ResKey = keyof typeof RESOURCES;
 export const RES_KEYS = Object.keys(RESOURCES) as ResKey[];
 export type Cost = Partial<Record<ResKey, number>>;
 
+export interface Req {
+  kind: string; text: string; need: number; base: number; stat?: string;
+  cost?: Partial<Record<string, number>>; reward: { stars: number; res?: Partial<Record<string, number>> };
+}
 export interface SavedBuilding { type: string; i: number; j: number; rot: number; queue: number; prog: number; work?: number }
 export interface State {
   res: Record<ResKey, number>;
@@ -32,14 +38,20 @@ export interface State {
   marks: { i: number; j: number; kind: 'plant' | 'path'; type?: string }[];  // orders waiting for a figure
   time: number;
   clock: number;                       // time of day, 0..1 (0 = morning)
-  grid: number;                        // 2 = coordinates on the 44×44 grid (v0.8)
+  grid: number;                        // 3 = coordinates on the 52×52 grid (v0.10)
+  map: number;                         // island layout: 1 = classic (older saves), 2 = the bigger island
   ruins: { lit: boolean[]; awake: boolean; seen: boolean };
+  stats: Record<string, number>;       // counters for achievements and requests (felled trees, nights…)
+  stars: number;                       // earned from chapters, requests and achievements; sets the island level
+  ach: Record<string, number>;         // achievement id → tier reached (0..3)
+  chDone: string[];                    // finished chapters (their reward was given)
+  board: { list: Req[]; next: number[] };   // notice board requests; `next` = game time a slot may be swapped again
   done: boolean;
 }
 
 const zero = () => Object.fromEntries(RES_KEYS.map(k => [k, 0])) as Record<ResKey, number>;
 export function freshState(): State {
-  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], grown: [], paths: [], marks: [], time: 0, clock: 0.04, grid: 2, ruins: { lit: [false, false, false, false, false], awake: false, seen: false }, done: false };
+  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], grown: [], paths: [], marks: [], time: 0, clock: 0.04, grid: 3, map: 2, ruins: { lit: [false, false, false, false, false], awake: false, seen: false }, stats: {}, stars: 0, ach: {}, chDone: [], board: { list: [], next: [] }, done: false };
 }
 export let S: State = freshState();
 export function setState(s: State) { S = s; }
@@ -54,16 +66,17 @@ export function loadSave(): State | null {
     const s = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!s) return null;
     const f = freshState();
-    if (!s.grid) migrateGrid(s);
-    return { ...f, ...s, ruins: { ...f.ruins, ...(s.ruins || {}) }, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags }, gone: s.gone || [], stumps: s.stumps || [], sites: s.sites || [], expanded: s.expanded || [], grown: s.grown || [], paths: s.paths || [], marks: s.marks || [] };
+    if (!s.map) s.map = 1;                       // saves from before v0.10 keep the classic island
+    if (s.grid !== 3) migrateGrid(s, s.grid === 2 ? 4 : 11);
+    return { ...f, ...s, ruins: { ...f.ruins, ...(s.ruins || {}) }, stats: { ...(s.stats || {}) }, ach: { ...(s.ach || {}) }, chDone: s.chDone || [], board: s.board || f.board, goal: s.chDone ? s.goal : 0, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags }, gone: s.gone || [], stumps: s.stumps || [], sites: s.sites || [], expanded: s.expanded || [], grown: s.grown || [], paths: s.paths || [], marks: s.marks || [] };
   } catch { return null; }
 }
-/** v0.7 saves used a 30×30 grid; the island now sits OFF cells in from the corner of a 44×44 grid. */
-function migrateGrid(s: any, OFF = 7) {
+/** Older saves used smaller grids (30×30 until v0.7, 44×44 in v0.8–v0.9): shift every stored cell into the 52×52 grid. */
+function migrateGrid(s: any, OFF: number) {
   const k = (x: string) => { const [i, j] = x.split(',').map(Number); return `${i + OFF},${j + OFF}`; };
   for (const list of [s.buildings, s.sites, s.expanded, s.grown, s.marks]) for (const o of list || []) { o.i += OFF; o.j += OFF; }
   for (const key of ['gone', 'stumps', 'paths']) if (s[key]) s[key] = s[key].map(k);
-  s.grid = 2;
+  s.grid = 3;
 }
 export function clearSave() { try { localStorage.removeItem(KEY); } catch { /* ignore */ } }
 export function hasSave() { try { return !!localStorage.getItem(KEY); } catch { return false; } }

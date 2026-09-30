@@ -5,7 +5,8 @@ import { camera } from '../render/renderer';
 import { S, RES_KEYS, DATA, type ResKey } from '../game/state';
 import { crew, selected, select, statusOf } from '../game/crew';
 import { has, place } from '../game/buildings';
-import { currentGoal, GOALS, goalText } from '../game/goals';
+import { currentGoal, goalText, chapterStep } from '../game/goals';
+import { readyCount, fillBoard } from '../game/board';
 import { nightK, phaseName } from '../render/daynight';
 import type { CharId } from '../assets/characters';
 
@@ -52,8 +53,9 @@ export function refreshHUD(dt = 0) {
     el.classList.toggle('bump', (bumps[k] || 0) > 0);
   }
   const g = currentGoal();
-  $('goalN').textContent = g ? `${S.goal + 1}/${GOALS.length}` : 'Listo';
-  const gt = g ? goalText(g) : 'Isla despierta. Sigue jugando libremente.';
+  const st = chapterStep();
+  $('goalN').textContent = st ? `Cap. ${st.ch + 1} · ${st.n}/${st.of}` : 'Listo';
+  const gt = g ? goalText(g) : 'Sigue con los encargos del tablón. El capítulo 4 llega pronto.';
   if ($('goalT').textContent !== gt) $('goalT').textContent = gt;
   const hint = g && !place ? g.hint : undefined;
   // crew cards
@@ -85,6 +87,9 @@ export function refreshHUD(dt = 0) {
       : '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" fill="#ffd24a"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4M4 4l3 3M17 17l3 3M4 20l3-3M17 7l3-3" stroke="#ffd24a" stroke-width="2"/></svg>';
   }
   clk.setAttribute('aria-label', `Hora del día: ${phaseName()}`);
+  // diary badge: requests ready to claim
+  const rc = readyCount(), bd = $('diarioBadge');
+  bd.hidden = rc === 0; if (rc && bd.textContent !== String(rc)) bd.textContent = String(rc);
 }
 
 export function initHUD() {
@@ -94,6 +99,10 @@ export function initHUD() {
   });
   on('gain', (k: ResKey, n: number, at?: THREE.Vector3) => { bumps[k] = 0.5; if (at) floatAt(at, '+' + n, ICON[k]); });
   on('toast', toast);
-  on('goalAdvanced', () => { $('goal').classList.add('flash'); setTimeout(() => $('goal').classList.remove('flash'), 700); if (S.goal < GOALS.length) toast('Objetivo cumplido'); });
+  on('goalAdvanced', () => { $('goal').classList.add('flash'); setTimeout(() => $('goal').classList.remove('flash'), 700); if (currentGoal()) toast('Objetivo cumplido'); });
+  on('levelUp', (l: number, d: { text: string }) => toast(`¡Nivel de isla ${l}! Nuevo: ${d.text}`));
+  on('chapterDone', (c: { title: string }) => toast(`Capítulo completo: ${c.title}`));
+  on('achievement', (a: { name: string }, t: number) => toast(`Logro: ${a.name} (${['bronce', 'plata', 'oro'][t - 1]})`));
+  on('changed', () => fillBoard());
   on('changed', () => refreshHUD());
 }

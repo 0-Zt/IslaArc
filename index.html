@@ -11,7 +11,7 @@
 <body>
 <div id="scene"></div>
 <div id="top">
-  <div id="topRow"><div id="res" aria-label="Recursos"></div><div id="topBtns"><button id="menuBtn">Menú</button><button id="clock" aria-label="Hora del día"></button></div></div>
+  <div id="topRow"><div id="res" aria-label="Recursos"></div><div id="topBtns"><button id="menuBtn">Menú</button><div class="tbrow"><button id="diarioBtn" aria-label="Diario de la isla"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="4" y="3" width="15" height="18" rx="2" fill="#c98655"/><rect x="6" y="3" width="2" height="18" fill="#8a5a2e"/><rect x="10" y="7" width="7" height="2" fill="#fff0d0"/><rect x="10" y="11" width="5" height="2" fill="#fff0d0"/></svg><i id="diarioBadge" hidden></i></button><button id="clock" aria-label="Hora del día"></button></div></div></div>
   <div id="goal"><span class="n" id="goalN">1/8</span><span class="t" id="goalT"></span></div>
 </div>
 <div id="toast" aria-live="polite"></div>
@@ -30,7 +30,7 @@
     <p class="sub">Guía a tus figuras de barro y despierta la isla.</p>
     <button class="btn main" id="tContinue">Continuar</button>
     <button class="btn" id="tNew">Nueva partida</button>
-    <div class="ver">Versión 0.9 · se guarda en este navegador</div>
+    <div class="ver">Versión 0.10 · se guarda en este navegador</div>
   </div>
 </div>
 <script type="module" src="/src/main.ts"></script>

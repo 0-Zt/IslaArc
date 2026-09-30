@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { emit } from '../core/events';
 import { rng, hash } from '../core/random';
-import { worldGroup, tileAt, topY, landTiles, DIRS, island, N, tileWorld, type Tile } from '../world/island';
+import { worldGroup, tileAt, topY, landTiles, DIRS, island, N, tileWorld, MAP, type Tile } from '../world/island';
 import { puff, smoke } from '../world/particles';
 import {
   modelBrokenPillar, modelArch, modelSeaRock, modelBrasero, modelStatueRing, modelHexWalls,
@@ -22,13 +22,14 @@ import RUINS from '../data/ruins.json';
    up as Brasa. */
 
 export const BRAZIERS = RUINS.braziers as { name: string; sym: Sym; puzzle: Design; cost: Cost; hint: string }[];
-const [CI, CJ] = RUINS.center;
+let CI = 0, CJ = 0;
 export let center: Tile | null = null;
 export const slots: Tile[] = [];                 // brazier tiles, in the order of BRAZIERS
 const PLAT = 2.75, EDGE = 4.4;                    // platform radius, islet radius (tiles)
 
 /* ---------- the islet (added right after the island is generated, before trees and rocks) ---------- */
 export function buildIslet(seed: number) {
+  [CI, CJ] = MAP.islet;
   const r = rng(seed + 808);
   const nearMain = (i: number, j: number) => { for (let b = -3; b <= 3; b++) for (let a = -3; a <= 3; a++) { const t = tileAt(i + a, j + b); if (t && !t.ruin) return true; } return false; };
   for (let dj = -5; dj <= 5; dj++) for (let di = -5; di <= 5; di++) {

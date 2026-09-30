@@ -1,0 +1,55 @@
+[
+  {
+    "stars": 0,
+    "text": "Cerco"
+  },
+  {
+    "stars": 4,
+    "unlock": [
+      "farol"
+    ],
+    "text": "Farol"
+  },
+  {
+    "stars": 10,
+    "unlock": [
+      "banca"
+    ],
+    "slots": 1,
+    "text": "Banca y un encargo más en el tablón"
+  },
+  {
+    "stars": 18,
+    "speed": 0.1,
+    "text": "Las figuras trabajan un 10 % más rápido"
+  },
+  {
+    "stars": 28,
+    "unlock": [
+      "macetero"
+    ],
+    "text": "Macetero"
+  },
+  {
+    "stars": 40,
+    "slots": 1,
+    "text": "Otro encargo en el tablón"
+  },
+  {
+    "stars": 55,
+    "speed": 0.1,
+    "text": "Las figuras trabajan otro 10 % más rápido"
+  },
+  {
+    "stars": 72,
+    "text": "Próximamente: planos del capítulo Fuego"
+  },
+  {
+    "stars": 92,
+    "text": "Próximamente"
+  },
+  {
+    "stars": 115,
+    "text": "Próximamente"
+  }
+]

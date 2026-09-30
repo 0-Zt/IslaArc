@@ -1,0 +1,130 @@
+[
+  {
+    "id": "barro",
+    "title": "Barro",
+    "desc": "Arci despierta sola en una isla de arcilla. Hay que empezar por lo básico: madera, un techo y fuego.",
+    "reward": {
+      "stars": 5,
+      "text": "Planos de decoración y +5 ★"
+    },
+    "goals": [
+      {
+        "id": "talar",
+        "text": "Toca a Arci y luego un árbol para talar",
+        "hint": "crew"
+      },
+      {
+        "id": "madera10",
+        "text": "Junta 10 de madera"
+      },
+      {
+        "id": "casa",
+        "text": "Toca Construir y levanta la casa",
+        "hint": "build"
+      },
+      {
+        "id": "tablon",
+        "text": "Construye el tablón de encargos junto a la casa",
+        "hint": "build"
+      },
+      {
+        "id": "piedra",
+        "text": "Envía a Arci a picar una roca gris"
+      },
+      {
+        "id": "arena",
+        "text": "Junta 6 de arena en la playa"
+      },
+      {
+        "id": "horno",
+        "text": "Construye el horno",
+        "hint": "build"
+      },
+      {
+        "id": "lingotes",
+        "text": "Funde 2 lingotes en el horno (tócalo)"
+      },
+      {
+        "id": "hacha",
+        "text": "Fabrica el hacha de metal en la casa (tócala)"
+      }
+    ]
+  },
+  {
+    "id": "claro",
+    "title": "El claro",
+    "desc": "Algo verde asoma entre los árboles antiguos del noroeste.",
+    "reward": {
+      "stars": 6,
+      "text": "Musgo se une al equipo y +6 ★"
+    },
+    "goals": [
+      {
+        "id": "claro",
+        "text": "Explora: toca el claro de árboles antiguos"
+      },
+      {
+        "id": "despejar",
+        "text": "Tala los árboles antiguos del claro"
+      },
+      {
+        "id": "desenterrar",
+        "text": "Desentierra lo que asoma en el claro"
+      },
+      {
+        "id": "expandir",
+        "text": "Expande la isla: Construir → Expandir la isla",
+        "hint": "build"
+      }
+    ]
+  },
+  {
+    "id": "ruinas",
+    "title": "Las ruinas",
+    "desc": "Mar adentro, un islote de piedra tallada guarda una estatua dormida.",
+    "reward": {
+      "stars": 8,
+      "text": "Brasa se une al equipo y +8 ★"
+    },
+    "goals": [
+      {
+        "id": "islote",
+        "text": "Llega al islote de las ruinas: tiende un puente (Construir → Expandir → Puente)",
+        "hint": "build"
+      },
+      {
+        "id": "braseros",
+        "text": "Reconstruye los 5 braseros de las ruinas ({b}/5)"
+      },
+      {
+        "id": "llamas",
+        "text": "Enciende las 5 llamas resolviendo sus acertijos ({n}/5)"
+      },
+      {
+        "id": "brasa",
+        "text": "Espera a que despierte lo que duerme en las ruinas"
+      }
+    ]
+  },
+  {
+    "id": "fuego",
+    "title": "Fuego",
+    "locked": true,
+    "desc": "La cueva del volcán, el aserradero, ladrillos y vidrio. Brasa aprende a fundir sin horno.",
+    "goals": []
+  },
+  {
+    "id": "mar",
+    "title": "Mar adentro",
+    "locked": true,
+    "desc": "Un barco de verdad, islas que nadie ha pisado y las primeras batallas.",
+    "goals": []
+  },
+  {
+    "id": "origen",
+    "title": "El origen",
+    "locked": true,
+    "desc": "Restos de un mundo antiguo que sabía cosas que las figuras olvidaron.",
+    "goals": []
+  }
+]

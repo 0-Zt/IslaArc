@@ -12,6 +12,7 @@ import { removeStump } from './forest';
 import { completeMark, nearestMark, type Mark, type MarkKind } from './marks';
 import { fillHit, sites, type Site } from './expansion';
 import { S, DATA, gain } from './state';
+import { workSpeed } from './progress';
 import { buildings, buildHit, isDone, type Building } from './buildings';
 
 export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'plant' | 'path' | 'build' | 'walk';
@@ -265,7 +266,7 @@ function updateOne(c: Crew, dt: number, T: number) {
     const contact = 1 - Math.abs(s); bob = Math.abs(s) * 0.045; sy = 1 - 0.07 * contact; sxz = 1 + 0.035 * contact; lean = 0.08; hz = Math.sin(ph * 0.5) * 0.06;
     const step = Math.floor(ph / Math.PI); if (step !== c.lastStep) { c.lastStep = step; if (Math.random() < 0.4) puff(p.x, p.y + 0.03, p.z, '#d8c8a8', 2, 0.6, 0.6, p.y); }
   } else if (c.anim === 'work') {
-    const cyc = DATA.BALANCE.workCycle, q = (c.t % cyc) / cyc; let a: number;
+    const cyc = DATA.BALANCE.workCycle / workSpeed(), q = (c.t % cyc) / cyc; let a: number;
     if (q < 0.55) { const k = smoothstep(0, 0.55, q); a = lerp(0, -2.85, k); sy = 1 + 0.07 * k; sxz = 1 - 0.035 * k; lean = -0.12 * k; hx = -0.15 * k; }
     else if (q < 0.66) { const k = smoothstep(0.55, 0.66, q); a = lerp(-2.85, -0.75, k); lean = lerp(-0.12, 0.2, k); sy = lerp(1.07, 0.86, k); sxz = lerp(0.965, 1.09, k); hx = lerp(-0.15, 0.12, k); }
     else { const k = smoothstep(0.66, 1, q); a = lerp(-0.75, 0, k); lean = lerp(0.2, 0, k); sy = lerp(0.86, 1, k); sxz = lerp(1.09, 1, k); hx = lerp(0.12, 0, k); }

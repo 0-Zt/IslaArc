@@ -1,0 +1,123 @@
+[
+  {
+    "id": "talador",
+    "name": "Talador",
+    "desc": "Árboles talados",
+    "stat": "talados",
+    "tiers": [
+      10,
+      50,
+      150
+    ]
+  },
+  {
+    "id": "cantero",
+    "name": "Cantero",
+    "desc": "Piedra picada",
+    "stat": "piedra",
+    "tiers": [
+      20,
+      100,
+      300
+    ]
+  },
+  {
+    "id": "arenero",
+    "name": "Arenero",
+    "desc": "Arena juntada",
+    "stat": "arena",
+    "tiers": [
+      20,
+      80,
+      250
+    ]
+  },
+  {
+    "id": "fundidor",
+    "name": "Fundidor",
+    "desc": "Lingotes fundidos",
+    "stat": "lingotes",
+    "tiers": [
+      3,
+      15,
+      50
+    ]
+  },
+  {
+    "id": "jardinero",
+    "name": "Jardinero",
+    "desc": "Semillas plantadas",
+    "stat": "plantados",
+    "tiers": [
+      3,
+      15,
+      40
+    ]
+  },
+  {
+    "id": "arquitecto",
+    "name": "Arquitecto",
+    "desc": "Obras terminadas",
+    "stat": "obras",
+    "tiers": [
+      3,
+      10,
+      25
+    ]
+  },
+  {
+    "id": "decorador",
+    "name": "Decorador",
+    "desc": "Adornos colocados",
+    "stat": "adornos",
+    "tiers": [
+      3,
+      12,
+      30
+    ]
+  },
+  {
+    "id": "tierra",
+    "name": "Tierra nueva",
+    "desc": "Parcelas ganadas al mar",
+    "stat": "parcelas",
+    "tiers": [
+      3,
+      15,
+      40
+    ]
+  },
+  {
+    "id": "caminante",
+    "name": "Caminante",
+    "desc": "Tramos de sendero",
+    "stat": "senderos",
+    "tiers": [
+      5,
+      20,
+      60
+    ]
+  },
+  {
+    "id": "noctambulo",
+    "name": "Noctámbulo",
+    "desc": "Noches vividas",
+    "stat": "noches",
+    "tiers": [
+      1,
+      5,
+      15
+    ]
+  },
+  {
+    "id": "vecino",
+    "name": "Buen vecino",
+    "desc": "Encargos cumplidos",
+    "stat": "encargos",
+    "tiers": [
+      3,
+      15,
+      40
+    ]
+  }
+]

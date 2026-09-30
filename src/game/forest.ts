@@ -127,6 +127,7 @@ export function growthProgress(g: Growth) {
 export function onTreeFallen(t: Tree, now: number) {
   for (let a = 0; a < 3; a++) puff(t.x + Math.sin(t.fallDir) * (0.4 + a * 0.35), t.y + 0.1, t.z + Math.cos(t.fallDir) * (0.4 + a * 0.35), a % 2 ? '#6fc955' : '#c9a06a', 6, 1.4, 1.6, t.y);
   const tile = t.tile;
+  emit('treeFelled', t);
   forgetGrowth(tile);
   placeStump(tile, t.type, t.x, t.z, t.rotY);
   addKey(S.gone, key(tile)); addKey(S.stumps, key(tile));

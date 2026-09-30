@@ -5,13 +5,17 @@ import { LEVEL, topMat, sideMatFor, SIDE_MAT } from './tiles';
 import { Voxels, meshVoxels } from '../assets/voxmesh';
 import { MAT } from '../assets/voxel';
 
-export const N = 44;          // grid size: room for the sea, expansions, a bridge and the ruins islet
-// The main island is generated on a 30×30 grid (as in v0.7) and set in the middle of this one,
-// so it keeps the same shape, trees and rocks. Saves from v0.7 are shifted by OFF (see state.ts).
-const G0 = 30;
-export const OFF = (N - G0) / 2;
+export const N = 52;          // grid size: room for the sea, expansions, a bridge and the ruins islet
 const GRID = N;
-const R = 10.6;               // island radius in tiles
+/* Map versions. The island is generated on its own small grid and set in the middle of this one.
+   v1 is the island of v0.4–v0.9 (kept for older saves, identical tree by tree); v2 is bigger, for new games. */
+export interface MapSpec { v: number; g0: number; r: number; off: number; islet: [number, number] }
+export const MAPS: Record<number, MapSpec> = {
+  1: { v: 1, g0: 30, r: 10.6, off: 11, islet: [41, 10] },
+  2: { v: 2, g0: 36, r: 13.4, off: 8, islet: [45, 7] },
+};
+export let MAP = MAPS[2];
+export function setMap(v: number) { MAP = MAPS[v] || MAPS[1]; }
 
 export interface Tile {
   i: number; j: number; h: number;
@@ -37,7 +41,7 @@ export const topY = (t: Tile) => t.h * LEVEL;
 export function landTiles() { const a: Tile[] = []; for (const row of island) for (const t of row) if (t) a.push(t); return a; }
 export const blocked = (t: Tile | null) => !t || !!t.tree || !!t.rock || !!t.building || !!t.ancient || !!t.mound || !!t.solid;
 /** Grid coordinates as they were on the original 30×30 map: noise keyed on these keeps the island identical. */
-export const oi = (t: Tile) => t.i - OFF, oj = (t: Tile) => t.j - OFF;
+export const oi = (t: Tile) => t.i - MAP.off, oj = (t: Tile) => t.j - MAP.off;
 export const GRASS = ['pasto', 'matas', 'flores', 'trebol'];
 export const walkable = (t: Tile | null) => !blocked(t);
 export const DIRS: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -55,7 +59,7 @@ export function addLand(i: number, j: number, type: string) {
 
 /* ---------- generation ---------- */
 export function generate(seed: number) {
-  const N = G0; // everything below runs on the original grid; the result is shifted into place at the end
+  const N = MAP.g0, R = MAP.r, OFF = MAP.off; // everything below runs on the small grid; the result is shifted into place at the end
   const r = rng(seed), g: (Tile | null)[][] = [], c = (N - 1) / 2;
   for (let j = 0; j < N; j++) {
     g[j] = [];

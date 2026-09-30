@@ -26,6 +26,19 @@
     "requires": "casa",
     "work": 12
   },
+  "tablon": {
+    "name": "Tablón",
+    "desc": "Aquí llegan encargos de la isla. Cumplirlos da estrellas.",
+    "size": [
+      2,
+      1
+    ],
+    "cost": {
+      "madera": 6
+    },
+    "work": 5,
+    "requires": "casa"
+  },
   "farol": {
     "name": "Farol",
     "desc": "Se enciende solo al caer la noche.",
@@ -39,7 +52,8 @@
     },
     "work": 4,
     "requires": "casa",
-    "deco": true
+    "deco": true,
+    "level": 2
   },
   "cerco": {
     "name": "Cerco",
@@ -68,7 +82,8 @@
     },
     "work": 3,
     "requires": "casa",
-    "deco": true
+    "deco": true,
+    "level": 3
   },
   "macetero": {
     "name": "Macetero",
@@ -83,7 +98,8 @@
     },
     "work": 3,
     "requires": "casa",
-    "deco": true
+    "deco": true,
+    "level": 5
   },
   "brasero": {
     "name": "Brasero",

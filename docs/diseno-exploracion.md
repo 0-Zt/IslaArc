@@ -1,0 +1,95 @@
+# Diseño: exploración, inventos y combates
+
+Documento de visión para lo que viene después del capítulo 3. La idea es mezclar tres cosas: una isla-base que crece (Grow), expediciones por zonas con vista desde arriba y combates por turnos (Pokémon de GBA), y un árbol de inventos que se desbloquea con materiales y hallazgos (Dr. Stone, en simple).
+
+## La premisa
+
+Las figuras de arcilla despiertan en un archipiélago sin saber quién las hizo. Antes vivieron aquí **los Alfareros**, una civilización que dominaba la lava, los cristales y las máquinas, y que desapareció. Sus restos están repartidos: el santuario de Brasa fue el primero. La pregunta de fondo del juego es **de dónde vienen las figuras y qué pasó con el mundo anterior**. La respuesta llega al final, en el Faro.
+
+## El bucle que le da sentido a juntar cosas
+
+> Recolectar → Refinar → Inventar → Explorar → Encontrar → Inventar más
+
+- **Recolectar:** madera, piedra, arena, tierra y mineral en la isla, con tus figuras.
+- **Refinar:** tablas (aserradero), ladrillos y vidrio (horno), lingotes, carbón, cuerda.
+- **Inventar:** en el Taller de inventos, cada invento pide materiales refinados y, a veces, una pista o reliquia encontrada afuera.
+- **Explorar:** los inventos abren zonas nuevas (la balsa abre el mar, la antorcha abre la cueva oscura, el pico de metal rompe muros).
+- **Encontrar:** en las zonas hay materiales raros, cofres, planos, reliquias de los Alfareros y, a veces, una figura nueva.
+
+Así cada material tiene un destino claro:
+
+| Material | Para qué sirve más adelante |
+| --- | --- |
+| Madera | Tablas, cuerda, balsa y barcos, andamios, carbón |
+| Piedra | Ladrillos, muros, caminos, hornos mejores |
+| Arena | Vidrio: lentes, faroles mejores, el Faro |
+| Tierra | Expandir la isla, granjas, macetas |
+| Mineral y lingotes | Herramientas, engranajes, equipo de combate |
+| Materiales raros (cobre, cuarzo, obsidiana, cristal de lava) | Inventos avanzados y equipo; solo aparecen en expediciones |
+
+## El Taller de inventos
+
+Un árbol de inventos por eras. Cada nodo muestra qué pide y qué desbloquea.
+
+1. **Piedra:** herramientas básicas, cuerda, antorcha.
+2. **Fuego:** aserradero, ladrillo, vidrio, carbón.
+3. **Metal:** herramientas de metal mejores, engranajes, bisagras, cofres.
+4. **Mecánica:** molino, bomba de agua, poleas (producción automática).
+5. **Navegación:** balsa, velero y barco rápido (más alcance y velocidad en el mapa del mar).
+6. **Luz:** lentes y catalejo (revelan secretos en el mapa), el Faro.
+7. **Antiguo:** tecnología de los Alfareros, que solo se entiende con reliquias.
+
+**Mesa de pruebas (opcional, para el toque Dr. Stone):** combinar dos o tres materiales para descubrir recetas nuevas. Los intentos fallidos dan una pista ("casi… le falta algo que arda").
+
+## Expediciones: el modo exploración
+
+Al entrar en una cueva o bajar del barco en otra isla, la cámara cambia a una **vista más alta y cercana, como Pokémon de GBA**. Se mueve un grupo de hasta 3 figuras por una cuadrícula: la líder va adelante y las otras la siguen.
+
+- **Mapas hechos a mano**, con rutas que se abren con herramientas: el pico rompe rocas, el hacha corta enredaderas, la antorcha ilumina y el puente cruza grietas.
+- **Puntos de recolección** de materiales raros, cofres, tablillas con historia de los Alfareros y atajos que se quedan abiertos para la próxima vez.
+- **Provisiones:** comida y antorchas limitan cuánto se puede avanzar, así la isla-base sigue importando.
+- **Encuentros** con criaturas en zonas marcadas, como el pasto alto o la oscuridad.
+
+### Zonas previstas
+
+| Zona | Capítulo | Qué hay | Jefe |
+| --- | --- | --- | --- |
+| Cueva del volcán | 4 · Fuego | Tres niveles, ríos de lava, cobre, cuarzo y obsidiana | Gólem de magma |
+| Archipiélago (bosque de hongos, arrecife, isla nevada) | 5 · Mar adentro | Materiales propios de cada isla, una figura nueva por isla | Uno por isla |
+| Ciudad de los Alfareros | 6 · El origen | Máquinas rotas, terminales, la historia de las figuras | El Guardián |
+
+## Combates por turnos
+
+Simples y tácticos, pensados para el celular.
+
+- **Tu equipo:** hasta 3 figuras. Cada una tiene vida, ataque, defensa, energía y de 2 a 4 habilidades según su naturaleza:
+  - **Arci (tierra):** muros, golpes pesados.
+  - **Musgo (planta):** curación, enredar.
+  - **Brasa (fuego):** daño en área, quemar.
+  - **Espectro (noche, del barco fantasma):** esquivar, robar energía.
+- **Ventajas por tipo:** fuego gana a planta, planta gana a tierra y tierra gana a fuego; los autómatas antiguos resisten todo menos el metal.
+- **Equipo:** las herramientas y los inventos dan bonos (un pico de metal pega más a las criaturas de roca).
+- **Jefes:** tienen fases y **anuncian su próximo ataque** un turno antes, así se puede planificar.
+- **Perder no castiga fuerte:** vuelves a la isla sin lo recolectado en esa salida.
+- **Experiencia:** las figuras suben de nivel con el trabajo en la isla y con los combates.
+
+## Cómo encaja con lo que ya existe
+
+- **Ruta por capítulos (el Diario):** cada capítulo abre una zona y una era del Taller.
+- **Nivel de isla y estrellas:** los encargos, logros y capítulos siguen sumando. Las expediciones agregan sus propios logros.
+- **Encargos:** empezarán a pedir materiales refinados y raros.
+- **Producción:** aserradero, cantera y granja producen poco a poco con una figura asignada, para que la isla se sienta como un campamento base.
+
+## Orden propuesto
+
+1. **v0.11 · Fuego, parte 1:** Taller de inventos (primera era), aserradero, ladrillos y vidrio, habilidades de cada figura en la isla, cajas y botellas que llegan a la playa.
+2. **v0.12 · Prototipo de exploración:** entrada a la cueva, modo exploración con movimiento por cuadrícula, un nivel, puntos de recolección, una criatura y el primer combate por turnos.
+3. **v0.13 · Cueva completa:** tres niveles, provisiones y el Gólem de magma.
+4. **v0.14 · Mar adentro:** balsa, mapa del archipiélago y la primera isla nueva.
+5. **Después:** Ciudad de los Alfareros, el Espectro y el Faro.
+
+## Enfoque técnico
+
+- El mismo motor (Three.js). Cada zona es una escena propia cargada desde un mapa en texto o JSON (cuadrícula con alturas y tipos), con los mismos bloques vóxel.
+- La cámara de exploración es un ajuste de la actual (más alta y más cerca), con movimiento casilla a casilla y animación de caminar.
+- El combate es una capa de interfaz sobre una pequeña arena 3D con las figuras animadas; la lógica es un sistema de turnos con datos en JSON (criaturas, habilidades, tipos).

@@ -88,6 +88,7 @@ export function buildHit(b: Building) {
   if (b.scaffold) { worldGroup.remove(b.scaffold); b.scaffold = null; }
   for (const q of b.tiles) puff(q.wx, topY(q) + 0.4, q.wz, '#fff0c0', 10, 2, 1.6, topY(q));
   emit('toast', `Obra terminada: ${def(b.type).name.toLowerCase()}`);
+  emit('obraDone', !!def(b.type).deco);
   emit('built', b); emit('changed');
   return true;
 }

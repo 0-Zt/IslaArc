@@ -91,6 +91,17 @@ export function modelMacetero(): Model {
   return { group: g, smoke: [0, 0.7, 0] };
 }
 
+/** Notice board: two posts, a small roof and a board with pinned notes. */
+export function modelTablon(): Model {
+  const M = parts(), P: THREE.BufferGeometry[] = [];
+  for (const x of [-0.7, 0.7]) { vbox(M.plank, x, 0.5, 0, 0.1, 1, 0.1, '#6a4226'); vbox(M.stone, x, 0.05, 0, 0.2, 0.1, 0.2, '#8a847a'); }
+  vbox(M.plank, 0, 0.6, 0, 1.3, 0.6, 0.06, '#b07a44'); vbox(M.plank, 0, 0.6, 0.035, 1.34, 0.64, 0.02, '#8a5a2e');
+  vbox(M.thatch, 0, 1.02, 0, 1.6, 0.08, 0.36, '#d4a444'); vbox(M.thatch, 0, 1.08, 0, 1.3, 0.06, 0.26, '#e0b050');
+  [[-0.4, 0.72, '#fff6e0'], [-0.05, 0.58, '#fff0c8'], [0.32, 0.74, '#ffe0e8'], [0.4, 0.46, '#e8f4ff'], [-0.35, 0.44, '#fff6e0']].forEach(([x, y, c]) => { vbox(P, x as number, y as number, 0.055, 0.22, 0.18, 0.01, c as string); vbox(P, x as number, (y as number) + 0.07, 0.062, 0.03, 0.03, 0.01, '#d9463c'); });
+  const g = group({ ...M, plank: M.plank.concat(P) });
+  return { group: g, smoke: [0, 1.2, 0] };
+}
+
 /** Scaffolding shown around a building while it is being built. */
 export function modelScaffold(w: number, d: number, h: number) {
   const P: THREE.BufferGeometry[] = [];
@@ -101,7 +112,7 @@ export function modelScaffold(w: number, d: number, h: number) {
   return group({ plank: P });
 }
 
-export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
+export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, tablon: modelTablon, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
 
 export const ICONS: Record<string, string> = {
   casa: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="18" width="24" height="16" fill="#d9a066"/><rect x="17" y="24" width="6" height="10" fill="#7a4f2a"/><path d="M4 20L20 7L36 20Z" fill="#e0b050"/><rect x="27" y="8" width="4" height="8" fill="#8a847a"/></svg>',
@@ -114,6 +125,7 @@ export const ICONS: Record<string, string> = {
   roble: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="17" y="24" width="6" height="12" fill="#6a3f22"/><rect x="7" y="8" width="26" height="18" rx="7" fill="#5fb84a"/><rect x="11" y="10" width="10" height="7" rx="3" fill="#7fd060"/></svg>',
   abedul: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="18" y="20" width="4" height="16" fill="#e8e0d0"/><rect x="18" y="26" width="4" height="2" fill="#4a4038"/><rect x="11" y="4" width="18" height="20" rx="8" fill="#b8d860"/></svg>',
   sendero: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="4" width="36" height="32" fill="#5cb847"/><path d="M14 36L18 4H26L28 36Z" fill="#b08a5a"/><rect x="19" y="12" width="3" height="2" fill="#d8d2c6"/><rect x="22" y="24" width="3" height="2" fill="#d8d2c6"/></svg>',
+  tablon: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="12" width="3" height="26" fill="#6a4226"/><rect x="30" y="12" width="3" height="26" fill="#6a4226"/><rect x="5" y="13" width="30" height="16" fill="#b07a44"/><rect x="3" y="8" width="34" height="5" fill="#d4a444"/><rect x="9" y="16" width="8" height="7" fill="#fff6e0"/><rect x="21" y="17" width="9" height="8" fill="#ffe0e8"/><rect x="12" y="15" width="2" height="2" fill="#d9463c"/><rect x="25" y="16" width="2" height="2" fill="#d9463c"/></svg>',
   farol: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="14" y="33" width="12" height="4" fill="#9a948a"/><rect x="18.5" y="16" width="3" height="18" fill="#4a3a2e"/><rect x="13" y="6" width="14" height="3" fill="#3a2e24"/><rect x="15" y="9" width="10" height="8" fill="#ffd27a"/><rect x="13" y="17" width="14" height="2" fill="#3a2e24"/></svg>',
   cerco: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="18" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="30" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="4" y="17" width="32" height="4" fill="#a8743e"/><rect x="4" y="26" width="32" height="4" fill="#a8743e"/></svg>',
   banca: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="12" width="28" height="6" fill="#b07a44"/><rect x="6" y="22" width="28" height="5" fill="#b07a44"/><rect x="9" y="27" width="4" height="8" fill="#9a948a"/><rect x="27" y="27" width="4" height="8" fill="#9a948a"/></svg>',

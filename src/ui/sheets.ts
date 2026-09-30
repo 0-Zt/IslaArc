@@ -6,6 +6,8 @@ import { refreshTools } from '../game/crew';
 import { KINDS, expandCost, startSite, enterExpandMode, exitExpandMode, type ExpandKind } from '../game/expansion';
 import { enterMarkMode } from '../game/marks';
 import { refreshDay } from '../render/daynight';
+import { unlocked } from '../game/progress';
+import { diarioHTML, diarioClick, diarioSig, setTab, type DiarioTab } from './diario';
 import { BRAZIERS, rebuildBrazier } from '../game/ruins';
 import { initPuzzles, openPuzzle, closePuzzle, puzzleHTML, puzzleClick, puzzleSig } from './puzzles';
 import { runeSVG } from '../assets/ruins';
@@ -16,23 +18,24 @@ import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'fin';
+type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'fin';
 let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {};
 export function initSheets(opts: { centreTile: () => Tile | null; onReset: () => void }) { centreTile = opts.centreTile; onReset = opts.onReset; }
 
 export const sheetOpen = () => type !== null;
-export function openSheet(t: SheetType, b: Building | null = null, c: [number, number] | null = null) { if (type === 'puzzle' && t !== 'puzzle') closePuzzle(); type = t; arg = b; cell = c; confirmReset = false; render(); $('sheet').hidden = false; $('sheet').classList.toggle('tall', t === 'puzzle'); }
+export function openSheet(t: SheetType, b: Building | null = null, c: [number, number] | null = null) { if (type === 'puzzle' && t !== 'puzzle') closePuzzle(); type = t; arg = b; cell = c; confirmReset = false; render(); $('sheet').hidden = false; $('sheet').classList.toggle('tall', t === 'puzzle' || t === 'diario'); }
 export function closeSheet() { if (type === 'puzzle') closePuzzle(); type = null; $('sheet').hidden = true; }
 /** A ruined brazier: what it is and what rebuilding it costs. */
 let ruinK = -1;
 export function openRuin(k: number) { ruinK = k; openSheet('ruina'); }
 export function openFlame(k: number) { openPuzzle(k); openSheet('puzzle'); }
+export function openDiario(t: DiarioTab = 'ruta') { setTab(t); openSheet('diario'); }
 
 const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => `<span class="${S.res[k as ResKey] >= (v as number) ? '' : 'no'}">${img(k as ResKey)}${S.res[k as ResKey]}/${v}</span>`).join('')}</div>`;
 // the settings sheet never re-renders by itself, so sliders keep working while dragged
-const signature = () => type === 'gfx' ? 'gfx' : type === 'puzzle' ? 'puzzle' + puzzleSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.queue, S.expanded.length]);
+const signature = () => type === 'gfx' ? 'gfx' : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.queue, S.expanded.length]);
 
 function render() {
   sig = signature();
@@ -41,11 +44,11 @@ function render() {
     h += '<h2>Construir</h2><p>Paga los materiales, ubica la obra con la guía amarilla y una figura la levanta a martillazos.</p>';
     const row = (k: string, d: any) => {
       const count = buildings.filter(b => b.type === k).length, working = buildings.some(b => b.type === k && !isDone(b));
-      const unique = !d.deco, built = unique && count > 0, locked = d.requires && !has(d.requires);
+      const unique = !d.deco, built = unique && count > 0, locked = d.requires && !has(d.requires), lowLevel = !unlocked(k);
       const size = d.size[0] * d.size[1] > 1 ? ` · ocupa ${d.size[0]}×${d.size[1]}` : '';
       const extra = d.deco && count ? ` · tienes ${count}` : '';
       return `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${d.name}</b><small>${d.desc}${size}${extra}</small>${built ? '' : costHTML(d.cost)}</div>`
-        + (built ? `<span class="done">${working ? 'En obra' : 'Construida'}</span>` : locked ? `<span class="done" style="color:var(--muted)">Necesita ${buildingDef(d.requires).name.toLowerCase()}</span>`
+        + (built ? `<span class="done">${working ? 'En obra' : 'Construida'}</span>` : lowLevel ? `<span class="done" style="color:var(--muted)">Nivel de isla ${d.level}</span>` : locked ? `<span class="done" style="color:var(--muted)">Necesita ${buildingDef(d.requires).name.toLowerCase()}</span>`
           : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-place="${k}" ${afford(d.cost) ? '' : 'disabled'}>Ubicar</button>`) + '</div>';
     };
     const all = Object.entries(DATA.BUILDINGS) as [string, any][];
@@ -108,6 +111,8 @@ function render() {
       + `<div class="row"><div class="thumb">${runeSVG(d.sym, '#ffb45a', 34)}</div><div class="info"><b>Reconstruir</b><small>Una figura lo levanta con el martillo. Después habrá que encender su llama.</small>${costHTML(d.cost)}</div><button class="btn${afford(d.cost) ? ' main' : ''}" data-rebuild="${ruinK}" ${afford(d.cost) ? '' : 'disabled'}>Reconstruir</button></div>`;
   } else if (type === 'puzzle') {
     h += puzzleHTML();
+  } else if (type === 'diario') {
+    h += diarioHTML();
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
     h += `<h2>¡La isla despierta!</h2><p>Fundiste metal, desenterraste a Musgo, llegaste a las ruinas y despertaste a Brasa en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}.</p>`
@@ -131,6 +136,7 @@ export function initSheetEvents() {
     if (type === 'puzzle' && !(b && b.dataset.act === 'close')) { puzzleClick(e.target as HTMLElement); return; }
     if (!b || b.disabled) return;
     if (b.dataset.act === 'close') return closeSheet();
+    if (type === 'diario') { const r = diarioClick(b); if (r !== undefined) { if (r) toast(r); render(); return; } }
     if (b.dataset.rebuild) {
       const r = rebuildBrazier(Number(b.dataset.rebuild));
       if (typeof r === 'string') { toast(r); return; }

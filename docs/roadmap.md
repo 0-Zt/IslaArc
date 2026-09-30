@@ -89,6 +89,17 @@ Siguiendo las láminas de referencia (árboles, bloques, adornos):
 - **Adornos nuevos:** arbustos redondos (algunos con flores) en pasto con matas y en bordes de bosque, rocas con musgo en suelo pedregoso, pasto más alto.
 - **Costo:** un 14 % más por cuadro que la v0.8, todavía unas 4 veces más liviano que la v0.6.
 
+## Ruta, encargos y logros (v0.10)
+
+- **Isla más grande** en partidas nuevas (radio 13,4 en vez de 10,6, unas 540 casillas, 7 rocas). Las partidas guardadas conservan su isla clásica.
+- **Diario de la isla** (botón con un libro bajo Menú), con tres pestañas:
+  - **Ruta:** capítulos con sus metas. 1 · Barro, 2 · El claro y 3 · Las ruinas se pueden jugar; 4 · Fuego, 5 · Mar adentro y 6 · El origen se ven bloqueados con un adelanto. Cada capítulo da estrellas al cerrarse.
+  - **Encargos:** con el **tablón** (nuevo edificio) llegan 3 pedidos a la vez: entregas de materiales o tareas (talar, picar, plantar, adornar, ganar parcelas, pasar una noche). Pagan estrellas y un regalo. Cada pedido se puede cambiar una vez cada 90 segundos.
+  - **Logros:** 11 logros con bronce, plata y oro (talador, cantero, jardinero, arquitecto, noctámbulo…). Cada grado da estrellas.
+- **Nivel de isla:** las estrellas suben el nivel. Cada nivel desbloquea algo: farol (2), banca y un pedido más (3), trabajo 10 % más rápido (4), macetero (5)…
+
+Ver también **docs/diseno-exploracion.md**: la visión de exploración, inventos y combates por turnos.
+
 ## Pendiente
 
 - **Habilidades por figura:** Brasa podría fundir sin horno o encender faroles; Musgo, hacer crecer retoños más rápido.
