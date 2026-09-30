@@ -1,15 +1,16 @@
 import './style.css';
 import { on } from './core/events';
 import {
-  renderer, scene, camera, controls, resize, render, placeSun, applyTime, adaptResolution, waterTex, pixelRatio,
+  renderer, scene, camera, controls, resize, render, placeSun, applyTime, adaptResolution, waterTex, pixelRatio, focusOn, gfx,
 } from './render/renderer';
 import { N, generate, buildTerrain, rebuildDeco, worldGroup, tileAt, landTiles, walkable, grove, terrainDrawCalls, type Tile } from './world/island';
 import { plantIsland, clearTrees, tickTrees, tickLeaves, treeDrawCalls, trees } from './world/trees';
 import { placeRocks, tickRocks, rocks } from './world/rocks';
 import { tickParticles } from './world/particles';
 import { S, setState, freshState, loadSave, save, hasSave, clearSave, DATA } from './game/state';
-import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order } from './game/crew';
-import { buildings, createBuilding, clearBuildings, tickBuildings, cancelPlace, saved, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid } from './game/buildings';
+import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected } from './game/crew';
+import * as THREE from 'three';
+import { buildings, createBuilding, clearBuildings, tickBuildings, cancelPlace, saved, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, place } from './game/buildings';
 import { spawnGrove, tickGrove, ancients, mound } from './game/grove';
 import { onTreeFallen, tickForest, clearForest, setOccupiedTest } from './game/forest';
 import { checkGoals } from './game/goals';
@@ -68,6 +69,18 @@ resize(); addEventListener('resize', resize);
 applyTime('manana');
 newGame(loadSave());
 
+/* the sharp band of the miniature effect follows what matters: the ghost, the selected figure, or the figure nearest the view */
+const _f = new THREE.Vector3();
+function focusTarget(): THREE.Vector3 | null {
+  if (place) return _f.copy(place.ghost.position);
+  const sel = selected && crew.find(c => c.id === selected);
+  if (sel) return _f.copy(sel.root.position);
+  let best: THREE.Object3D | null = null, bd = 1e9;
+  for (const c of crew) { const d = c.root.position.distanceTo(controls.target); if (d < bd) { bd = d; best = c.root; } }
+  return best && bd < 9 / camera.zoom ? _f.copy(best.position) : null;
+}
+let fpsAcc = 0, fpsFrames = 0;
+
 /* keep the camera over the island */
 function clampCamera() {
   const t = controls.target, lim = N / 2 - 1;
@@ -93,6 +106,9 @@ function frame(now: number) {
   waterTex.offset.x = (T * 0.012) % 1; waterTex.offset.y = Math.sin(T * 0.4) * 0.01;
   controls.update(); clampCamera();
   sunAcc += dt; if (sunAcc > 0.5) { sunAcc = 0; placeSun(); }
+  const ft = focusTarget(); focusOn(ft ? ft.setY(ft.y + 0.5).project(camera).y : null, raw);
+  fpsAcc += raw; fpsFrames++;
+  if (fpsAcc > 0.5) { const el = $('fps'); el.hidden = !gfx.fps; if (gfx.fps) el.textContent = `${Math.round(fpsFrames / fpsAcc)} fps · ${pixelRatio().toFixed(2)}x`; fpsAcc = 0; fpsFrames = 0; }
   adaptResolution(raw); // resizing clears the canvas, so it must happen before drawing
   renderer.info.reset(); render(dt);
   requestAnimationFrame(frame);

@@ -87,41 +87,75 @@ water.position.y = 0.14;
 water.receiveShadow = true;
 scene.add(water);
 
-/* ---------- post-processing: one render, AO, and one merged effect pass ---------- */
+/* ---------- graphics settings (saved per device) ---------- */
 export type Quality = 'alta' | 'baja';
-let composer: EffectComposer;
-let aoPass: any;
-let tilt: TiltShiftEffect;
-export const bloom = new BloomEffect({ intensity: 0.6, luminanceThreshold: 0.92, luminanceSmoothing: 0.1, mipmapBlur: true, radius: 0.6, levels: 6 });
+export interface Gfx {
+  quality: Quality;
+  tilt: number;            // 0 = off, 1 = strong miniature blur
+  tiltFollow: boolean;     // focus band follows the selected figure
+  ao: 'off' | 'suave' | 'marcada';
+  bloom: boolean; vignette: boolean; shadows: boolean; fps: boolean;
+}
+const GFX_KEY = 'isla-arcilla-gfx';
+export const GFX_DEFAULT: Gfx = { quality: IS_TOUCH ? 'baja' : 'alta', tilt: 0.35, tiltFollow: true, ao: 'suave', bloom: true, vignette: true, shadows: true, fps: false };
+export const gfx: Gfx = { ...GFX_DEFAULT };
+try { Object.assign(gfx, JSON.parse(localStorage.getItem(GFX_KEY) || '{}')); } catch { /* storage may be blocked */ }
+function saveGfx() { try { localStorage.setItem(GFX_KEY, JSON.stringify(gfx)); } catch { /* ignore */ } }
 
-export let quality: Quality = IS_TOUCH ? 'baja' : 'alta';
-try { const q = localStorage.getItem('isla-arcilla-q'); if (q === 'alta' || q === 'baja') quality = q; } catch { /* storage may be blocked */ }
+/* ---------- post-processing: one render, AO, and one merged effect pass ---------- */
+let composer: EffectComposer;
+let tilt: TiltShiftEffect | null = null;
+export const bloom = new BloomEffect({ intensity: 0.6, luminanceThreshold: 0.92, luminanceSmoothing: 0.1, mipmapBlur: true, radius: 0.6, levels: 6 });
+let focusY = 0;
+
+function tiltParams(t: number) { const focusArea = 0.6 - 0.36 * t; return { focusArea, feather: focusArea * 0.6 }; } // the soft edge must stay narrower than the sharp band
 
 function buildComposer() {
   composer?.dispose();
-  const high = quality === 'alta';
+  const high = gfx.quality === 'alta';
   composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType, multisampling: high ? 4 : 2 });
   composer.addPass(new RenderPass(scene, camera));
-  aoPass = new N8AOPostPass(scene, camera, innerWidth, innerHeight);
-  aoPass.setQualityMode(high ? 'Medium' : 'Performance');
-  Object.assign(aoPass.configuration, {
-    aoRadius: 0.9, distanceFalloff: 0.6, intensity: 2.2, color: new THREE.Color('#1c2410'),
-    halfRes: !high, depthAwareUpsampling: true, gammaCorrection: false, screenSpaceRadius: false,
-  });
-  composer.addPass(aoPass);
-  tilt = new TiltShiftEffect({ focusArea: 0.5, feather: 0.4, kernelSize: high ? KernelSize.MEDIUM : KernelSize.SMALL, resolutionScale: 0.5 });
-  const vignette = new VignetteEffect({ offset: 0.32, darkness: 0.42 });
-  const tone = new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL });
-  composer.addPass(new EffectPass(camera, bloom, tilt, vignette, tone));
+  if (gfx.ao !== 'off') {
+    const ao: any = new N8AOPostPass(scene, camera, innerWidth, innerHeight);
+    ao.setQualityMode(high ? 'Medium' : 'Performance');
+    Object.assign(ao.configuration, {
+      aoRadius: 0.9, distanceFalloff: 0.6, intensity: gfx.ao === 'marcada' ? 3 : 1.8, color: new THREE.Color('#1c2410'),
+      halfRes: !high, depthAwareUpsampling: true, gammaCorrection: false, screenSpaceRadius: false,
+    });
+    composer.addPass(ao);
+  }
+  const effects: any[] = [];
+  if (gfx.bloom) effects.push(bloom);
+  tilt = null;
+  if (gfx.tilt > 0.01) {
+    tilt = new TiltShiftEffect({ ...tiltParams(gfx.tilt), offset: focusY, kernelSize: high ? KernelSize.MEDIUM : KernelSize.SMALL, resolutionScale: 0.5 });
+    effects.push(tilt);
+  }
+  if (gfx.vignette) effects.push(new VignetteEffect({ offset: 0.32, darkness: 0.42 }));
+  effects.push(new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL }));
+  composer.addPass(new EffectPass(camera, ...effects));
   composer.setSize(innerWidth, innerHeight);
+  sun.castShadow = gfx.shadows;
   sun.shadow.mapSize.set(high ? 2048 : 1024, high ? 2048 : 1024);
   if (sun.shadow.map) { sun.shadow.map.dispose(); (sun.shadow as any).map = null; }
 }
 
-export function setQuality(q: Quality) {
-  quality = q;
-  try { localStorage.setItem('isla-arcilla-q', q); } catch { /* ignore */ }
-  buildComposer();
+/** Changes settings; only rebuilds the pipeline when an effect is switched on or off. */
+export function setGfx(patch: Partial<Gfx>) {
+  const before = { ...gfx };
+  Object.assign(gfx, patch); saveGfx();
+  const structural = before.quality !== gfx.quality || before.ao !== gfx.ao || before.bloom !== gfx.bloom || before.vignette !== gfx.vignette
+    || before.shadows !== gfx.shadows || (before.tilt > 0.01) !== (gfx.tilt > 0.01);
+  if (structural) buildComposer();
+  else if (tilt) Object.assign(tilt, tiltParams(gfx.tilt));
+}
+export function resetGfx() { setGfx({ ...GFX_DEFAULT }); }
+
+/** Moves the sharp band of the miniature effect toward a screen height (-1 bottom .. 1 top). */
+export function focusOn(ndcY: number | null, dt: number) {
+  const target = gfx.tiltFollow && ndcY !== null ? Math.max(-0.3, Math.min(0.3, ndcY / 2)) : 0;
+  focusY += (target - focusY) * Math.min(1, dt * 4);
+  if (tilt) tilt.offset = focusY;
 }
 
 /* ---------- dynamic resolution: keep frames smooth before touching the look ---------- */

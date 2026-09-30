@@ -1,5 +1,5 @@
 import { on } from '../core/events';
-import { quality, setQuality } from '../render/renderer';
+import { gfx, setGfx, resetGfx } from '../render/renderer';
 import { S, DATA, afford, pay, type Cost, type ResKey } from '../game/state';
 import { buildings, has, smelt, startPlace, buildingDef, type Building } from '../game/buildings';
 import { refreshTools } from '../game/crew';
@@ -9,7 +9,7 @@ import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'fin';
+type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'fin';
 let type: SheetType | null = null, arg: Building | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {};
@@ -20,7 +20,8 @@ export function openSheet(t: SheetType, b: Building | null = null) { type = t; a
 export function closeSheet() { type = null; $('sheet').hidden = true; }
 
 const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => `<span class="${S.res[k as ResKey] >= (v as number) ? '' : 'no'}">${img(k as ResKey)}${S.res[k as ResKey]}/${v}</span>`).join('')}</div>`;
-const signature = () => JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type), arg?.queue]);
+// the settings sheet never re-renders by itself, so sliders keep working while dragged
+const signature = () => type === 'gfx' ? 'gfx' : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type), arg?.queue]);
 
 function render() {
   sig = signature();
@@ -50,8 +51,22 @@ function render() {
       + (S.res.mineral < 2 ? '<p>El mineral sale al picar las rocas grises con vetas azules.</p>' : '');
   } else if (type === 'menu') {
     h += '<h2>Menú</h2><p>La partida se guarda sola en este navegador.</p>'
-      + `<div class="row"><div class="info"><b>Calidad gráfica</b><small>Alta suma sombras más finas y más suavizado de bordes. Baja rinde mejor en celulares antiguos.</small></div><button class="btn" data-act="quality">${quality === 'alta' ? 'Alta' : 'Baja'}</button></div>`
+      + '<div class="row"><div class="info"><b>Ajustes gráficos</b><small>Efecto maqueta, sombras, brillo y calidad.</small></div><button class="btn" data-act="gfx">Abrir</button></div>'
       + `<div class="row"><div class="info"><b>Nueva partida</b><small>Borra el progreso y empieza de cero.</small></div>${confirmReset ? '<button class="btn main" data-act="reset2">Sí, borrar</button>' : '<button class="btn" data-act="reset">Empezar de cero</button>'}</div>`;
+  } else if (type === 'gfx') {
+    const seg = (key: string, opts: [string, string][], cur: string) => `<div class="seg" role="group">${opts.map(([v, n]) => `<button data-set="${key}" data-val="${v}" class="${cur === v ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    const onoff = (key: 'bloom' | 'vignette' | 'shadows' | 'fps') => seg(key, [['1', 'Sí'], ['0', 'No']], gfx[key] ? '1' : '0');
+    h += '<h2>Ajustes gráficos</h2><p>Se guardan en este dispositivo.</p>'
+      + `<div class="row col"><div class="info"><b>Efecto maqueta</b><small>Desenfoque arriba y abajo que da aspecto de miniatura. En 0 queda todo nítido.</small></div>
+         <div class="slide"><input type="range" id="gTilt" min="0" max="100" step="5" value="${Math.round(gfx.tilt * 100)}" aria-label="Intensidad del efecto maqueta"><output id="gTiltOut">${Math.round(gfx.tilt * 100)}</output></div></div>`
+      + `<div class="row col"><div class="info"><b>Enfoque</b><small>Dónde queda la franja nítida del efecto maqueta.</small></div>${seg('tiltFollow', [['1', 'Sigue a la figura'], ['0', 'Centro de pantalla']], gfx.tiltFollow ? '1' : '0')}</div>`
+      + `<div class="row col"><div class="info"><b>Sombra de contacto</b><small>Oscurece esquinas y uniones entre bloques. Es el efecto que más volumen da.</small></div>${seg('ao', [['off', 'Apagada'], ['suave', 'Suave'], ['marcada', 'Marcada']], gfx.ao)}</div>`
+      + `<div class="row col"><div class="info"><b>Sombras del sol</b></div>${onoff('shadows')}</div>`
+      + `<div class="row col"><div class="info"><b>Resplandor</b><small>Brillo en luces, brasas y el horno.</small></div>${onoff('bloom')}</div>`
+      + `<div class="row col"><div class="info"><b>Viñeta</b><small>Bordes de la pantalla un poco más oscuros.</small></div>${onoff('vignette')}</div>`
+      + `<div class="row col"><div class="info"><b>Calidad</b><small>Alta: sombras más finas y bordes más suaves. Baja: mejor en celulares antiguos.</small></div>${seg('quality', [['alta', 'Alta'], ['baja', 'Baja']], gfx.quality)}</div>`
+      + `<div class="row col"><div class="info"><b>Mostrar cuadros por segundo</b><small>Útil para probar qué tan fluido va.</small></div>${onoff('fps')}</div>`
+      + '<div class="row"><button class="btn" data-act="gfxReset" style="width:100%">Volver a los valores recomendados</button></div>';
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
     h += `<h2>¡Musgo está libre!</h2><p>Talaste, construiste, fundiste metal, abriste el claro y desenterraste a Musgo en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}.</p>`
@@ -81,9 +96,21 @@ export function initSheetEvents() {
       toast(`Fabricaste: ${d.name}`); render(); return;
     }
     if (b.dataset.act === 'smelt' && arg) { smelt(arg); render(); return; }
-    if (b.dataset.act === 'quality') { setQuality(quality === 'alta' ? 'baja' : 'alta'); render(); return; }
+    if (b.dataset.act === 'gfx') { openSheet('gfx'); return; }
+    if (b.dataset.act === 'gfxReset') { resetGfx(); render(); return; }
+    if (b.dataset.set) {
+      const k = b.dataset.set, v = b.dataset.val!;
+      setGfx(k === 'ao' || k === 'quality' ? { [k]: v } as any : { [k]: v === '1' });
+      render(); return;
+    }
     if (b.dataset.act === 'reset') { confirmReset = true; render(); return; }
     if (b.dataset.act === 'reset2') { closeSheet(); onReset(); }
+  });
+  $('sheet').addEventListener('input', e => {
+    const el = e.target as HTMLInputElement;
+    if (el.id !== 'gTilt') return;
+    $('gTiltOut').textContent = el.value;
+    setGfx({ tilt: Number(el.value) / 100 });
   });
   on('finished', () => setTimeout(() => openSheet('fin'), 900));
 }
