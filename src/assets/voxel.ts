@@ -8,11 +8,18 @@ import { hash } from '../core/random';
 export const Q = 1 / 32;
 export const snap = (v: number) => Math.round(v / Q) * Q;
 
+/* Baked occlusion: undersides are dark and the lower edge of each side face is a little darker,
+   so canopies, roofs and stacked blocks read as solid without a screen-space AO pass. */
 function paint(g: THREE.BufferGeometry, col: THREE.ColorRepresentation) {
   const c = new THREE.Color(col);
-  const n = g.attributes.position.count;
+  const p = g.attributes.position, nr = g.attributes.normal, n = p.count;
+  let y0 = Infinity; for (let i = 0; i < n; i++) y0 = Math.min(y0, p.getY(i));
   const a = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+  for (let i = 0; i < n; i++) {
+    const ny = nr.getY(i);
+    const k = ny < -0.5 ? 0.58 : ny > 0.5 ? 1 : p.getY(i) - y0 < 1e-4 ? 0.8 : 1;
+    a[i * 3] = c.r * k; a[i * 3 + 1] = c.g * k; a[i * 3 + 2] = c.b * k;
+  }
   g.setAttribute('color', new THREE.BufferAttribute(a, 3));
 }
 
@@ -114,8 +121,9 @@ export const TEX = {
   }, 97),
 };
 
+// Lambert: the blocks are matte anyway, and it costs far less per pixel than the physical material
 const texMat = (map: THREE.Texture, boost = 1.14) =>
-  new THREE.MeshStandardMaterial({ vertexColors: true, map, roughness: 0.88, color: new THREE.Color(boost, boost, boost) });
+  new THREE.MeshLambertMaterial({ vertexColors: true, map, color: new THREE.Color(boost, boost, boost) });
 
 export const MAT = {
   leaf: texMat(TEX.leaf), needle: texMat(TEX.needle), bark: texMat(TEX.bark), birch: texMat(TEX.birch),

@@ -38,10 +38,15 @@ Para equilibrar el juego (costos, tiempos, probabilidades) se editan los archivo
 
 - **Terreno fusionado:** solo se generan las caras visibles de cada columna, agrupadas en una malla por material.
 - **Árboles instanciados:** todos los árboles de una misma forma se dibujan en una sola llamada, y cada uno conserva su vaivén, sacudida y caída.
-- **Post-proceso en una pasada:** [postprocessing](https://github.com/pmndrs/postprocessing) une bloom, efecto maqueta, viñeta y tono en un solo efecto; la oclusión ambiental es [N8AO](https://github.com/N8python/n8ao).
-- **Resolución dinámica:** si el celular no alcanza unos 45 cuadros por segundo, baja un poco la resolución interna antes de tocar los efectos.
+- **Sombra de contacto horneada:** las esquinas del terreno junto a columnas más altas, el pie de los acantilados y la parte de abajo de copas y techos se oscurecen al construir la malla (colores por vértice, al estilo de Minecraft). No cuesta nada por cuadro; la oclusión en pantalla (N8AO) queda como opción.
+- **Materiales Lambert:** los bloques son mates, así que se usa el material más liviano de Three.js en vez del físico.
+- **Sombras en caché:** el mapa de sombras se redibuja cada dos cuadros, o de inmediato cuando la cámara mueve el sol. Las matas y flores no proyectan sombra.
+- **Resolución:** en calidad Baja la isla se dibuja a 1,5× (la interfaz HTML queda nítida) y la resolución dinámica baja un poco más si hace falta.
+- **Límite de 60 cuadros por segundo** en pantallas de 120 Hz, para que el celular no se caliente.
+- **Post-proceso en una pasada:** [postprocessing](https://github.com/pmndrs/postprocessing) une bloom, efecto maqueta, viñeta y tono en un solo efecto.
+- **Agua estilizada:** un solo material con franjas de color por distancia a la costa, espuma animada y un fondo de arena que se ve en lo bajo.
 
-Resultado medido: de unas 3.800 llamadas de dibujo por cuadro en el corte vertical anterior a unas 220.
+Medido en la misma escena y resolución de pantalla de celular: la v0.6 tardaba 3,2 unidades por cuadro y la v0.7 tarda 0,73, unas 4,4 veces menos. Con `#debug`, `__isla.benchRender(n)` mide el costo real de dibujar un cuadro.
 
 ## Controles
 

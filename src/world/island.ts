@@ -116,7 +116,7 @@ export function generate(seed: number) {
 }
 
 /* ---------- terrain mesh: visible faces only, one merged mesh per material ---------- */
-type Bucket = { pos: number[]; nor: number[]; uv: number[]; idx: number[] };
+type Bucket = { pos: number[]; nor: number[]; uv: number[]; col: number[]; idx: number[] };
 let terrainMeshes: THREE.Mesh[] = [];
 export const tileProxies: THREE.Mesh[] = [];
 const proxyGroup = new THREE.Group();
@@ -125,7 +125,7 @@ scene.add(proxyGroup);
 const proxyGeo = new Map<number, THREE.BoxGeometry>();
 const proxyMat = new THREE.MeshBasicMaterial();
 
-function quad(b: Bucket, cx: number, cy: number, cz: number, n: number[], right: number[], up: number[], hw: number, hh: number, rot = 0) {
+function quad(b: Bucket, cx: number, cy: number, cz: number, n: number[], right: number[], up: number[], hw: number, hh: number, rot = 0, ao = [1, 1, 1, 1]) {
   const base = b.pos.length / 3;
   const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
   const uvs = [[0, 0], [1, 0], [1, 1], [0, 1]];
@@ -135,6 +135,7 @@ function quad(b: Bucket, cx: number, cy: number, cz: number, n: number[], right:
     b.nor.push(n[0], n[1], n[2]);
     const [u, v] = uvs[(k + rot) % 4];
     b.uv.push(u, v);
+    b.col.push(ao[k], ao[k], ao[k]);
   }
   b.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
 }
@@ -143,21 +144,32 @@ export function buildTerrain() {
   for (const m of terrainMeshes) { worldGroup.remove(m); m.geometry.dispose(); }
   terrainMeshes = [];
   const buckets = new Map<THREE.Material, Bucket>();
-  const B = (m: THREE.Material) => { let b = buckets.get(m); if (!b) { b = { pos: [], nor: [], uv: [], idx: [] }; buckets.set(m, b); } return b; };
+  const B = (m: THREE.Material) => { let b = buckets.get(m); if (!b) { b = { pos: [], nor: [], uv: [], col: [], idx: [] }; buckets.set(m, b); } return b; };
   const sides: { n: number[]; right: number[]; di: number; dj: number }[] = [
     { n: [1, 0, 0], right: [0, 0, -1], di: 1, dj: 0 }, { n: [-1, 0, 0], right: [0, 0, 1], di: -1, dj: 0 },
     { n: [0, 0, 1], right: [1, 0, 0], di: 0, dj: 1 }, { n: [0, 0, -1], right: [-1, 0, 0], di: 0, dj: -1 },
   ];
+  // baked ambient occlusion, voxel style: a top corner darkens for each taller neighbour touching it
+  const higher = (i: number, j: number, h: number) => { const n = tileAt(i, j); return n && n.h > h ? 1 : 0; };
+  const AO = [0.52, 0.68, 0.84, 1];
+  const cornerAO = (t: Tile, sx: number, sz: number) => {
+    const a = higher(t.i + sx, t.j, t.h), b = higher(t.i, t.j + sz, t.h), c = higher(t.i + sx, t.j + sz, t.h);
+    return AO[a && b ? 0 : 3 - (a + b + c)];
+  };
   for (const t of landTiles()) {
     const top = topMat(t.type, t.variant);
-    quad(B(top), t.wx, t.h * LEVEL, t.wz, [0, 1, 0], [1, 0, 0], [0, 0, -1], 0.5, 0.5, t.rot);
+    // quad corners in order: (-x,+z) (+x,+z) (+x,-z) (-x,-z) for right=+x, up=-z
+    const tao = [cornerAO(t, -1, 1), cornerAO(t, 1, 1), cornerAO(t, 1, -1), cornerAO(t, -1, -1)];
+    quad(B(top), t.wx, t.h * LEVEL, t.wz, [0, 1, 0], [1, 0, 0], [0, 0, -1], 0.5, 0.5, t.rot, tao);
     for (let l = 0; l <= t.h; l++) {
       const mat = l === t.h ? sideMatFor(t.type) : l === 0 ? SIDE_MAT.deep : SIDE_MAT.under;
       const cy = l * LEVEL - LEVEL / 2;
       for (const s of sides) {
         const nb = tileAt(t.i + s.di, t.j + s.dj);
         if (nb && nb.h >= l) continue; // hidden behind the neighbour column
-        quad(B(mat), t.wx + s.n[0] * 0.5, cy, t.wz + s.n[2] * 0.5, s.n, s.right, [0, 1, 0], 0.5, LEVEL / 2);
+        // the foot of a cliff, where it meets the lower ground, gets a soft dark band
+        const foot = nb && nb.h === l - 1 ? 0.62 : l === 0 ? 0.7 : 0.9;
+        quad(B(mat), t.wx + s.n[0] * 0.5, cy, t.wz + s.n[2] * 0.5, s.n, s.right, [0, 1, 0], 0.5, LEVEL / 2, 0, [foot, foot, 1, 1]);
       }
     }
   }
@@ -166,6 +178,7 @@ export function buildTerrain() {
     g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
     g.setAttribute('normal', new THREE.Float32BufferAttribute(b.nor, 3));
     g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(b.col, 3));
     g.setIndex(b.idx);
     g.computeBoundingSphere();
     const m = new THREE.Mesh(g, mat);
@@ -187,7 +200,7 @@ export const terrainDrawCalls = () => terrainMeshes.length;
 
 /* ---------- ground decoration: one instanced mesh ---------- */
 const decoGeo = new THREE.BoxGeometry(1, 1, 1);
-const decoMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9 });
+const decoMat = new THREE.MeshLambertMaterial({ color: '#ffffff' });
 let deco: THREE.InstancedMesh | null = null;
 export function rebuildDeco() {
   if (deco) { worldGroup.remove(deco); deco.dispose(); }
@@ -214,6 +227,6 @@ export function rebuildDeco() {
   deco = new THREE.InstancedMesh(decoGeo, decoMat, Math.max(1, list.length));
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), c = new THREE.Color();
   list.forEach((d, k) => { e.set(0, hash(k, 3) * Math.PI, 0); q.setFromEuler(e); m.compose(new THREE.Vector3(d[0], d[1], d[2]), q, new THREE.Vector3(d[3], d[4], d[5])); deco!.setMatrixAt(k, m); deco!.setColorAt(k, c.set(d[6])); });
-  deco.count = list.length; deco.castShadow = true; deco.receiveShadow = true;
+  deco.count = list.length; deco.castShadow = false; deco.receiveShadow = true; // tufts are too small for their shadows to show, and cost a lot in the shadow pass
   worldGroup.add(deco);
 }

@@ -73,6 +73,7 @@ Arci empieza sola. Musgo está enterrado en un claro rodeado por cuatro árboles
 ## Decisiones tomadas
 
 - Motor: Three.js + TypeScript + Vite, con build en un solo HTML.
-- Rendimiento: terreno fusionado, árboles instanciados, postprocessing + N8AO y resolución dinámica.
+- Rendimiento: terreno fusionado, árboles instanciados, sombra de contacto horneada, materiales Lambert, sombras en caché, 1,5× en calidad Baja, límite de 60 fps y resolución dinámica. N8AO queda opcional.
+- Agua: estilizada, sin reflejos reales; franjas por distancia a la costa, espuma y fondo de arena.
 - Plataforma principal: celular.
 - Estilo: voxel con texturas pixel, luz suave, oclusión ambiental y efecto maqueta.

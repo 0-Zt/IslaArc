@@ -10,13 +10,16 @@ import { makeCanvas, pixTex } from '../core/canvas';
 import { rng } from '../core/random';
 
 export const IS_TOUCH = matchMedia('(pointer:coarse)').matches || innerWidth < 820;
-const DPR_MAX = Math.min(devicePixelRatio || 1, IS_TOUCH ? 2 : 1.5);
+/* The 3D view renders at up to 1.5× on "Baja" and 2× on "Alta"; the interface is HTML, so it stays sharp at full resolution.
+   Pixel-art voxels hold up very well at 1.5×, and it is roughly half the pixels of 2×. */
+let DPR_MAX = Math.min(devicePixelRatio || 1, 1.5);
 
 /* ---------- renderer, scene, camera ---------- */
 export const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', stencil: false, depth: false });
 renderer.setPixelRatio(DPR_MAX);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.autoUpdate = false; // redrawn every other frame, or right away when the sun moves (see tickShadows)
 renderer.toneMapping = THREE.NoToneMapping; // done in the effect pass
 
 export const scene = new THREE.Scene();
@@ -67,7 +70,13 @@ export function placeSun() {
   rim.target.position.copy(c);
   const half = Math.min(16, (FR * Math.max(1, camera.right / FR)) / camera.zoom + 3);
   if (Math.abs(sc.right - half) > 0.5) { sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.updateProjectionMatrix(); }
+  if (!lastSun.equals(sun.position)) { lastSun.copy(sun.position); renderer.shadowMap.needsUpdate = true; }
 }
+const lastSun = new THREE.Vector3();
+/* Shadow cache: the island barely changes between two frames (only swaying leaves and walking figures),
+   so the shadow map is redrawn every other frame instead of every frame. */
+let shadowFrame = 0;
+export function tickShadows() { if (++shadowFrame % 2 === 0) renderer.shadowMap.needsUpdate = true; }
 
 /* ---------- smooth camera moves ---------- */
 let fly: { from: THREE.Vector3; to: THREE.Vector3; off: THREE.Vector3; z0: number; z1: number; t: number } | null = null;
@@ -84,24 +93,6 @@ export function tickFly(dt: number) {
   if (fly.t >= 1) fly = null;
 }
 
-/* ---------- water ---------- */
-export const waterTex = pixTex(makeCanvas(32, 32, (x, w, h) => {
-  const r = rng(5);
-  x.fillStyle = '#3a8fd6'; x.fillRect(0, 0, w, h);
-  for (let k = 0; k < 26; k++) { x.fillStyle = r() < 0.5 ? '#5aa8e8' : '#2f7cc4'; x.fillRect(Math.floor(r() * w), Math.floor(r() * h), 2 + Math.floor(r() * 3), 1); }
-  for (let k = 0; k < 5; k++) { x.fillStyle = '#9fd4ff'; x.fillRect(Math.floor(r() * w), Math.floor(r() * h), 2, 1); }
-}));
-waterTex.wrapS = waterTex.wrapT = THREE.RepeatWrapping;
-waterTex.repeat.set(50, 50);
-export const water = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({ map: waterTex, transparent: true, opacity: 0.9, roughness: 0.28 }),
-);
-water.rotation.x = -Math.PI / 2;
-water.position.y = 0.14;
-water.receiveShadow = true;
-scene.add(water);
-
 /* ---------- graphics settings (saved per device) ---------- */
 export type Quality = 'alta' | 'baja';
 export interface Gfx {
@@ -110,11 +101,18 @@ export interface Gfx {
   tiltFollow: boolean;     // focus band follows the selected figure
   ao: 'off' | 'suave' | 'marcada';
   bloom: boolean; vignette: boolean; shadows: boolean; fps: boolean;
+  cap60: boolean;          // never draw more than 60 frames per second (120 Hz phones heat up and throttle)
+  v?: number;
 }
 const GFX_KEY = 'isla-arcilla-gfx';
-export const GFX_DEFAULT: Gfx = { quality: IS_TOUCH ? 'baja' : 'alta', tilt: 0.35, tiltFollow: true, ao: 'suave', bloom: true, vignette: true, shadows: true, fps: false };
+export const GFX_DEFAULT: Gfx = { quality: IS_TOUCH ? 'baja' : 'alta', tilt: 0.35, tiltFollow: true, ao: 'off', bloom: true, vignette: true, shadows: true, fps: false, cap60: true, v: 2 };
 export const gfx: Gfx = { ...GFX_DEFAULT };
-try { Object.assign(gfx, JSON.parse(localStorage.getItem(GFX_KEY) || '{}')); } catch { /* storage may be blocked */ }
+try {
+  const saved = JSON.parse(localStorage.getItem(GFX_KEY) || '{}');
+  // v2: occlusion is baked into the blocks now, so the costly screen-space pass starts off
+  if (!saved.v) { delete saved.ao; saved.v = 2; }
+  Object.assign(gfx, saved);
+} catch { /* storage may be blocked */ }
 function saveGfx() { try { localStorage.setItem(GFX_KEY, JSON.stringify(gfx)); } catch { /* ignore */ } }
 
 /* ---------- post-processing: one render, AO, and one merged effect pass ---------- */
@@ -128,6 +126,8 @@ function tiltParams(t: number) { const focusArea = 0.6 - 0.36 * t; return { focu
 function buildComposer() {
   composer?.dispose();
   const high = gfx.quality === 'alta';
+  DPR_MAX = Math.min(devicePixelRatio || 1, high ? 2 : 1.5);
+  if (!prLocked) { pr = Math.min(pr, DPR_MAX); if (high) pr = DPR_MAX; renderer.setPixelRatio(pr); }
   composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType, multisampling: high ? 4 : 2 });
   composer.addPass(new RenderPass(scene, camera));
   if (gfx.ao !== 'off') {
@@ -153,6 +153,7 @@ function buildComposer() {
   sun.castShadow = gfx.shadows;
   sun.shadow.mapSize.set(high ? 2048 : 1024, high ? 2048 : 1024);
   if (sun.shadow.map) { sun.shadow.map.dispose(); (sun.shadow as any).map = null; }
+  renderer.shadowMap.needsUpdate = true;
 }
 
 /** Changes settings; only rebuilds the pipeline when an effect is switched on or off. */
@@ -180,9 +181,11 @@ export function focusOn(ndcY: number | null, dt: number, allSharp = false) {
 }
 
 /* ---------- dynamic resolution: keep frames smooth before touching the look ---------- */
-let pr = DPR_MAX, acc = 0, frames = 0;
+let prLocked = false;
+let pr = 1.5, acc = 0, frames = 0;
 const PR_MIN = 0.8;
 export function adaptResolution(rawDt: number) {
+  if (prLocked) return;
   acc += rawDt; frames++;
   if (acc < 1.2) return;
   const avg = acc / frames; acc = 0; frames = 0;
@@ -219,7 +222,7 @@ export function applyTime(k: TimeKey) {
   g.addColorStop(0, t.sky[0]); g.addColorStop(0.55, t.sky[1]); g.addColorStop(1, t.sky[2]);
   x.fillStyle = g; x.fillRect(0, 0, 4, 256); skyTex.needsUpdate = true;
   (scene.fog as THREE.Fog).color.set(t.fog);
-  hemi.color.set(t.hemi[0]); hemi.groundColor.set(t.hemi[1]); hemi.intensity = t.hemi[2];
+  hemi.color.set(t.hemi[0]); hemi.groundColor.set(t.hemi[1]); hemi.intensity = t.hemi[2] + t.env * 1.6; // stands in for the environment light the physical materials used to get
   sun.color.set(t.sun[0]); sun.intensity = t.sun[1]; sunEl = t.el;
   rim.color.set(t.rim[0]); rim.intensity = t.rim[1];
   scene.environmentIntensity = t.env; glowMul = t.glow;
@@ -227,3 +230,15 @@ export function applyTime(k: TimeKey) {
 }
 
 buildComposer();
+
+/* ---------- debug: timings for performance work ---------- */
+export function lockPixelRatio(v: number | null) { prLocked = v !== null; if (v !== null) { pr = v; renderer.setPixelRatio(v); composer.setSize(innerWidth, innerHeight); } }
+export function benchRender(n = 3, post = true, shadowEvery = 0) {
+  const gl = renderer.getContext(), px = new Uint8Array(4);
+  const sync = () => { renderer.setRenderTarget(null); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); };
+  sync();
+  const t0 = performance.now();
+  renderer.info.reset();
+  for (let k = 0; k < n; k++) { if (shadowEvery && k % shadowEvery === 0) renderer.shadowMap.needsUpdate = true; if (post) composer.render(0.016); else renderer.render(scene, camera); sync(); }
+  return { ms: (performance.now() - t0) / n, calls: Math.round(renderer.info.render.calls / n), tris: Math.round(renderer.info.render.triangles / n) };
+}

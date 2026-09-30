@@ -107,9 +107,9 @@ const SIDE_TEX = {
   }),
 };
 
-const std = (map: THREE.Texture) => new THREE.MeshStandardMaterial({ map, roughness: 0.95, metalness: 0 });
-export const SIDE_MAT = Object.fromEntries(Object.entries(SIDE_TEX).map(([k, t]) => [k, std(t)])) as Record<keyof typeof SIDE_TEX, THREE.MeshStandardMaterial>;
-const topCache = new Map<string, THREE.MeshStandardMaterial>();
+const std = (map: THREE.Texture) => new THREE.MeshLambertMaterial({ map, vertexColors: true }); // vertex colours carry the baked occlusion
+export const SIDE_MAT = Object.fromEntries(Object.entries(SIDE_TEX).map(([k, t]) => [k, std(t)])) as Record<keyof typeof SIDE_TEX, THREE.MeshLambertMaterial>;
+const topCache = new Map<string, THREE.MeshLambertMaterial>();
 export function topMat(type: string, variant: number) {
   const key = type + variant;
   let m = topCache.get(key);

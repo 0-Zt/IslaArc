@@ -62,16 +62,17 @@ function render() {
       + `<div class="row"><div class="info"><b>Nueva partida</b><small>Borra el progreso y empieza de cero.</small></div>${confirmReset ? '<button class="btn main" data-act="reset2">Sí, borrar</button>' : '<button class="btn" data-act="reset">Empezar de cero</button>'}</div>`;
   } else if (type === 'gfx') {
     const seg = (key: string, opts: [string, string][], cur: string) => `<div class="seg" role="group">${opts.map(([v, n]) => `<button data-set="${key}" data-val="${v}" class="${cur === v ? 'on' : ''}">${n}</button>`).join('')}</div>`;
-    const onoff = (key: 'bloom' | 'vignette' | 'shadows' | 'fps') => seg(key, [['1', 'Sí'], ['0', 'No']], gfx[key] ? '1' : '0');
+    const onoff = (key: 'bloom' | 'vignette' | 'shadows' | 'fps' | 'cap60') => seg(key, [['1', 'Sí'], ['0', 'No']], gfx[key] ? '1' : '0');
     h += '<h2>Ajustes gráficos</h2><p>Se guardan en este dispositivo.</p>'
       + `<div class="row col"><div class="info"><b>Efecto maqueta</b><small>Desenfoque arriba y abajo que da aspecto de miniatura. En 0 queda todo nítido.</small></div>
          <div class="slide"><input type="range" id="gTilt" min="0" max="100" step="5" value="${Math.round(gfx.tilt * 100)}" aria-label="Intensidad del efecto maqueta"><output id="gTiltOut">${Math.round(gfx.tilt * 100)}</output></div></div>`
       + `<div class="row col"><div class="info"><b>Enfoque</b><small>Dónde queda la franja nítida del efecto maqueta.</small></div>${seg('tiltFollow', [['1', 'Sigue a la figura'], ['0', 'Centro de pantalla']], gfx.tiltFollow ? '1' : '0')}</div>`
-      + `<div class="row col"><div class="info"><b>Sombra de contacto</b><small>Oscurece esquinas y uniones entre bloques. Es el efecto que más volumen da.</small></div>${seg('ao', [['off', 'Apagada'], ['suave', 'Suave'], ['marcada', 'Marcada']], gfx.ao)}</div>`
+      + `<div class="row col"><div class="info"><b>Sombra de contacto extra</b><small>Los bloques ya traen su sombra de contacto incluida. Esto suma una capa calculada en cada cuadro: se ve un poco más suave, pero es el efecto más pesado.</small></div>${seg('ao', [['off', 'No'], ['suave', 'Suave'], ['marcada', 'Marcada']], gfx.ao)}</div>`
       + `<div class="row col"><div class="info"><b>Sombras del sol</b></div>${onoff('shadows')}</div>`
       + `<div class="row col"><div class="info"><b>Resplandor</b><small>Brillo en luces, brasas y el horno.</small></div>${onoff('bloom')}</div>`
       + `<div class="row col"><div class="info"><b>Viñeta</b><small>Bordes de la pantalla un poco más oscuros.</small></div>${onoff('vignette')}</div>`
-      + `<div class="row col"><div class="info"><b>Calidad</b><small>Alta: sombras más finas y bordes más suaves. Baja: mejor en celulares antiguos.</small></div>${seg('quality', [['alta', 'Alta'], ['baja', 'Baja']], gfx.quality)}</div>`
+      + `<div class="row col"><div class="info"><b>Calidad</b><small>Alta: resolución completa y sombras más finas. Baja: la isla se dibuja a 1,5× (la interfaz sigue nítida), bastante más liviano.</small></div>${seg('quality', [['alta', 'Alta'], ['baja', 'Baja']], gfx.quality)}</div>`
+      + `<div class="row col"><div class="info"><b>Limitar a 60 cuadros por segundo</b><small>En pantallas de 120 Hz evita que el celular se caliente y se ponga lento.</small></div>${onoff('cap60')}</div>`
       + `<div class="row col"><div class="info"><b>Mostrar cuadros por segundo</b><small>Útil para probar qué tan fluido va.</small></div>${onoff('fps')}</div>`
       + '<div class="row"><button class="btn" data-act="gfxReset" style="width:100%">Volver a los valores recomendados</button></div>';
   } else if (type === 'expandir' && cell) {

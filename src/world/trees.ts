@@ -175,7 +175,7 @@ export const treeDrawCalls = () => [...combos.values()].filter(c => c.list.lengt
 
 /* ---------- falling leaves ---------- */
 const LEAF_N = 90;
-const leafMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.085, 0.012, 0.055), new THREE.MeshStandardMaterial({ roughness: 0.9, side: THREE.DoubleSide }), LEAF_N);
+const leafMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.085, 0.012, 0.055), new THREE.MeshLambertMaterial({ side: THREE.DoubleSide }), LEAF_N);
 leafMesh.count = 0; leafMesh.frustumCulled = false;
 worldGroup.parent!.add(leafMesh);
 const LEAF_COLS: Record<TreeType, string[]> = { roble: ['#4ea33c', '#6fc955', '#8ad96b', '#d8b84a'], abedul: ['#a8cf52', '#c4e070', '#e8d25a', '#f0b848'], pino: ['#2f6b3a', '#3b7d44'] };
