@@ -38,7 +38,7 @@ function render() {
           : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-place="${k}" ${afford(d.cost) ? '' : 'disabled'}>Ubicar</button>`) + '</div>';
     }
     const cheapest = Math.min(...(Object.keys(KINDS) as ExpandKind[]).map(k => expandCost(k).tierra || 0));
-    h += `<div class="row"><div class="thumb">${ICONS.expandir}</div><div class="info"><b>Expandir la isla</b><small>Rellena una casilla de mar junto a la costa. Desde ${cheapest} de tierra; la tierra se saca cavando en suelo café.</small></div><button class="btn main" data-act="expand">Elegir lugar</button></div>`;
+    h += `<div class="row"><div class="thumb">${ICONS.expandir}</div><div class="info"><b>Expandir la isla</b><small>Marca una o varias casillas de mar junto a la costa y una figura las rellena. Desde ${cheapest} de tierra cada una; la tierra se saca cavando en suelo café.</small></div><button class="btn main" data-act="expand">Marcar</button></div>`;
     h += '<h3>Jardín</h3>';
     h += `<div class="row"><div class="thumb">${ICONS.plantar}</div><div class="info"><b>Plantar semillas</b><small>${S.res.semilla > 0 ? `Tienes ${S.res.semilla}. Elige la especie y dónde plantar; crece sola.` : 'Las semillas salen al talar árboles grandes.'}</small></div><button class="btn${S.res.semilla > 0 ? ' main' : ''}" data-act="plant" ${S.res.semilla > 0 ? '' : 'disabled'}>Plantar</button></div>`;
     h += `<div class="row"><div class="thumb">${ICONS.sendero}</div><div class="info"><b>Senderos</b><small>Una figura cava el pasto con la pala. Ahí no crecen árboles y se camina más rápido.</small></div><button class="btn main" data-act="path">Trazar</button></div>`;

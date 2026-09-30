@@ -49,7 +49,7 @@ Arci empieza sola. Musgo está enterrado en un claro rodeado por cuatro árboles
 
 - **Tierra:** se cava en casillas de tierra o de piedras sueltas. Arrancar un tocón da 1 de tierra.
 - **Tocones:** un árbol talado deja un tocón que vuelve a crecer. Si se arranca con la pala, esa casilla queda limpia para siempre.
-- **Expansión:** en Construir, "Expandir la isla" marca casillas de agua junto a la costa. Una parcela de pradera cuesta tierra; una de playa, tierra y arena. Después una figura la rellena a paladas. Cada expansión sube un poco el costo de la siguiente.
+- **Expansión:** en Construir, "Expandir la isla" muestra las casillas de agua junto a la costa. Se eligen pradera (tierra) o playa (tierra y arena) y se marcan varias parcelas seguidas, incluso en tira hacia el mar; tocar una marcada la quita y devuelve los materiales. Al tocar Listo, la figura libre más cercana las rellena una tras otra. Cada parcela sube un poco el costo de la siguiente.
 - **Burbujas de estado:** muestran el horno fundiendo o listo, la casa cuando hay una herramienta que se puede fabricar, las figuras sin trabajo (zZ) y el avance de las parcelas.
 
 ## Bosque, semillas y senderos (v0.6)

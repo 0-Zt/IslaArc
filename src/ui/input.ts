@@ -4,14 +4,14 @@ import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
 import { tileProxies, topY, type Tile } from '../world/island';
 import { pickTree } from '../world/trees';
 import { rocks } from '../world/rocks';
-import { crew, selected, select, order, tileOf, type JobKind } from '../game/crew';
+import { crew, selected, select, order, tileOf, nextSite, type JobKind } from '../game/crew';
 import { buildings, place, movePlace, rotatePlace, cancelPlace, confirmPlace } from '../game/buildings';
 import { ancients, mound } from '../game/grove';
 import { stumps, sproutMeshes, growing, growthProgress } from '../game/forest';
 import { marks, markMode, toggleMark, exitMarkMode, nearestMark, type MarkKind } from '../game/marks';
-import { sites, expandMode, pickCell, exitExpandMode } from '../game/expansion';
+import { sites, expandMode, pickCell, exitExpandMode, startSite, cancelSite, refreshMarkers, expandCost, expandKind, setExpandKind, KINDS, type ExpandKind } from '../game/expansion';
 import { S } from '../game/state';
-import { $, toast, refreshHUD } from './hud';
+import { $, toast, refreshHUD, img } from './hud';
 import { openSheet, closeSheet, sheetOpen } from './sheets';
 import type { CharId } from '../assets/characters';
 
@@ -72,8 +72,19 @@ export function onTap(x: number, y: number) {
   aim(x, y);
   if (place) { const g = ray.intersectObjects(tileProxies, false)[0]; if (g) movePlace(g.object.userData.tile); return; }
   if (expandMode) {
+    // tapping a plot that is only marked takes it back (materials are returned)
+    const xh = ray.intersectObjects(sites.map(q => q.group), true)[0];
+    if (xh) {
+      let o: THREE.Object3D | null = xh.object; while (o && !o.userData.site) o = o.parent;
+      const st = o?.userData.site;
+      if (st && !cancelSite(st)) toast('Esa parcela ya se está rellenando');
+      refreshMarkers(); refreshExpandBar(); return;
+    }
     const cell = pickCell(ray);
-    if (cell) openSheet('expandir', null, cell); else toast('Toca una de las casillas de agua marcadas');
+    if (!cell) { toast('Toca una de las casillas de agua marcadas'); return; }
+    const r = startSite(cell[0], cell[1], expandKind);
+    if (typeof r === 'string') toast(r);
+    refreshMarkers(); refreshExpandBar();
     return;
   }
   if (markMode) {
@@ -103,6 +114,15 @@ export function onTap(x: number, y: number) {
 }
 
 let lastMode: MarkKind = 'plant';
+function refreshExpandBar() {
+  const pending = sites.filter(q => q.hits === 0).length;
+  const c = expandCost(expandKind);
+  const cost = Object.entries(c).map(([k, v]) => `${v} de ${k}`).join(' y ');
+  const t = `Toca el agua marcada para agregar parcelas (la siguiente cuesta ${cost}). Toca una parcela para quitarla.${pending ? ` Marcadas: ${pending}.` : ''}`;
+  const span = $('expandBar').querySelector('span')!; if (span.textContent !== t) span.textContent = t;
+  const h = (Object.keys(KINDS) as ExpandKind[]).map(k => `<button data-kind="${k}" class="${k === expandKind ? 'on' : ''}">${img(k === 'playa' ? 'arena' : 'tierra')}${KINDS[k].name}</button>`).join('');
+  const box = $('xKinds'); if (box.dataset.sig !== h) { box.dataset.sig = h; box.innerHTML = h; }
+}
 export function initInput() {
   const el = renderer.domElement;
   let down: { x: number; y: number; t: number; multi: boolean } | null = null;
@@ -122,9 +142,14 @@ export function initInput() {
     toast(`${r.type === 'casa' ? 'Casa construida' : 'Horno construido'}`); emit('changed');
   });
   $('xExit').addEventListener('click', () => { exitExpandMode(); exitMarkMode(); });
+  $('xKinds').addEventListener('click', e => {
+    const b = (e.target as HTMLElement).closest('[data-kind]') as HTMLElement | null; if (!b) return;
+    setExpandKind(b.dataset.kind as ExpandKind); refreshExpandBar();
+  });
+  on('changed', () => { if (expandMode) refreshExpandBar(); });
   on('markMode', (m: { kind: MarkKind } | null) => {
     $('bottom').hidden = !!m; $('expandBar').hidden = !m;
-    if (m) { $('expandBar').querySelector('span')!.textContent = m.kind === 'plant' ? 'Toca el pasto donde quieras un árbol. Toca una marca para quitarla.' : 'Toca el pasto para trazar el sendero. Toca una marca para quitarla.'; return; }
+    if (m) { $('xKinds').innerHTML = ''; $('xKinds').dataset.sig = ''; $('expandBar').querySelector('span')!.textContent = m.kind === 'plant' ? 'Toca el pasto donde quieras un árbol. Toca una marca para quitarla.' : 'Toca el pasto para trazar el sendero. Toca una marca para quitarla.'; return; }
     refreshHUD();
     // the nearest idle figure gets to work on the new marks
     const kind: MarkKind = lastMode;
@@ -140,8 +165,17 @@ export function initInput() {
   let before: { target: THREE.Vector3; zoom: number } | null = null;
   on('expandMode', (on_: boolean) => {
     $('bottom').hidden = on_; $('expandBar').hidden = !on_; refreshHUD();
-    if (on_) $('expandBar').querySelector('span')!.textContent = 'Toca una casilla de agua marcada para expandir la isla';
-    if (on_) { before = { target: controls.target.clone(), zoom: camera.zoom }; flyTo(new THREE.Vector3(0, 0.5, 0), Math.min(camera.zoom, innerWidth < innerHeight ? 0.5 : 0.8)); }
+    if (on_) refreshExpandBar();
+    else {
+      $('xKinds').innerHTML = ''; $('xKinds').dataset.sig = '';
+      // the nearest idle figure starts on the new plots
+      if (sites.length && !crew.some(c => c.job?.kind === 'fill')) {
+        const idle = crew.find(c => !c.job && !c.path.length);
+        if (idle) { nextSite(idle); if (idle.job?.kind === 'fill') toast(`${idle.def.name} va a rellenar ${sites.length === 1 ? 'la parcela' : `${sites.length} parcelas`}`); }
+        else toast('Toca una figura y luego una parcela para rellenarla');
+      }
+    }
+    if (on_) { before = { target: controls.target.clone(), zoom: camera.zoom }; flyTo(new THREE.Vector3(0, 0.5, 0), Math.min(camera.zoom, innerWidth < innerHeight ? 0.36 : 0.7)); }
     else if (before) { flyTo(before.target, before.zoom); before = null; }
   });
   on('placeChanged', (p: any) => {

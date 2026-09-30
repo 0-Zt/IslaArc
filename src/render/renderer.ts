@@ -39,7 +39,7 @@ camera.position.set(18, 17.5, 18);
 export const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.12;
-controls.minZoom = 0.45;
+controls.minZoom = 0.32;
 controls.maxZoom = 4;
 controls.minPolarAngle = 0.45;
 controls.maxPolarAngle = 1.2;

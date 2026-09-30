@@ -3,7 +3,7 @@ import { on, emit } from '../core/events';
 import { camera } from '../render/renderer';
 import { buildings, smokePoint, type Building } from '../game/buildings';
 import { crew, select, selected, type Crew } from '../game/crew';
-import { sites } from '../game/expansion';
+import { sites, expandMode } from '../game/expansion';
 import { marks } from '../game/marks';
 import { S, DATA, afford } from '../game/state';
 import { ICON } from './hud';
@@ -85,7 +85,7 @@ export function tickLabels() {
     show(c, at.clone(), '<b class="zz">z<small>z</small>z</b>', 'idle', `${c.def.name} no tiene trabajo`, () => select(c.id));
   }
 
-  for (const s of sites) {
+  for (const s of expandMode ? [] : sites) {
     const worker = crew.find(c => c.job?.tile === s.tile);
     const at = _v.set(s.tile.wx, 1.05, s.tile.wz);
     const pct = Math.round(s.hits / DATA.BALANCE.fillHits * 100);

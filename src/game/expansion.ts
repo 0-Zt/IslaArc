@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { emit } from '../core/events';
 import { scene } from '../render/renderer';
-import { worldGroup, tileWorld, canExpand, addLand, buildTerrain, rebuildDeco, landTiles, DIRS, type Tile } from '../world/island';
+import { worldGroup, tileWorld, inGrid, tileAt, addLand, buildTerrain, rebuildDeco, DIRS, type Tile } from '../world/island';
 import { vbox } from '../assets/voxel';
 import { group } from '../assets/buildings';
 import { puff } from '../world/particles';
@@ -13,12 +13,12 @@ import { S, DATA, afford, pay, type Cost } from './state';
 
 export type ExpandKind = keyof typeof EXPANSION;
 export const KINDS = EXPANSION;
-export interface Site { i: number; j: number; kind: ExpandKind; hits: number; tile: Tile; group: THREE.Group; fill: THREE.Mesh }
+export interface Site { i: number; j: number; kind: ExpandKind; hits: number; tile: Tile; group: THREE.Group; fill: THREE.Mesh; cost: Cost }
 export const sites: Site[] = [];
 
-/** Each finished expansion makes the next one cost a little more soil. */
+/** Each expansion, finished or marked, makes the next one cost a little more soil. */
 export function expandCost(kind: ExpandKind): Cost {
-  const extra = DATA.BALANCE.expandCostStep * S.expanded.length;
+  const extra = DATA.BALANCE.expandCostStep * (S.expanded.length + sites.length);
   const c: Cost = { ...(KINDS[kind].cost as Cost) };
   c.tierra = (c.tierra || 0) + extra;
   return c;
@@ -44,29 +44,44 @@ function setFill(s: Site) {
   s.fill.scale.y = Math.max(0.01, h); s.fill.position.y = top - h / 2;
 }
 
-function makeSite(i: number, j: number, kind: ExpandKind, hits = 0) {
+function makeSite(i: number, j: number, kind: ExpandKind, hits = 0, cost: Cost = {}) {
   const [wx, wz] = tileWorld(i, j);
   const tile = { i, j, h: 1, type: 'site', variant: 0, rot: 0, wx, wz } as Tile;
   const { g, fill } = siteModel(kind);
   g.position.set(wx, 0, wz);
-  const s: Site = { i, j, kind, hits, tile, group: g, fill };
+  const s: Site = { i, j, kind, hits, tile, group: g, fill, cost };
   g.traverse(o => { o.userData.site = s; });
   (tile as any).site = s;
   worldGroup.add(g); sites.push(s); setFill(s);
   return s;
 }
 
+const siteAt = (i: number, j: number) => sites.find(s => s.i === i && s.j === j);
+/** Water cell that touches the coast, or a plot already marked, so a strip can be drawn out to sea. */
+export const canMark = (i: number, j: number) => inGrid(i, j) && !tileAt(i, j) && !siteAt(i, j) && DIRS.some(([a, b]) => tileAt(i + a, j + b) || siteAt(i + a, j + b));
+
 /** Pays and marks a plot. Returns a reason when it cannot. */
 export function startSite(i: number, j: number, kind: ExpandKind): Site | string {
-  if (!canExpand(i, j) || sites.some(s => s.i === i && s.j === j)) return 'Ahí no se puede expandir';
+  if (!canMark(i, j)) return 'Ahí no se puede expandir';
   const cost = expandCost(kind);
-  if (!afford(cost)) return 'Te faltan materiales';
+  if (!afford(cost)) return 'No te alcanza para otra parcela';
   pay(cost);
-  const s = makeSite(i, j, kind);
-  S.sites.push({ i, j, kind, hits: 0 });
+  const s = makeSite(i, j, kind, 0, cost);
+  S.sites.push({ i, j, kind, hits: 0, cost } as any);
   puff(s.tile.wx, 0.3, s.tile.wz, '#9fd4ff', 10, 1.6, 1.4);
   emit('siteChanged'); emit('changed');
   return s;
+}
+
+/** Removes a plot nobody has started filling, and gives its materials back. */
+export function cancelSite(s: Site) {
+  if (s.hits > 0) return false;
+  worldGroup.remove(s.group); sites.splice(sites.indexOf(s), 1);
+  S.sites = S.sites.filter(q => !(q.i === s.i && q.j === s.j));
+  for (const [k, v] of Object.entries(s.cost)) S.res[k as keyof typeof S.res] += v as number;
+  puff(s.tile.wx, 0.3, s.tile.wz, '#9fd4ff', 6, 1.2, 1);
+  emit('siteChanged'); emit('changed');
+  return true;
 }
 
 /** One shovelful. Returns true when the plot becomes land. */
@@ -90,31 +105,34 @@ export function fillHit(s: Site) {
 export function restoreExpansions() {
   for (const e of S.expanded) addLand(e.i, e.j, KINDS[e.kind as ExpandKind]?.tile || 'pasto');
 }
-export function restoreSites() { for (const s of S.sites) makeSite(s.i, s.j, s.kind as ExpandKind, s.hits); }
+export function restoreSites() { for (const s of S.sites as any[]) makeSite(s.i, s.j, s.kind as ExpandKind, s.hits, s.cost || {}); }
 export function clearSites() { for (const s of sites) worldGroup.remove(s.group); sites.length = 0; }
 
 /* ---------- expand mode: sea cells that can become land glow softly ---------- */
 export let expandMode = false;
+export let expandKind: ExpandKind = 'pradera';
+export function setExpandKind(k: ExpandKind) { expandKind = k; emit('changed'); }
 const markerGeo = new THREE.PlaneGeometry(0.9, 0.9); markerGeo.rotateX(-Math.PI / 2);
-const markerTex = new THREE.CanvasTexture((() => { const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d')!; x.fillStyle = 'rgba(255,236,150,0.35)'; x.fillRect(0, 0, 32, 32); x.strokeStyle = '#ffe07a'; x.lineWidth = 4; x.strokeRect(2, 2, 28, 28); return c; })());
+const markerTex = new THREE.CanvasTexture((() => { const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d')!; x.fillStyle = 'rgba(255,214,90,0.55)'; x.fillRect(0, 0, 32, 32); x.strokeStyle = '#fff2b0'; x.lineWidth = 5; x.strokeRect(3, 3, 26, 26); return c; })());
 markerTex.colorSpace = THREE.SRGBColorSpace;
-const markerMat = new THREE.MeshBasicMaterial({ map: markerTex, transparent: true, opacity: 0.9, depthWrite: false, fog: false });
+const markerMat = new THREE.MeshBasicMaterial({ map: markerTex, transparent: true, opacity: 1, depthWrite: false, depthTest: false, fog: false, toneMapped: false });
 let markers: THREE.InstancedMesh | null = null;
 let cells: [number, number][] = [];
-export function enterExpandMode() {
-  exitExpandMode();
-  const seen = new Set<string>();
+/** Rebuilds the glowing cells: every water cell next to land or to a marked plot. */
+export function refreshMarkers() {
+  if (markers) { scene.remove(markers); markers.dispose(); markers = null; }
   cells = [];
-  for (const t of landTiles()) for (const [a, b] of DIRS) {
-    const i = t.i + a, j = t.j + b, k = `${i},${j}`;
-    if (seen.has(k) || !canExpand(i, j) || sites.some(s => s.i === i && s.j === j)) continue;
-    seen.add(k); cells.push([i, j]);
-  }
+  for (let j = 0; j < 64; j++) for (let i = 0; i < 64; i++) if (canMark(i, j)) cells.push([i, j]);
   markers = new THREE.InstancedMesh(markerGeo, markerMat, Math.max(1, cells.length));
   const m = new THREE.Matrix4();
-  cells.forEach(([i, j], k) => { const [x, z] = tileWorld(i, j); m.makeTranslation(x, 0.18, z); markers!.setMatrixAt(k, m); });
+  cells.forEach(([i, j], k) => { const [x, z] = tileWorld(i, j); m.makeTranslation(x, 0.2, z); markers!.setMatrixAt(k, m); });
   markers.count = cells.length; markers.renderOrder = 4;
-  scene.add(markers); expandMode = true; emit('expandMode', true);
+  scene.add(markers);
+}
+export function enterExpandMode() {
+  exitExpandMode();
+  refreshMarkers();
+  expandMode = true; emit('expandMode', true);
 }
 export function exitExpandMode() {
   if (markers) { scene.remove(markers); markers.dispose(); markers = null; }
@@ -125,4 +143,4 @@ export function pickCell(ray: THREE.Raycaster): [number, number] | null {
   const h = ray.intersectObject(markers, false)[0];
   return h && h.instanceId != null ? cells[h.instanceId] : null;
 }
-export function pulseMarkers(T: number) { markerMat.opacity = 0.75 + 0.25 * Math.sin(T * 4); }
+export function pulseMarkers(T: number) { markerMat.opacity = 0.8 + 0.2 * Math.sin(T * 4); }

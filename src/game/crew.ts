@@ -10,7 +10,7 @@ import { buildFigure, type CharId, type Figure, type ToolKey } from '../assets/c
 import { hitAncient, digMound, type Ancient } from './grove';
 import { removeStump } from './forest';
 import { completeMark, nearestMark, type Mark, type MarkKind } from './marks';
-import { fillHit, type Site } from './expansion';
+import { fillHit, sites, type Site } from './expansion';
 import { S, DATA, gain } from './state';
 import type { Building } from './buildings';
 
@@ -109,6 +109,14 @@ function nextMark(c: Crew, kind: MarkKind) {
   const m = here && nearestMark(here, kind, t => crew.some(o => o !== c && o.job?.tile === t));
   if (!m || order(c, m.tile, kind) !== true) stop(c);
 }
+/** After filling a plot, the figure walks on to the nearest plot that still needs filling. */
+export function nextSite(c: Crew) {
+  const here = tileOf(c); if (!here) { stop(c); return; }
+  const free = sites.filter(s => !crew.some(o => o !== c && o.job?.tile === s.tile))
+    .sort((a, b) => (Math.abs(a.i - here.i) + Math.abs(a.j - here.j)) - (Math.abs(b.i - here.i) + Math.abs(b.j - here.j)));
+  for (const s of free) if (order(c, s.tile, 'fill') === true) return;
+  stop(c);
+}
 function nextTree(c: Crew) {
   const t = nearestTile(c, t => !!t.tree && !t.tree.falling && !crew.some(o => o !== c && o.job?.tile === t));
   if (!t || order(c, t, 'tree') !== true) stop(c);
@@ -165,7 +173,7 @@ function onWorkHit(c: Crew) {
     case 'fill': {
       const s: Site | undefined = (j.tile as any).site;
       if (!s || !s.group.parent) { stop(c); return; }
-      if (fillHit(s)) { stop(c); emit('toast', 'La isla creció una casilla'); }
+      if (fillHit(s)) { emit('toast', 'La isla creció una casilla'); nextSite(c); }
       break;
     }
     case 'plant': case 'path': {
