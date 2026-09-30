@@ -126,3 +126,6 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .bubble .zz small{font-size:11px}
 .bubble.wait{border-color:var(--sun)}
 .bubble.wait small{color:var(--text)}
+
+#topBtns{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+#clock{pointer-events:auto;width:36px;height:30px;border-radius:10px;background:var(--glass);border:1.5px solid var(--line);display:grid;place-items:center;padding:0}

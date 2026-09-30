@@ -101,11 +101,12 @@ export interface Gfx {
   tiltFollow: boolean;     // focus band follows the selected figure
   ao: 'off' | 'suave' | 'marcada';
   bloom: boolean; vignette: boolean; shadows: boolean; fps: boolean;
+  daycycle: boolean;       // the day turns into night and back
   cap60: boolean;          // never draw more than 60 frames per second (120 Hz phones heat up and throttle)
   v?: number;
 }
 const GFX_KEY = 'isla-arcilla-gfx';
-export const GFX_DEFAULT: Gfx = { quality: IS_TOUCH ? 'baja' : 'alta', tilt: 0.35, tiltFollow: true, ao: 'off', bloom: true, vignette: true, shadows: true, fps: false, cap60: true, v: 2 };
+export const GFX_DEFAULT: Gfx = { quality: IS_TOUCH ? 'baja' : 'alta', tilt: 0.35, tiltFollow: true, ao: 'off', bloom: true, vignette: true, shadows: true, fps: false, cap60: true, daycycle: true, v: 2 };
 export const gfx: Gfx = { ...GFX_DEFAULT };
 try {
   const saved = JSON.parse(localStorage.getItem(GFX_KEY) || '{}');
@@ -215,19 +216,32 @@ const TIMES = {
 } as const;
 export type TimeKey = keyof typeof TIMES;
 export let glowMul = 1;
-export function applyTime(k: TimeKey) {
-  const t = TIMES[k];
-  const x = skyCanvas.getContext('2d')!;
-  const g = x.createLinearGradient(0, 0, 0, 256);
-  g.addColorStop(0, t.sky[0]); g.addColorStop(0.55, t.sky[1]); g.addColorStop(1, t.sky[2]);
-  x.fillStyle = g; x.fillRect(0, 0, 4, 256); skyTex.needsUpdate = true;
-  (scene.fog as THREE.Fog).color.set(t.fog);
-  hemi.color.set(t.hemi[0]); hemi.groundColor.set(t.hemi[1]); hemi.intensity = t.hemi[2] + t.env * 1.6; // stands in for the environment light the physical materials used to get
-  sun.color.set(t.sun[0]); sun.intensity = t.sun[1]; sunEl = t.el;
-  rim.color.set(t.rim[0]); rim.intensity = t.rim[1];
-  scene.environmentIntensity = t.env; glowMul = t.glow;
+type Preset = (typeof TIMES)[TimeKey];
+const _ca = new THREE.Color(), _cb = new THREE.Color();
+const mixHex = (a: string, b: string, k: number) => '#' + _ca.set(a).lerp(_cb.set(b), k).getHexString();
+let skySig = '';
+/** Lighting between two presets (k = 0 → a, 1 → b). The day-night cycle calls this every few frames. */
+export function applyBlend(ka: TimeKey, kb: TimeKey, k: number, azimuth = 35) {
+  const a: Preset = TIMES[ka], b: Preset = TIMES[kb], L = (x: number, y: number) => x + (y - x) * k;
+  const sky = [0, 1, 2].map(i => mixHex(a.sky[i], b.sky[i], k));
+  const sig = sky.join();
+  if (sig !== skySig) {
+    skySig = sig;
+    const x = skyCanvas.getContext('2d')!;
+    const g = x.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, sky[0]); g.addColorStop(0.55, sky[1]); g.addColorStop(1, sky[2]);
+    x.fillStyle = g; x.fillRect(0, 0, 4, 256); skyTex.needsUpdate = true;
+  }
+  (scene.fog as THREE.Fog).color.set(mixHex(a.fog, b.fog, k));
+  hemi.color.set(mixHex(a.hemi[0], b.hemi[0], k)); hemi.groundColor.set(mixHex(a.hemi[1], b.hemi[1], k));
+  const env = L(a.env, b.env);
+  hemi.intensity = L(a.hemi[2], b.hemi[2]) + env * 1.6; // stands in for the environment light the physical materials used to get
+  sun.color.set(mixHex(a.sun[0], b.sun[0], k)); sun.intensity = L(a.sun[1], b.sun[1]); sunEl = L(a.el, b.el); sunAz = azimuth;
+  rim.color.set(mixHex(a.rim[0], b.rim[0], k)); rim.intensity = L(a.rim[1], b.rim[1]);
+  scene.environmentIntensity = env; glowMul = L(a.glow, b.glow);
   placeSun();
 }
+export function applyTime(k: TimeKey) { applyBlend(k, k, 0); }
 
 buildComposer();
 

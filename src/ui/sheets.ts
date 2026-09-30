@@ -1,10 +1,11 @@
 import { on } from '../core/events';
 import { gfx, setGfx, resetGfx } from '../render/renderer';
 import { S, DATA, afford, pay, type Cost, type ResKey } from '../game/state';
-import { buildings, has, smelt, startPlace, buildingDef, type Building } from '../game/buildings';
+import { buildings, has, smelt, startPlace, buildingDef, isDone, type Building } from '../game/buildings';
 import { refreshTools } from '../game/crew';
 import { KINDS, expandCost, startSite, enterExpandMode, exitExpandMode, type ExpandKind } from '../game/expansion';
 import { enterMarkMode } from '../game/marks';
+import { refreshDay } from '../render/daynight';
 import { ICONS } from '../assets/buildings';
 import { $, img, toast } from './hud';
 import type { Tile } from '../world/island';
@@ -23,20 +24,27 @@ export function closeSheet() { type = null; $('sheet').hidden = true; }
 
 const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => `<span class="${S.res[k as ResKey] >= (v as number) ? '' : 'no'}">${img(k as ResKey)}${S.res[k as ResKey]}/${v}</span>`).join('')}</div>`;
 // the settings sheet never re-renders by itself, so sliders keep working while dragged
-const signature = () => type === 'gfx' ? 'gfx' : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type), arg?.queue, S.expanded.length]);
+const signature = () => type === 'gfx' ? 'gfx' : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.queue, S.expanded.length]);
 
 function render() {
   sig = signature();
   let h = '<div class="grab"></div><button class="x" data-act="close" aria-label="Cerrar">×</button>';
   if (type === 'build') {
-    h += '<h2>Construir</h2><p>Elige un edificio y ubícalo en la isla. La guía amarilla muestra dónde cabe.</p>';
-    for (const [k, d] of Object.entries(DATA.BUILDINGS) as [string, any][]) {
-      const built = has(k), locked = d.requires && !has(d.requires);
+    h += '<h2>Construir</h2><p>Paga los materiales, ubica la obra con la guía amarilla y una figura la levanta a martillazos.</p>';
+    const row = (k: string, d: any) => {
+      const count = buildings.filter(b => b.type === k).length, working = buildings.some(b => b.type === k && !isDone(b));
+      const unique = !d.deco, built = unique && count > 0, locked = d.requires && !has(d.requires);
       const size = d.size[0] * d.size[1] > 1 ? ` · ocupa ${d.size[0]}×${d.size[1]}` : '';
-      h += `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${d.name}</b><small>${d.desc}${size}</small>${built ? '' : costHTML(d.cost)}</div>`
-        + (built ? '<span class="done">Construida</span>' : locked ? `<span class="done" style="color:var(--muted)">Necesita ${buildingDef(d.requires).name.toLowerCase()}</span>`
+      const extra = d.deco && count ? ` · tienes ${count}` : '';
+      return `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${d.name}</b><small>${d.desc}${size}${extra}</small>${built ? '' : costHTML(d.cost)}</div>`
+        + (built ? `<span class="done">${working ? 'En obra' : 'Construida'}</span>` : locked ? `<span class="done" style="color:var(--muted)">Necesita ${buildingDef(d.requires).name.toLowerCase()}</span>`
           : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-place="${k}" ${afford(d.cost) ? '' : 'disabled'}>Ubicar</button>`) + '</div>';
-    }
+    };
+    const all = Object.entries(DATA.BUILDINGS) as [string, any][];
+    for (const [k, d] of all) if (!d.deco) h += row(k, d);
+    h += '<h3>Decoración</h3>';
+    for (const [k, d] of all) if (d.deco) h += row(k, d);
+    h += '<h3>Isla</h3>';
     const cheapest = Math.min(...(Object.keys(KINDS) as ExpandKind[]).map(k => expandCost(k).tierra || 0));
     h += `<div class="row"><div class="thumb">${ICONS.expandir}</div><div class="info"><b>Expandir la isla</b><small>Marca una o varias casillas de mar junto a la costa y una figura las rellena. Desde ${cheapest} de tierra cada una; la tierra se saca cavando en suelo café.</small></div><button class="btn main" data-act="expand">Marcar</button></div>`;
     h += '<h3>Jardín</h3>';
@@ -62,7 +70,7 @@ function render() {
       + `<div class="row"><div class="info"><b>Nueva partida</b><small>Borra el progreso y empieza de cero.</small></div>${confirmReset ? '<button class="btn main" data-act="reset2">Sí, borrar</button>' : '<button class="btn" data-act="reset">Empezar de cero</button>'}</div>`;
   } else if (type === 'gfx') {
     const seg = (key: string, opts: [string, string][], cur: string) => `<div class="seg" role="group">${opts.map(([v, n]) => `<button data-set="${key}" data-val="${v}" class="${cur === v ? 'on' : ''}">${n}</button>`).join('')}</div>`;
-    const onoff = (key: 'bloom' | 'vignette' | 'shadows' | 'fps' | 'cap60') => seg(key, [['1', 'Sí'], ['0', 'No']], gfx[key] ? '1' : '0');
+    const onoff = (key: 'bloom' | 'vignette' | 'shadows' | 'fps' | 'cap60' | 'daycycle') => seg(key, [['1', 'Sí'], ['0', 'No']], gfx[key] ? '1' : '0');
     h += '<h2>Ajustes gráficos</h2><p>Se guardan en este dispositivo.</p>'
       + `<div class="row col"><div class="info"><b>Efecto maqueta</b><small>Desenfoque arriba y abajo que da aspecto de miniatura. En 0 queda todo nítido.</small></div>
          <div class="slide"><input type="range" id="gTilt" min="0" max="100" step="5" value="${Math.round(gfx.tilt * 100)}" aria-label="Intensidad del efecto maqueta"><output id="gTiltOut">${Math.round(gfx.tilt * 100)}</output></div></div>`
@@ -72,6 +80,7 @@ function render() {
       + `<div class="row col"><div class="info"><b>Resplandor</b><small>Brillo en luces, brasas y el horno.</small></div>${onoff('bloom')}</div>`
       + `<div class="row col"><div class="info"><b>Viñeta</b><small>Bordes de la pantalla un poco más oscuros.</small></div>${onoff('vignette')}</div>`
       + `<div class="row col"><div class="info"><b>Calidad</b><small>Alta: resolución completa y sombras más finas. Baja: la isla se dibuja a 1,5× (la interfaz sigue nítida), bastante más liviano.</small></div>${seg('quality', [['alta', 'Alta'], ['baja', 'Baja']], gfx.quality)}</div>`
+      + `<div class="row col"><div class="info"><b>Ciclo de día y noche</b><small>Un día completo dura unos ${DATA.BALANCE.dayMinutes} minutos. Algunas cosas solo pasan de noche.</small></div>${onoff('daycycle')}</div>`
       + `<div class="row col"><div class="info"><b>Limitar a 60 cuadros por segundo</b><small>En pantallas de 120 Hz evita que el celular se caliente y se ponga lento.</small></div>${onoff('cap60')}</div>`
       + `<div class="row col"><div class="info"><b>Mostrar cuadros por segundo</b><small>Útil para probar qué tan fluido va.</small></div>${onoff('fps')}</div>`
       + '<div class="row"><button class="btn" data-act="gfxReset" style="width:100%">Volver a los valores recomendados</button></div>';
@@ -128,6 +137,7 @@ export function initSheetEvents() {
     if (b.dataset.set) {
       const k = b.dataset.set, v = b.dataset.val!;
       setGfx(k === 'ao' || k === 'quality' ? { [k]: v } as any : { [k]: v === '1' });
+      if (k === 'daycycle') refreshDay();
       render(); return;
     }
     if (b.dataset.act === 'reset') { confirmReset = true; render(); return; }

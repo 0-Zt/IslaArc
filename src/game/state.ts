@@ -12,7 +12,7 @@ export type ResKey = keyof typeof RESOURCES;
 export const RES_KEYS = Object.keys(RESOURCES) as ResKey[];
 export type Cost = Partial<Record<ResKey, number>>;
 
-export interface SavedBuilding { type: string; i: number; j: number; rot: number; queue: number; prog: number }
+export interface SavedBuilding { type: string; i: number; j: number; rot: number; queue: number; prog: number; work?: number }
 export interface State {
   res: Record<ResKey, number>;
   got: Record<ResKey, number>;
@@ -31,12 +31,13 @@ export interface State {
   paths: string[];                     // grass tiles turned into dirt paths ("i,j")
   marks: { i: number; j: number; kind: 'plant' | 'path'; type?: string }[];  // orders waiting for a figure
   time: number;
+  clock: number;                       // time of day, 0..1 (0 = morning)
   done: boolean;
 }
 
 const zero = () => Object.fromEntries(RES_KEYS.map(k => [k, 0])) as Record<ResKey, number>;
 export function freshState(): State {
-  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], grown: [], paths: [], marks: [], time: 0, done: false };
+  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], grown: [], paths: [], marks: [], time: 0, clock: 0.04, done: false };
 }
 export let S: State = freshState();
 export function setState(s: State) { S = s; }

@@ -12,9 +12,9 @@ import { removeStump } from './forest';
 import { completeMark, nearestMark, type Mark, type MarkKind } from './marks';
 import { fillHit, sites, type Site } from './expansion';
 import { S, DATA, gain } from './state';
-import type { Building } from './buildings';
+import { buildings, buildHit, isDone, type Building } from './buildings';
 
-export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'plant' | 'path' | 'walk';
+export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'plant' | 'path' | 'build' | 'walk';
 export interface Job { kind: JobKind; tile: Tile }
 export interface Crew extends Figure {
   job: Job | null; path: Tile[]; anim: 'idle' | 'walk' | 'work' | 'wave';
@@ -49,7 +49,7 @@ export function clearCrew() { for (const c of crew) scene.remove(c.root); crew.l
 
 function setAnim(c: Crew, a: Crew['anim']) { if (c.anim !== a) { c.anim = a; c.t = 0; c.workHit = false; } }
 function setTool(c: Crew, kind: JobKind) {
-  c.toolKey = kind === 'tree' || kind === 'ancient' ? (S.tools.hacha ? 'axeM' : 'axe') : kind === 'rock' ? (S.tools.pico ? 'pickM' : 'pick') : 'shovel';
+  c.toolKey = kind === 'tree' || kind === 'ancient' ? (S.tools.hacha ? 'axeM' : 'axe') : kind === 'rock' ? (S.tools.pico ? 'pickM' : 'pick') : kind === 'build' ? 'hammer' : 'shovel';
 }
 export function refreshTools() { for (const c of crew) if (c.job) setTool(c, c.job.kind); }
 
@@ -74,7 +74,10 @@ export function bfs(start: Tile, goal: (t: Tile) => boolean): Tile[] | null {
 export function order(c: Crew, tile: Tile, kind: JobKind): true | string {
   const here = tileOf(c); if (!here) return 'No hay camino hasta ahí';
   const standOn = kind === 'walk' || kind === 'sand' || kind === 'soil' || kind === 'path';
-  const reach = standOn ? (t: Tile) => t === tile : (t: Tile) => adjacent(t, tile) && Math.abs(t.h - tile.h) <= 1;
+  const b: Building | undefined = kind === 'build' ? tile.building : undefined;
+  const reach = standOn ? (t: Tile) => t === tile
+    : b ? (t: Tile) => b.tiles.some(q => adjacent(t, q) && Math.abs(t.h - q.h) <= 1)   // any side of a building site
+    : (t: Tile) => adjacent(t, tile) && Math.abs(t.h - tile.h) <= 1;
   const path = bfs(here, reach);
   if (!path) return kind === 'dig' ? 'Los árboles antiguos no dejan pasar' : 'No hay camino hasta ahí';
   c.job = { kind, tile }; c.path = path; c.hits = 0;
@@ -86,7 +89,8 @@ function arrive(c: Crew) {
   const j = c.job;
   if (!j || j.kind === 'walk') { c.job = null; setAnim(c, 'idle'); emit('changed'); return; }
   const p = c.root.position;
-  if (j.kind !== 'sand' && j.kind !== 'soil' && j.kind !== 'path') c.dir = Math.atan2(j.tile.wx - p.x, j.tile.wz - p.z);
+  if (j.kind === 'build' && j.tile.building) { const bt = j.tile.building.tiles as Tile[]; const n = bt.reduce((a, q) => Math.hypot(q.wx - p.x, q.wz - p.z) < Math.hypot(a.wx - p.x, a.wz - p.z) ? q : a, bt[0]); c.dir = Math.atan2(n.wx - p.x, n.wz - p.z); }
+  else if (j.kind !== 'sand' && j.kind !== 'soil' && j.kind !== 'path') c.dir = Math.atan2(j.tile.wx - p.x, j.tile.wz - p.z);
   setTool(c, j.kind); setAnim(c, 'work'); emit('changed');
 }
 function stop(c: Crew) { c.job = null; c.path = []; setAnim(c, 'idle'); emit('changed'); }
@@ -94,7 +98,7 @@ function stop(c: Crew) { c.job = null; c.path = []; setAnim(c, 'idle'); emit('ch
 export function statusOf(c: Crew) {
   if (c.path.length) return 'Caminando';
   const j = c.job; if (!j) return 'Esperando órdenes';
-  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', plant: 'Plantando', path: 'Haciendo sendero', walk: 'Esperando' } as const)[j.kind];
+  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', plant: 'Plantando', path: 'Haciendo sendero', build: 'Construyendo', walk: 'Esperando' } as const)[j.kind];
 }
 
 function nearestTile(c: Crew, test: (t: Tile) => boolean, max = 6) {
@@ -108,6 +112,14 @@ function nextMark(c: Crew, kind: MarkKind) {
   const here = tileOf(c);
   const m = here && nearestMark(here, kind, t => crew.some(o => o !== c && o.job?.tile === t));
   if (!m || order(c, m.tile, kind) !== true) stop(c);
+}
+/** After finishing a building, the figure moves on to the nearest unfinished one nobody is working on. */
+export function nextBuild(c: Crew) {
+  const here = tileOf(c); if (!here) { stop(c); return; }
+  const open = buildings.filter(b => !isDone(b) && !crew.some(o => o !== c && o.job?.kind === 'build' && o.job.tile.building === b))
+    .sort((a, b) => (Math.abs(a.i - here.i) + Math.abs(a.j - here.j)) - (Math.abs(b.i - here.i) + Math.abs(b.j - here.j)));
+  for (const b of open) if (order(c, b.tiles[0], 'build') === true) return;
+  stop(c);
 }
 /** After filling a plot, the figure walks on to the nearest plot that still needs filling. */
 export function nextSite(c: Crew) {
@@ -188,6 +200,12 @@ function onWorkHit(c: Crew) {
       }
       break;
     }
+    case 'build': {
+      const b: Building | undefined = j.tile.building;
+      if (!b || isDone(b)) { nextBuild(c); return; }
+      if (buildHit(b)) { c.hits = 0; setTimeout(() => { if (c.job?.kind === 'build') nextBuild(c); }, 500); }
+      break;
+    }
     case 'ancient': {
       const a: Ancient | undefined = j.tile.ancient;
       if (!a || a.falling) { stop(c); return; }
@@ -249,7 +267,7 @@ function updateOne(c: Crew, dt: number, T: number) {
     if (q >= 0.66 && !c.workHit) {
       c.workHit = true;
       const fx = p.x + Math.sin(c.root.rotation.y) * 0.4, fz = p.z + Math.cos(c.root.rotation.y) * 0.4, k = c.job?.kind;
-      if (k !== 'sand' && k !== 'dig' && k !== 'soil' && k !== 'fill' && k !== 'plant' && k !== 'path') puff(fx, p.y + 0.25, fz, k === 'rock' ? '#b8b2a8' : '#c9a06a', 6, 1.8, 1.4, p.y);
+      if (k !== 'sand' && k !== 'dig' && k !== 'soil' && k !== 'fill' && k !== 'plant' && k !== 'path' && k !== 'build') puff(fx, p.y + 0.25, fz, k === 'rock' ? '#b8b2a8' : '#c9a06a', 6, 1.8, 1.4, p.y);
       onWorkHit(c);
     }
     if (q < 0.3) c.workHit = false;
@@ -262,7 +280,7 @@ function updateOne(c: Crew, dt: number, T: number) {
 }
 
 /* Figures standing where a building goes step out of its footprint. */
-on('built', (b: Building) => {
+on('placed', (b: Building) => {
   for (const c of crew) if (b.tiles.includes(tileOf(c)!)) {
     const out = bfs(b.tiles[0], t => walkable(t));
     if (out && out.length) { const d = out[out.length - 1]; c.root.position.set(d.wx, topY(d), d.wz); stop(c); }

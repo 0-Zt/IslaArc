@@ -6,6 +6,7 @@ import { S, RES_KEYS, DATA, type ResKey } from '../game/state';
 import { crew, selected, select, statusOf } from '../game/crew';
 import { has, place } from '../game/buildings';
 import { currentGoal, GOALS } from '../game/goals';
+import { nightK, phaseName } from '../render/daynight';
 import type { CharId } from '../assets/characters';
 
 export const $ = (id: string) => document.getElementById(id)!;
@@ -72,6 +73,16 @@ export function refreshHUD(dt = 0) {
     const sp = el.querySelector('span')!; if (sp.textContent !== s) sp.textContent = s;
   }
   $('buildBtn').classList.toggle('hint', hint === 'build' && $('sheet').hidden);
+  // time of day: a sun that sinks into a moon
+  const ck = nightK > 0.5 ? 'moon' : 'sun';
+  const clk = $('clock');
+  if (clk.dataset.k !== ck) {
+    clk.dataset.k = ck;
+    clk.innerHTML = ck === 'moon'
+      ? '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 3a9 9 0 1 0 6 15A8 8 0 0 1 15 3z" fill="#dfe6ff"/><rect x="9" y="9" width="2" height="2" fill="#b8c2e8"/><rect x="12" y="14" width="3" height="2" fill="#b8c2e8"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" fill="#ffd24a"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4M4 4l3 3M17 17l3 3M4 20l3-3M17 7l3-3" stroke="#ffd24a" stroke-width="2"/></svg>';
+  }
+  clk.setAttribute('aria-label', `Hora del día: ${phaseName()}`);
 }
 
 export function initHUD() {

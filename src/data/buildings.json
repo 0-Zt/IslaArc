@@ -1,4 +1,88 @@
 {
-  "casa":  { "name": "Casa",  "desc": "Refugio y taller. Aquí se fabrican herramientas.", "size": [2, 2], "cost": { "madera": 10 } },
-  "horno": { "name": "Horno", "desc": "Funde mineral con madera y saca lingotes.", "size": [2, 1], "cost": { "piedra": 6, "arena": 6, "madera": 4 }, "requires": "casa" }
+  "casa": {
+    "name": "Casa",
+    "desc": "Refugio y taller. Aquí se fabrican herramientas.",
+    "size": [
+      2,
+      2
+    ],
+    "cost": {
+      "madera": 10
+    },
+    "work": 14
+  },
+  "horno": {
+    "name": "Horno",
+    "desc": "Funde mineral con madera y saca lingotes.",
+    "size": [
+      2,
+      1
+    ],
+    "cost": {
+      "piedra": 6,
+      "arena": 6,
+      "madera": 4
+    },
+    "requires": "casa",
+    "work": 12
+  },
+  "farol": {
+    "name": "Farol",
+    "desc": "Se enciende solo al caer la noche.",
+    "size": [
+      1,
+      1
+    ],
+    "cost": {
+      "madera": 2,
+      "piedra": 3
+    },
+    "work": 4,
+    "requires": "casa",
+    "deco": true
+  },
+  "cerco": {
+    "name": "Cerco",
+    "desc": "Un tramo de cerca de madera para bordes y corrales.",
+    "size": [
+      1,
+      1
+    ],
+    "cost": {
+      "madera": 2
+    },
+    "work": 2,
+    "requires": "casa",
+    "deco": true
+  },
+  "banca": {
+    "name": "Banca",
+    "desc": "Para que las figuras descansen algún día.",
+    "size": [
+      1,
+      1
+    ],
+    "cost": {
+      "madera": 3,
+      "piedra": 1
+    },
+    "work": 3,
+    "requires": "casa",
+    "deco": true
+  },
+  "macetero": {
+    "name": "Macetero",
+    "desc": "Piedra con flores de colores.",
+    "size": [
+      1,
+      1
+    ],
+    "cost": {
+      "piedra": 3,
+      "semilla": 1
+    },
+    "work": 3,
+    "requires": "casa",
+    "deco": true
+  }
 }

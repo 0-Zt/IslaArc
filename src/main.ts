@@ -8,6 +8,7 @@ import { plantIsland, clearTrees, tickTrees, tickLeaves, treeDrawCalls, trees } 
 import { placeRocks, tickRocks, rocks } from './world/rocks';
 import { tickParticles } from './world/particles';
 import { updateWater, tickWater } from './world/water';
+import { tickDay, refreshDay, phaseName, minutesToNight, isNight } from './render/daynight';
 import { S, setState, freshState, loadSave, save, hasSave, clearSave, DATA } from './game/state';
 import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected } from './game/crew';
 import * as THREE from 'three';
@@ -17,7 +18,7 @@ import { onTreeFallen, tickForest, clearForest, setOccupiedTest, restoreForest, 
 import { restorePaths, restoreMarks, clearMarks, exitMarkMode, marks } from './game/marks';
 import { restoreExpansions, restoreSites, clearSites, exitExpandMode, pulseMarkers, sites } from './game/expansion';
 import { checkGoals } from './game/goals';
-import { $, initHUD, refreshHUD } from './ui/hud';
+import { $, initHUD, refreshHUD, toast } from './ui/hud';
 import { initSheets, initSheetEvents, refreshSheet, closeSheet } from './ui/sheets';
 import { initInput, centreTile, tickMarker, onTap, debugPick } from './ui/input';
 import { tickLabels, clearLabels } from './ui/labels';
@@ -60,6 +61,7 @@ function newGame(state: typeof S | null) {
   camera.position.set(start.wx + 18, 18, start.wz + 18);
   camera.zoom = innerWidth < innerHeight ? 0.85 : 1.35;
   camera.updateProjectionMatrix(); controls.update(); placeSun();
+  refreshDay();
   refreshHUD();
 }
 
@@ -72,6 +74,7 @@ const persist = () => save(saved());
 initHUD(); initSheetEvents(); initInput();
 initSheets({ centreTile, onReset: () => { clearSave(); newGame(null); persist(); } });
 on('built', () => persist());
+on('placed', () => persist());
 on('expanded', () => { updateWater(); persist(); });
 on('forestChanged', () => persist());
 on('siteChanged', () => persist());
@@ -79,12 +82,15 @@ on('marksChanged', () => persist());
 on('pathsChanged', () => { buildTerrain(); rebuildDeco(); buildForestEdge(); persist(); });
 on('goalAdvanced', () => persist());
 
+$('clock').addEventListener('click', () => {
+  const m = Math.max(1, Math.round(minutesToNight()));
+  toast(isNight() ? `${phaseName()}: algunas cosas solo pasan de noche` : `${phaseName()} · la noche llega en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}`);
+});
 $('tContinue').hidden = !hasSave();
 $('tContinue').addEventListener('click', () => startGame(loadSave()));
 $('tNew').addEventListener('click', () => { clearSave(); startGame(null); });
 
 resize(); addEventListener('resize', resize);
-applyTime('manana');
 newGame(loadSave());
 
 /* the sharp band of the miniature effect follows what matters: the ghost, the selected figure, or the figure nearest the view */
@@ -115,7 +121,7 @@ function frame(now: number) {
   }
   const raw = Math.min(0.25, (now - last) / 1000); last = now;
   const dt = Math.min(0.05, raw); T += dt;
-  if (running) { S.time += dt; saveAcc += dt; if (saveAcc > DATA.BALANCE.saveEverySeconds) { saveAcc = 0; persist(); } }
+  if (running) { tickDay(dt); S.time += dt; saveAcc += dt; if (saveAcc > DATA.BALANCE.saveEverySeconds) { saveAcc = 0; persist(); } }
   updateCrew(dt, T);
   tickTrees(dt, T, t => onTreeFallen(t, T));
   tickForest(T);
@@ -149,6 +155,6 @@ if (location.hash === '#debug') {
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
     step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
-    scene, sites, marks, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid,
+    scene, sites, marks, refreshDay, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid,
   };
 }

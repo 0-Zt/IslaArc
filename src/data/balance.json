@@ -27,5 +27,6 @@
   "forestMaxDensity": 0.6,
   "plantHits": 2,
   "pathHits": 3,
-  "pathSpeed": 1.35
+  "pathSpeed": 1.35,
+  "dayMinutes": 9
 }

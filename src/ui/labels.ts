@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { on, emit } from '../core/events';
 import { camera } from '../render/renderer';
-import { buildings, smokePoint, type Building } from '../game/buildings';
+import { buildings, smokePoint, isDone, buildingDef, type Building } from '../game/buildings';
 import { crew, select, selected, type Crew } from '../game/crew';
 import { sites, expandMode } from '../game/expansion';
 import { marks } from '../game/marks';
@@ -59,7 +59,14 @@ export function tickLabels() {
   for (const b of bubbles.values()) b.seen = false;
 
   for (const b of buildings) {
-    if (b.build < 1) continue;
+    if (!isDone(b)) {
+      const worker = crew.find(c => c.job?.kind === 'build' && c.job.tile.building === b);
+      const at = _v.copy(b.group.position); at.y += (b.tiles.length > 1 ? 1.6 : 1.1);
+      const pct = Math.round(b.work / b.need * 100), name = buildingDef(b.type).name;
+      if (worker) show(b, at.clone(), `${HAMMER}<span class="meter"><i style="width:${pct}%"></i></span><small>${name}</small>`, '', `${name} en obra, ${pct} por ciento`, () => {});
+      else show(b, at.clone(), `${HAMMER}<small>${name} · envía una figura</small>`, 'wait', `${name} esperando una figura`, () => emit('toast', 'Toca una figura y luego la obra para construirla'));
+      continue;
+    }
     if (b.type === 'horno') {
       const done = now < (doneUntil.get(b) || 0), working = b.queue > 0;
       if (!done && !working) continue;

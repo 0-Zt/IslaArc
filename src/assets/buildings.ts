@@ -48,7 +48,56 @@ export function modelHorno(): Model {
   return { group: g, glow, smoke: [ox + 0.2, 1.32, -0.14] };
 }
 
-export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno };
+/* ---------- decoration ---------- */
+export function modelFarol(): Model {
+  const M = parts();
+  vbox(M.stone, 0, 0.05, 0, 0.3, 0.1, 0.3, '#9a948a'); vbox(M.stone, 0, 0.12, 0, 0.2, 0.06, 0.2, '#8a847a');
+  vbox(M.plank, 0, 0.5, 0, 0.07, 0.72, 0.07, '#4a3a2e');
+  vbox(M.plank, 0, 0.87, 0, 0.24, 0.03, 0.24, '#3a2e24');
+  for (const [x, z] of [[-0.1, -0.1], [0.1, -0.1], [-0.1, 0.1], [0.1, 0.1]]) vbox(M.plank, x, 0.98, z, 0.03, 0.2, 0.03, '#3a2e24');
+  vbox(M.plank, 0, 1.1, 0, 0.28, 0.04, 0.28, '#3a2e24'); vbox(M.plank, 0, 1.15, 0, 0.14, 0.05, 0.14, '#3a2e24');
+  const g = group(M);
+  const glow = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 0.3, 0.12) }));
+  glow.position.set(0, 0.98, 0); g.add(glow);
+  return { group: g, glow, smoke: [0, 1.3, 0] };
+}
+export function modelCerco(): Model {
+  const M = parts();
+  for (const x of [-0.42, 0, 0.42]) { vbox(M.plank, x, 0.22, 0, 0.08, 0.44, 0.08, '#8a5a2e'); vbox(M.plank, x, 0.46, 0, 0.1, 0.04, 0.1, '#6a4226'); }
+  for (const y of [0.16, 0.34]) vbox(M.plank, 0, y, 0.05, 1, 0.07, 0.04, '#a8743e');
+  return { group: group(M), smoke: [0, 0.6, 0] };
+}
+export function modelBanca(): Model {
+  const M = parts();
+  for (const x of [-0.32, 0.32]) { vbox(M.stone, x, 0.1, 0, 0.12, 0.2, 0.3, '#9a948a'); }
+  vbox(M.plank, 0, 0.23, 0.02, 0.84, 0.06, 0.32, '#b07a44'); vbox(M.plank, 0, 0.23, 0.02, 0.84, 0.01, 0.02, '#8a5a2e');
+  for (const x of [-0.32, 0.32]) vbox(M.plank, x, 0.4, -0.13, 0.06, 0.3, 0.05, '#8a5a2e');
+  vbox(M.plank, 0, 0.46, -0.14, 0.84, 0.12, 0.04, '#b07a44');
+  return { group: group(M), smoke: [0, 0.6, 0] };
+}
+export function modelMacetero(): Model {
+  const M = parts(), L: THREE.BufferGeometry[] = [];
+  vbox(M.stone, 0, 0.14, 0, 0.62, 0.28, 0.62, '#a49e92'); vbox(M.stone, 0, 0.29, 0, 0.7, 0.04, 0.7, '#8a847a');
+  vbox(M.bark, 0, 0.29, 0, 0.52, 0.03, 0.52, '#6a4428');
+  const cols = ['#ff9ec4', '#ffd84a', '#8ab8ff', '#fff6e0'];
+  [[-0.14, -0.12], [0.12, -0.14], [0.14, 0.12], [-0.12, 0.14], [0, 0]].forEach(([x, z], k) => {
+    vbox(L, x, 0.38, z, 0.04, 0.16, 0.04, '#3f9434'); vbox(L, x, 0.48, z, 0.1, 0.06, 0.1, cols[k % 4]); vbox(L, x, 0.52, z, 0.04, 0.03, 0.04, '#ffd84a');
+  });
+  const g = group({ ...M, leaf: L });
+  return { group: g, smoke: [0, 0.7, 0] };
+}
+
+/** Scaffolding shown around a building while it is being built. */
+export function modelScaffold(w: number, d: number, h: number) {
+  const P: THREE.BufferGeometry[] = [];
+  const hx = w / 2 + 0.04, hz = d / 2 + 0.04;
+  for (const [x, z] of [[-hx, -hz], [hx, -hz], [-hx, hz], [hx, hz]]) vbox(P, x, h / 2, z, 0.06, h, 0.06, '#c9a06a');
+  for (let y = 0.35; y < h; y += 0.45) { vbox(P, 0, y, hz, w + 0.1, 0.05, 0.05, '#b08450'); vbox(P, 0, y, -hz, w + 0.1, 0.05, 0.05, '#b08450'); vbox(P, hx, y, 0, 0.05, 0.05, d + 0.1, '#b08450'); vbox(P, -hx, y, 0, 0.05, 0.05, d + 0.1, '#b08450'); }
+  vbox(P, 0, 0.04, hz + 0.12, Math.min(0.6, w * 0.5), 0.08, 0.16, '#8a5a2e'); // a stack of planks
+  return group({ plank: P });
+}
+
+export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero };
 
 export const ICONS: Record<string, string> = {
   casa: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="18" width="24" height="16" fill="#d9a066"/><rect x="17" y="24" width="6" height="10" fill="#7a4f2a"/><path d="M4 20L20 7L36 20Z" fill="#e0b050"/><rect x="27" y="8" width="4" height="8" fill="#8a847a"/></svg>',
@@ -61,5 +110,9 @@ export const ICONS: Record<string, string> = {
   roble: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="17" y="24" width="6" height="12" fill="#6a3f22"/><rect x="7" y="8" width="26" height="18" rx="7" fill="#5fb84a"/><rect x="11" y="10" width="10" height="7" rx="3" fill="#7fd060"/></svg>',
   abedul: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="18" y="20" width="4" height="16" fill="#e8e0d0"/><rect x="18" y="26" width="4" height="2" fill="#4a4038"/><rect x="11" y="4" width="18" height="20" rx="8" fill="#b8d860"/></svg>',
   sendero: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="4" width="36" height="32" fill="#5cb847"/><path d="M14 36L18 4H26L28 36Z" fill="#b08a5a"/><rect x="19" y="12" width="3" height="2" fill="#d8d2c6"/><rect x="22" y="24" width="3" height="2" fill="#d8d2c6"/></svg>',
+  farol: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="14" y="33" width="12" height="4" fill="#9a948a"/><rect x="18.5" y="16" width="3" height="18" fill="#4a3a2e"/><rect x="13" y="6" width="14" height="3" fill="#3a2e24"/><rect x="15" y="9" width="10" height="8" fill="#ffd27a"/><rect x="13" y="17" width="14" height="2" fill="#3a2e24"/></svg>',
+  cerco: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="18" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="30" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="4" y="17" width="32" height="4" fill="#a8743e"/><rect x="4" y="26" width="32" height="4" fill="#a8743e"/></svg>',
+  banca: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="12" width="28" height="6" fill="#b07a44"/><rect x="6" y="22" width="28" height="5" fill="#b07a44"/><rect x="9" y="27" width="4" height="8" fill="#9a948a"/><rect x="27" y="27" width="4" height="8" fill="#9a948a"/></svg>',
+  macetero: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="22" width="24" height="13" fill="#a49e92"/><rect x="6" y="20" width="28" height="3" fill="#8a847a"/><rect x="12" y="12" width="5" height="5" fill="#ff9ec4"/><rect x="21" y="9" width="5" height="5" fill="#ffd84a"/><rect x="26" y="14" width="5" height="5" fill="#8ab8ff"/><rect x="14" y="17" width="2" height="4" fill="#3f9434"/><rect x="23" y="14" width="2" height="7" fill="#3f9434"/></svg>',
   lingote: '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 26L14 16H32L26 26Z" fill="#dde3ea"/><path d="M8 26H26V30H8Z" fill="#8a929e"/><path d="M26 26L32 16V20L26 30Z" fill="#6a7280"/></svg>',
 };

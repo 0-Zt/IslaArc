@@ -4,8 +4,8 @@ import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
 import { tileProxies, topY, type Tile } from '../world/island';
 import { pickTree } from '../world/trees';
 import { rocks } from '../world/rocks';
-import { crew, selected, select, order, tileOf, nextSite, type JobKind } from '../game/crew';
-import { buildings, place, movePlace, rotatePlace, cancelPlace, confirmPlace } from '../game/buildings';
+import { crew, selected, select, order, tileOf, nextSite, nextBuild, type JobKind } from '../game/crew';
+import { buildings, place, movePlace, rotatePlace, cancelPlace, confirmPlace, isDone, buildingDef } from '../game/buildings';
 import { ancients, mound } from '../game/grove';
 import { stumps, sproutMeshes, growing, growthProgress } from '../game/forest';
 import { marks, markMode, toggleMark, exitMarkMode, nearestMark, type MarkKind } from '../game/marks';
@@ -98,7 +98,17 @@ export function onTap(x: number, y: number) {
   const h = pick();
   if (!h) { select(null); return; }
   if (h.kind === 'char') { select(selected === h.id ? null : h.id!); return; }
-  if (h.kind === 'building') { if (h.b && h.b.build >= 1) { select(null); openSheet(h.b.type, h.b); } return; }
+  if (h.kind === 'building') {
+    const b = h.b; if (!b) return;
+    if (!isDone(b)) {
+      const c = selected && crew.find(q => q.id === selected);
+      if (c) { const r = order(c, b.tiles[0], 'build'); if (r !== true) toast(r); else select(null); }
+      else toast(`${buildingDef(b.type).name} en obra: ${Math.round(b.work / b.need * 100)}%. Toca una figura y luego la obra.`);
+      return;
+    }
+    if (b.type === 'casa' || b.type === 'horno') { select(null); openSheet(b.type, b); }
+    return;
+  }
   if (h.kind === 'ancient' || h.kind === 'mound') seeGrove();
   const c = selected && crew.find(q => q.id === selected);
   const t = h.tile!;
@@ -139,7 +149,13 @@ export function initInput() {
   $('pOk').addEventListener('click', () => {
     const r = confirmPlace();
     if (typeof r === 'string') { toast(r); return; }
-    toast(`${r.type === 'casa' ? 'Casa construida' : 'Horno construido'}`); emit('changed');
+    emit('changed');
+    // the nearest free figure picks up the hammer
+    if (!crew.some(c => c.job?.kind === 'build')) {
+      const idle = crew.filter(c => !c.job && !c.path.length);
+      for (const c of idle) { nextBuild(c); if (c.job?.kind === 'build') { toast(`${c.def.name} va a construir: ${buildingDef(r.type).name.toLowerCase()}`); return; } }
+      toast('Obra marcada. Toca una figura y luego la obra para construirla.');
+    } else toast('Obra marcada. Se construirá cuando termine la anterior.');
   });
   $('xExit').addEventListener('click', () => { exitExpandMode(); exitMarkMode(); });
   $('xKinds').addEventListener('click', e => {
