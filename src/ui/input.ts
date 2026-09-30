@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { on, emit } from '../core/events';
 import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
-import { tileProxies, topY, type Tile } from '../world/island';
+import { tileProxies, topY, tileAt as tileAtIJ, type Tile } from '../world/island';
 import { pickTree } from '../world/trees';
 import { rocks } from '../world/rocks';
 import { crew, selected, select, order, tileOf, nextSite, assignIdleBuilder, type JobKind } from '../game/crew';
@@ -13,6 +13,7 @@ import { sites, expandMode, pickCell, exitExpandMode, startSite, cancelSite, ref
 import { S } from '../game/state';
 import { ready as readyReq } from '../game/board';
 import { ruinPropMeshes, shrineMeshes, slotOf, isIslet } from '../game/ruins';
+import { beachMeshes } from '../game/beach';
 import { $, toast, refreshHUD, img } from './hud';
 import { openSheet, closeSheet, sheetOpen, openRuin, openFlame, openDiario } from './sheets';
 import type { CharId } from '../assets/characters';
@@ -32,7 +33,7 @@ export function centreTile(): Tile | null {
   return h ? h.object.userData.tile : null;
 }
 
-type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'sprout' | 'mark' | 'site' | 'ruin' | 'shrine' | 'tile'; mk?: MarkKind; k?: number; tile?: Tile; id?: CharId; b?: any };
+type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'sprout' | 'mark' | 'site' | 'ruin' | 'shrine' | 'beach' | 'tile'; mk?: MarkKind; k?: number; tile?: Tile; id?: CharId; b?: any };
 function pick(): Hit | null {
   const hits: Hit[] = [];
   const up = (o: THREE.Object3D | null, key: string) => { while (o && o.userData[key] === undefined) o = o.parent; return o ? o.userData[key] : undefined; };
@@ -47,6 +48,7 @@ function pick(): Hit | null {
   const ph = ray.intersectObjects(sproutMeshes(), true)[0]; if (ph) hits.push({ d: ph.distance - 0.3, kind: 'sprout', tile: up(ph.object, 'sproutTile') });
   const mh2 = ray.intersectObjects(marks.map(m => m.group), true)[0]; if (mh2) { const m = up(mh2.object, 'mark'); if (m) hits.push({ d: mh2.distance - 0.3, kind: 'mark', tile: m.tile, mk: m.kind }); }
   const uh = ray.intersectObjects(ruinPropMeshes(), true)[0]; if (uh) hits.push({ d: uh.distance - 0.3, kind: 'ruin', k: up(uh.object, 'ruinSlot') });
+  const bh2 = ray.intersectObjects(beachMeshes(), true)[0]; if (bh2) { const it = up(bh2.object, 'beachItem'); if (it) hits.push({ d: bh2.distance - 0.6, kind: 'beach', tile: tileAtIJ(it.i, it.j) }); }
   const qh = ray.intersectObjects(shrineMeshes(), true)[0]; if (qh) hits.push({ d: qh.distance, kind: 'shrine' });
   const gh = ray.intersectObjects(tileProxies, false)[0]; if (gh) hits.push({ d: gh.distance + 0.05, kind: 'tile', tile: gh.object.userData.tile });
   hits.sort((a, b) => a.d - b.d);
@@ -103,16 +105,28 @@ export function onTap(x: number, y: number) {
   if (!h) { select(null); return; }
   if (h.kind === 'char') { select(selected === h.id ? null : h.id!); return; }
   if (h.kind === 'ruin') { select(null); openRuin(h.k!); return; }
+  if (h.kind === 'beach' && h.tile) {
+    // the selected figure goes to pick it up, or else the nearest free one
+    const sel = selected ? crew.find(q => q.id === selected) : null;
+    const who = sel || crew.filter(q => !q.job && !q.path.length).sort((a, b) => a.root.position.distanceTo(h.tile!.proxy!.position) - b.root.position.distanceTo(h.tile!.proxy!.position))[0];
+    if (!who) { toast('Toca una figura y luego lo que trajo el mar'); return; }
+    const r = order(who, h.tile, 'recoger'); if (r !== true) toast(r); else { select(null); toast(`${who.def.name} va a recogerlo`); }
+    return;
+  }
   if (h.kind === 'shrine') { toast(S.ruins.awake ? 'El santuario de Brasa. La lava todavía tibia corre hacia el centro.' : 'Una estatua de arcilla oscura, sentada en el centro. Parece dormida.'); return; }
   if (h.kind === 'building') {
     const b = h.b; if (!b) return;
+    const c0 = selected ? crew.find(q => q.id === selected) : null;
     if (!isDone(b)) {
       const c = selected && crew.find(q => q.id === selected);
       if (c) { const r = order(c, b.tiles[0], 'build'); if (r !== true) toast(r); else select(null); }
       else toast(`${buildingDef(b.type).name} en obra: ${Math.round(b.work / b.need * 100)}%. Toca una figura y luego la obra.`);
       return;
     }
-    if (b.type === 'casa' || b.type === 'horno') { select(null); openSheet(b.type, b); }
+    if (b.type === 'horno' && c0 && c0.id === 'brasa') { const r = order(c0, b.tiles[0], 'avivar'); if (r !== true) toast(r); else { select(null); toast('Brasa va a avivar el fuego del horno'); } return; }
+    if (b.type === 'casa') { select(null); openSheet('casa', b); }
+    if (b.type === 'horno' || b.type === 'aserradero') { select(null); openSheet('prod', b); }
+    if (b.type === 'taller') { select(null); openSheet('taller', b); }
     if (b.type === 'tablon') { select(null); openDiario('encargos'); }
     if (b.type === 'brasero') { const k = slotOf(b.tiles[0]); select(null); if (S.ruins.lit[k]) toast('Esta llama ya arde.'); else openFlame(k); }
     return;

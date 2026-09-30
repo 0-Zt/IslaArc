@@ -91,6 +91,37 @@ export function modelMacetero(): Model {
   return { group: g, smoke: [0, 0.7, 0] };
 }
 
+/** Sawmill: a log on a saw bench under a lean-to roof, a water wheel and a stack of planks. */
+export function modelAserradero(): Model {
+  const M = parts();
+  vbox(M.stone, 0, 0.05, 0, 1.86, 0.1, 0.9, '#a49e92');
+  for (const [x, z] of [[-0.7, -0.3], [0.4, -0.3], [-0.7, 0.3], [0.4, 0.3]]) vbox(M.plank, x, 0.5, z, 0.08, 0.9, 0.08, '#6a4226');
+  vbox(M.thatch, -0.15, 0.98, 0, 1.4, 0.08, 0.9, '#d4a444'); vbox(M.thatch, -0.15, 1.05, 0, 1.2, 0.06, 0.7, '#e0b050');
+  vbox(M.plank, -0.15, 0.38, 0, 1.0, 0.08, 0.36, '#8a5a2e');                       // bench
+  vbox(M.bark, -0.2, 0.52, 0, 0.9, 0.2, 0.2, '#7a4a2a'); vbox(M.plank, 0.26, 0.52, 0, 0.02, 0.2, 0.2, '#e0b878'); // log
+  vbox(M.stone, 0.05, 0.62, 0, 0.3, 0.3, 0.02, '#c8ccd4');                            // saw blade
+  for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; vbox(M.plank, 0.78 + Math.cos(a) * 0.22, 0.4 + Math.sin(a) * 0.22, 0.2, 0.08, 0.08, 0.1, '#8a5a2e'); }
+  vbox(M.plank, 0.78, 0.4, 0.2, 0.06, 0.06, 0.18, '#5e3a1e');                        // wheel hub
+  for (let k = 0; k < 4; k++) vbox(M.plank, 0.75, 0.13 + k * 0.07, -0.25, 0.4, 0.06, 0.26, k % 2 ? '#c08a50' : '#e0b070');  // planks
+  return { group: group(M), smoke: [0.05, 0.9, 0] };
+}
+/** Workshop: an open shed with a big workbench, tools on the wall and a glowing lamp. */
+export function modelTaller(): Model {
+  const M = parts();
+  vbox(M.stone, 0, 0.05, 0, 1.86, 0.1, 0.9, '#a49e92');
+  vbox(M.brick, 0, 0.5, -0.36, 1.7, 0.9, 0.12, '#b8804c');
+  for (const x of [-0.8, 0.8]) vbox(M.brick, x, 0.5, 0, 0.12, 0.9, 0.8, '#b8804c');
+  vbox(M.thatch, 0, 1.0, 0, 1.9, 0.08, 1.0, '#c08a50'); vbox(M.thatch, 0, 1.08, -0.1, 1.7, 0.08, 0.7, '#a8743e');
+  vbox(M.plank, 0, 0.42, 0.05, 1.2, 0.07, 0.4, '#8a5a2e'); for (const x of [-0.5, 0.5]) vbox(M.plank, x, 0.2, 0.05, 0.06, 0.38, 0.34, '#6a4226');
+  vbox(M.stone, -0.3, 0.5, 0.05, 0.2, 0.08, 0.14, '#c8ccd4'); vbox(M.plank, 0.2, 0.49, 0.1, 0.3, 0.05, 0.2, '#e0b878'); vbox(M.stone, 0.35, 0.53, -0.02, 0.1, 0.1, 0.1, '#8fd4e0');
+  vbox(M.plank, -0.4, 0.75, -0.29, 0.05, 0.3, 0.02, '#6a4226'); vbox(M.stone, -0.4, 0.88, -0.28, 0.14, 0.06, 0.02, '#b9c2cc');
+  vbox(M.plank, 0.1, 0.75, -0.29, 0.04, 0.26, 0.02, '#6a4226'); vbox(M.stone, 0.1, 0.62, -0.28, 0.1, 0.08, 0.02, '#b9c2cc');
+  const g = group(M);
+  const glow = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.1), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, 0.2, 0.08) }));
+  glow.position.set(0.6, 0.85, -0.2); g.add(glow);
+  return { group: g, glow, smoke: [0, 1.3, 0] };
+}
+
 /** Notice board: two posts, a small roof and a board with pinned notes. */
 export function modelTablon(): Model {
   const M = parts(), P: THREE.BufferGeometry[] = [];
@@ -112,7 +143,7 @@ export function modelScaffold(w: number, d: number, h: number) {
   return group({ plank: P });
 }
 
-export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, tablon: modelTablon, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
+export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, tablon: modelTablon, aserradero: modelAserradero, taller: modelTaller, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
 
 export const ICONS: Record<string, string> = {
   casa: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="18" width="24" height="16" fill="#d9a066"/><rect x="17" y="24" width="6" height="10" fill="#7a4f2a"/><path d="M4 20L20 7L36 20Z" fill="#e0b050"/><rect x="27" y="8" width="4" height="8" fill="#8a847a"/></svg>',
@@ -125,6 +156,8 @@ export const ICONS: Record<string, string> = {
   roble: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="17" y="24" width="6" height="12" fill="#6a3f22"/><rect x="7" y="8" width="26" height="18" rx="7" fill="#5fb84a"/><rect x="11" y="10" width="10" height="7" rx="3" fill="#7fd060"/></svg>',
   abedul: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="18" y="20" width="4" height="16" fill="#e8e0d0"/><rect x="18" y="26" width="4" height="2" fill="#4a4038"/><rect x="11" y="4" width="18" height="20" rx="8" fill="#b8d860"/></svg>',
   sendero: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="4" width="36" height="32" fill="#5cb847"/><path d="M14 36L18 4H26L28 36Z" fill="#b08a5a"/><rect x="19" y="12" width="3" height="2" fill="#d8d2c6"/><rect x="22" y="24" width="3" height="2" fill="#d8d2c6"/></svg>',
+  aserradero: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="10" width="32" height="4" fill="#d4a444"/><rect x="6" y="14" width="3" height="20" fill="#6a4226"/><rect x="31" y="14" width="3" height="20" fill="#6a4226"/><rect x="9" y="22" width="22" height="7" fill="#7a4a2a"/><circle cx="20" cy="22" r="6" fill="#c8ccd4"/><rect x="8" y="31" width="24" height="4" fill="#e0b070"/></svg>',
+  taller: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="8" width="34" height="5" fill="#c08a50"/><rect x="5" y="13" width="30" height="20" fill="#b8804c"/><rect x="9" y="22" width="22" height="4" fill="#8a5a2e"/><circle cx="29" cy="17" r="3" fill="#ffd24a"/><rect x="12" y="16" width="2" height="6" fill="#6a4226"/><rect x="11" y="15" width="4" height="2" fill="#b9c2cc"/></svg>',
   tablon: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="12" width="3" height="26" fill="#6a4226"/><rect x="30" y="12" width="3" height="26" fill="#6a4226"/><rect x="5" y="13" width="30" height="16" fill="#b07a44"/><rect x="3" y="8" width="34" height="5" fill="#d4a444"/><rect x="9" y="16" width="8" height="7" fill="#fff6e0"/><rect x="21" y="17" width="9" height="8" fill="#ffe0e8"/><rect x="12" y="15" width="2" height="2" fill="#d9463c"/><rect x="25" y="16" width="2" height="2" fill="#d9463c"/></svg>',
   farol: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="14" y="33" width="12" height="4" fill="#9a948a"/><rect x="18.5" y="16" width="3" height="18" fill="#4a3a2e"/><rect x="13" y="6" width="14" height="3" fill="#3a2e24"/><rect x="15" y="9" width="10" height="8" fill="#ffd27a"/><rect x="13" y="17" width="14" height="2" fill="#3a2e24"/></svg>',
   cerco: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="18" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="30" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="4" y="17" width="32" height="4" fill="#a8743e"/><rect x="4" y="26" width="32" height="4" fill="#a8743e"/></svg>',

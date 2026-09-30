@@ -39,6 +39,36 @@
     "work": 5,
     "requires": "casa"
   },
+  "aserradero": {
+    "name": "Aserradero",
+    "desc": "Corta madera en tablas.",
+    "size": [
+      2,
+      1
+    ],
+    "cost": {
+      "madera": 12,
+      "piedra": 6,
+      "lingote": 2
+    },
+    "work": 10,
+    "requires": "horno"
+  },
+  "taller": {
+    "name": "Taller de inventos",
+    "desc": "Aquí se inventan mejoras para la isla y las figuras.",
+    "size": [
+      2,
+      1
+    ],
+    "cost": {
+      "tablas": 8,
+      "ladrillo": 6,
+      "lingote": 2
+    },
+    "work": 12,
+    "requires": "aserradero"
+  },
   "farol": {
     "name": "Farol",
     "desc": "Se enciende solo al caer la noche.",

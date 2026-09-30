@@ -187,3 +187,16 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .btn.sm{min-height:30px;font-size:12px;padding:0 10px}
 .dach{align-items:center}
 .dmedal{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#2a1a08;font-weight:700;box-shadow:inset 0 -3px 0 #0003}
+
+/* production queue */
+.qline{display:flex;align-items:center;gap:6px;background:var(--glass2);border-radius:12px;padding:8px 10px;margin:6px 0 4px;flex-wrap:wrap}
+.qline .q{width:30px;height:30px;border-radius:8px;background:#0004;display:grid;place-items:center;border:2px solid transparent}
+.qline .q.now{border-color:var(--sun)}
+.qline .q img,.qline .q svg{width:20px;height:20px;image-rendering:pixelated}
+.qline .bar{flex:1 1 100%;margin-top:4px}
+.thumb img.pix{width:28px;height:28px;image-rendering:pixelated}
+.row.dim{opacity:.55}
+
+#sheet .lore,.lore{font-style:italic;font-size:16px;line-height:1.5;background:#f3e6c4;color:#3a2a18 !important;border-radius:10px;padding:14px 16px;box-shadow:inset 0 0 0 2px #d8c49a}
+.lore.sm{font-size:13.5px;padding:10px 12px;margin:6px 0}
+.dtabs button{font-size:12.5px}

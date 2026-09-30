@@ -135,7 +135,7 @@ export function onTreeFallen(t: Tree, now: number) {
     const secs = t.feller?.id === 'musgo' ? B().treeRegrowSecondsMusgo : B().treeRegrowSeconds;
     queue.push({ tile, type: t.type, at: now + secs });
   }
-  if (Math.random() < B().seedChance[t.si]) {
+  if (Math.random() < B().seedChance[t.si] * (t.feller?.id === 'musgo' ? 2 : 1)) {
     gain('semilla', 1, new THREE.Vector3(t.x, t.y + 1.1, t.z));
     if (!S.flags.seedHint) { S.flags.seedHint = true; emit('toast', '¡Una semilla! Plántala donde quieras desde Construir'); }
   }

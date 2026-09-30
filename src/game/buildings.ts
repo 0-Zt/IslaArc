@@ -7,13 +7,15 @@ import { rocks } from '../world/rocks';
 import { puff, smoke } from '../world/particles';
 import { MODELS, modelScaffold } from '../assets/buildings';
 import { lampK } from '../render/daynight';
-import { S, DATA, afford, pay, gain, type Cost, type SavedBuilding } from './state';
+import { S, DATA, afford, pay, gain, type Cost, type SavedBuilding, type ResKey } from './state';
+import { RECIPES, MAX_QUEUE, makesThings, jobSeconds, finishInvention, hammerPower } from './production';
 import { stumps } from './forest';
 
 export interface Building {
   type: string; i: number; j: number; rot: number; tiles: Tile[];
   group: THREE.Group; glow?: THREE.Mesh; smokeAt: THREE.Vector3;
-  queue: number; prog: number; build: number;
+  jobs: string[]; prog: number; build: number;   // production queue (recipe ids, or 'inv:<id>' at the workshop)
+  stoked: boolean;                                   // Brasa is fanning the fire (furnace works twice as fast)
   work: number; need: number;            // hammer blows done / needed: a building works only when finished
   scaffold: THREE.Group | null; light: THREE.Mesh | null;
 }
@@ -21,7 +23,7 @@ export const buildings: Building[] = [];
 export const isDone = (b: Building) => b.work >= b.need;
 /** Whether a finished building of this type exists. */
 export const has = (type: string) => buildings.some(b => b.type === type && isDone(b));
-export const saved = (): SavedBuilding[] => buildings.map(b => ({ type: b.type, i: b.i, j: b.j, rot: b.rot, queue: b.queue, prog: b.prog, work: b.work } as SavedBuilding));
+export const saved = (): SavedBuilding[] => buildings.map(b => ({ type: b.type, i: b.i, j: b.j, rot: b.rot, jobs: b.jobs, prog: b.prog, work: b.work } as SavedBuilding));
 const def = (type: string) => (DATA.BUILDINGS as any)[type] as { name: string; size: [number, number]; cost: Cost; requires?: string; work?: number; deco?: boolean };
 
 /* a warm pool of light on the ground under each lantern, only at night */
@@ -53,7 +55,7 @@ export function createBuilding(type: string, i: number, j: number, rot: number, 
   g.position.set(cx, cy, cz); g.rotation.y = rot * Math.PI / 2;
   const need = def(type).work || 1;
   const work = extra.work ?? (animate ? 0 : need);
-  const b: Building = { type, i, j, rot, tiles, group: g, glow: m.glow, smokeAt: new THREE.Vector3(...m.smoke), queue: extra.queue || 0, prog: extra.prog || 0, build: 1, work, need, scaffold: null, light: null };
+  const b: Building = { type, i, j, rot, tiles, group: g, glow: m.glow, smokeAt: new THREE.Vector3(...m.smoke), jobs: extra.jobs ? [...extra.jobs] : Array(extra.queue || 0).fill('lingote'), prog: extra.prog || 0, stoked: false, build: 1, work, need, scaffold: null, light: null };
   g.traverse(o => { o.userData.building = b; });
   tiles.forEach(t => { t.building = b; });
   worldGroup.add(g); buildings.push(b);
@@ -78,9 +80,9 @@ export function createBuilding(type: string, i: number, j: number, rot: number, 
 function setRise(b: Building) { const k = b.work / b.need; b.group.scale.set(1, isDone(b) ? 1 : 0.1 + 0.8 * k, 1); }
 
 /** One hammer blow. Returns true when this blow finishes the building. */
-export function buildHit(b: Building) {
+export function buildHit(b: Building, power = 1) {
   if (isDone(b)) return false;
-  b.work++;
+  b.work = Math.min(b.need, b.work + power * hammerPower());
   const t = b.tiles[Math.floor(Math.random() * b.tiles.length)];
   puff(t.wx, topY(t) + 0.3, t.wz, '#d8c8a8', 4, 1.2, 1, topY(t));
   setRise(b);
@@ -97,10 +99,11 @@ export function clearBuildings() { for (const b of buildings) { worldGroup.remov
 const _v = new THREE.Vector3();
 export function smokePoint(b: Building) { return b.group.localToWorld(_v.copy(b.smokeAt)); }
 
-export function smelt(b: Building) {
-  const R = DATA.RECIPES.lingote;
-  if (!isDone(b) || !afford(R.cost) || b.queue >= R.maxQueue) return false;
-  pay(R.cost); b.queue++; return true;
+/** Queues a recipe at a production building. */
+export function smelt(b: Building, recipe = 'lingote') {
+  const R = RECIPES[recipe];
+  if (!R || !isDone(b) || !afford(R.cost) || b.jobs.length >= MAX_QUEUE) return false;
+  pay(R.cost); b.jobs.push(recipe); emit('changed'); return true;
 }
 
 export function tickBuildings(dt: number) {
@@ -111,23 +114,34 @@ export function tickBuildings(dt: number) {
       (b.glow.material as THREE.MeshBasicMaterial).color.setRGB(0.4 + 2.6 * f, 0.3 + 1.5 * f, 0.12 + 0.4 * f);
       if (b.light) { (b.light.material as THREE.MeshBasicMaterial).opacity = 0.55 * f; b.light.visible = f > 0.02; }
     }
-    if (b.type === 'horno' && b.glow) {
-      const on = b.queue > 0;
+    if (makesThings(b.type)) {
+      const job = b.jobs[0], on = !!job;
       if (on) {
-        b.prog += dt / DATA.RECIPES.lingote.seconds;
+        b.prog += dt / jobSeconds(b.type, job, b.stoked);
         if (b.prog >= 1) {
-          b.prog = 0; b.queue--; S.made++;
+          b.prog = 0; b.jobs.shift();
           const v = smokePoint(b).clone();
+          if (job.startsWith('inv:')) finishInvention(job.slice(4));
+          else {
+            const out = RECIPES[job].out as ResKey;
+            if (job === 'lingote') S.made++;
+            S.stats[out] = (S.stats[out] || 0) + 1;
+            gain(out, 1, v);
+          }
           puff(v.x, v.y, v.z, '#ffd04a', 10, 2.2, 1.4);
-          gain('lingote', 1, v);
-          emit('smelted', b);
+          emit('smelted', b, job);
         }
-        if (Math.random() < dt * 6) { const v = smokePoint(b); smoke(v.x, v.y, v.z, Math.random() < 0.5 ? '#c8c4be' : '#a8a49e'); }
+        if (b.type === 'horno' && Math.random() < dt * (b.stoked ? 12 : 6)) { const v = smokePoint(b); smoke(v.x, v.y, v.z, Math.random() < 0.5 ? '#c8c4be' : '#a8a49e'); }
+        if (b.type === 'aserradero' && Math.random() < dt * 8) { const v = smokePoint(b); puff(v.x, v.y - 0.3, v.z, '#e0c08a', 2, 1.2, 1, v.y - 0.6); }
       }
-      const f = on ? 1.6 + 0.5 * Math.sin(performance.now() / 110) + 0.3 * Math.sin(performance.now() / 43) : 0.18;
-      (b.glow.material as THREE.MeshBasicMaterial).color.setRGB(2.4 * f * glowMul, 0.9 * f * glowMul, 0.22 * f * glowMul);
+      if (b.glow && b.type === 'taller') { const f = on ? 2 + 0.3 * Math.sin(performance.now() / 150) : 0.4 + lampK * 1.5; (b.glow.material as THREE.MeshBasicMaterial).color.setRGB(2.2 * f / 2, 1.7 * f / 2, 0.6 * f / 2); }
+      else if (b.glow) {
+        const f = on ? (b.stoked ? 2.4 : 1.6) + 0.5 * Math.sin(performance.now() / 110) + 0.3 * Math.sin(performance.now() / 43) : 0.18;
+        (b.glow.material as THREE.MeshBasicMaterial).color.setRGB(2.4 * f * glowMul, 0.9 * f * glowMul, 0.22 * f * glowMul);
+      }
     }
     if (b.type === 'casa' && Math.random() < dt * 1.2) { const v = smokePoint(b); smoke(v.x, v.y, v.z, '#d8d4ce', 0.05, 1.8); }
+    b.stoked = false; // set again next frame while Brasa keeps fanning
   }
 }
 

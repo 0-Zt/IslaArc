@@ -36,7 +36,7 @@ Asignar figuras → producir → procesar (horno, cráter) → construir y expan
 | --- | --- | --- |
 | 0. Prototipos (hecho) | Prototipo 2D, taller 3D | El estilo 3D convence |
 | 1. Fundación técnica (hecho) | Corte vertical 3D, migración a TypeScript + Vite, datos en JSON, optimización de rendimiento | Asignar figuras y construir se siente bien |
-| 2. Bucle núcleo (en curso) | Expansión (v0.5), bosque y senderos (v0.6), día y noche, obras, decoración y el secreto de Brasa (v0.8); falta la era 2 | 45 minutos con metas claras, probado por 3 personas |
+| 2. Bucle núcleo (en curso) | Expansión (v0.5), bosque y senderos (v0.6), día y noche, obras, decoración y el secreto de Brasa (v0.8), ruta y encargos (v0.10), era 2 parte 1 (v0.11) | 45 minutos con metas claras, probado por 3 personas |
 | 3. Contenido y secretos | Era 3, 3 puzzles, 2 zonas ocultas, eventos y barco fantasma | 6 horas sin atascos |
 | 4. Carrera del Bosque | Minijuego de carrera en 3 carriles | Una carrera de 60 s es divertida sin premio |
 | 5. Pulido y lanzamiento | Sonido, rendimiento, balance, demo pública | Lista para publicar |
@@ -98,14 +98,23 @@ Siguiendo las láminas de referencia (árboles, bloques, adornos):
   - **Logros:** 11 logros con bronce, plata y oro (talador, cantero, jardinero, arquitecto, noctámbulo…). Cada grado da estrellas.
 - **Nivel de isla:** las estrellas suben el nivel. Cada nivel desbloquea algo: farol (2), banca y un pedido más (3), trabajo 10 % más rápido (4), macetero (5)…
 
+## Fuego, parte 1 (v0.11)
+
+- **Capítulo 4 · Fuego jugable** (9 metas): aserradero, 10 tablas, 6 ladrillos, 4 de vidrio, que Brasa avive el horno, taller, 3 inventos, 2 botellas y la linterna, que prepara la entrada a la cueva.
+- **Producción en cola:** horno (lingote, ladrillo, vidrio) y aserradero (tablas). Se tocan y se encargan hasta 6 cosas; salen una tras otra con su burbuja de avance.
+- **Taller de inventos, primera era:** carretilla (caminar +25 %), pala de metal (mitad de paladas), martillo de metal (obras al doble), fuelle (horno +50 %), sierra dentada (aserradero al doble), catalejo (el mar trae cosas más seguido) y linterna (luz de noche). Algunos piden otro antes. Pico de obsidiana, balsa y engranaje se ven bloqueados como adelanto.
+- **Habilidades por figura:** Arci construye un 50 % más rápido; Musgo planta retoños ya crecidos y saca el doble de semillas; Brasa a veces funde un lingote al picar roca, aviva el horno (todo sale al doble) y da luz de noche.
+- **La playa:** cada tanto el mar deja una caja (materiales) o una botella. Una figura la recoge. Las botellas traen 12 mensajes de los Alfareros que se guardan en el Diario.
+- **Diario → Equipo:** figuras con su habilidad (las que faltan, con una pista), inventos hechos y mensajes leídos.
+- **Sonido** generado en el momento (sin archivos): golpes de hacha, pico y pala, martillo, caída de árboles, monedas, subir de nivel, acertijos, fuego y ambiente de olas, pájaros de día y grillos de noche. Se apaga en Menú.
+
 Ver también **docs/diseno-exploracion.md**: la visión de exploración, inventos y combates por turnos.
 
 ## Pendiente
 
-- **Habilidades por figura:** Brasa podría fundir sin horno o encender faroles; Musgo, hacer crecer retoños más rápido.
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **Era 2:** la cueva del volcán.
+- **v0.12 · Prototipo de exploración:** entrada a la cueva, vista tipo GBA, un nivel, una criatura y el primer combate por turnos.
 
 ## Decisiones tomadas
 

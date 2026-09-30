@@ -1,0 +1,108 @@
+{
+  "carretilla": {
+    "name": "Carretilla",
+    "desc": "Las figuras caminan un 25 % más rápido.",
+    "cost": {
+      "tablas": 6,
+      "lingote": 1
+    },
+    "seconds": 20,
+    "tier": 1
+  },
+  "palaM": {
+    "name": "Pala de metal",
+    "desc": "Cavar, plantar, trazar senderos y rellenar parcelas lleva la mitad de paladas.",
+    "cost": {
+      "tablas": 2,
+      "lingote": 2
+    },
+    "seconds": 20,
+    "tier": 1
+  },
+  "martillo": {
+    "name": "Martillo de metal",
+    "desc": "Cada martillazo avanza el doble en las obras.",
+    "cost": {
+      "tablas": 3,
+      "lingote": 2
+    },
+    "seconds": 20,
+    "tier": 1
+  },
+  "fuelle": {
+    "name": "Fuelle",
+    "desc": "El horno trabaja un 50 % más rápido.",
+    "cost": {
+      "tablas": 4,
+      "ladrillo": 4,
+      "lingote": 1
+    },
+    "seconds": 30,
+    "tier": 2,
+    "needs": [
+      "martillo"
+    ]
+  },
+  "sierra": {
+    "name": "Sierra dentada",
+    "desc": "El aserradero corta el doble de rápido.",
+    "cost": {
+      "tablas": 2,
+      "lingote": 3
+    },
+    "seconds": 30,
+    "tier": 2,
+    "needs": [
+      "martillo"
+    ]
+  },
+  "catalejo": {
+    "name": "Catalejo",
+    "desc": "Ves lo que trae el mar: llegan cajas y botellas el doble de seguido.",
+    "cost": {
+      "vidrio": 3,
+      "lingote": 2,
+      "tablas": 2
+    },
+    "seconds": 30,
+    "tier": 2,
+    "needs": [
+      "carretilla"
+    ]
+  },
+  "linterna": {
+    "name": "Linterna",
+    "desc": "De noche cada figura lleva su propia luz. Hará falta para entrar a la cueva del volcán.",
+    "cost": {
+      "vidrio": 2,
+      "lingote": 1,
+      "tablas": 1
+    },
+    "seconds": 40,
+    "tier": 3,
+    "needs": [
+      "catalejo"
+    ]
+  },
+  "picoO": {
+    "name": "Pico de obsidiana",
+    "desc": "Rompe los muros de la cueva.",
+    "cost": {},
+    "tier": 3,
+    "locked": "Necesita obsidiana de la cueva del volcán (próximamente)"
+  },
+  "balsa": {
+    "name": "Balsa",
+    "desc": "Para navegar hasta otras islas.",
+    "cost": {},
+    "tier": 4,
+    "locked": "Capítulo 5 · Mar adentro"
+  },
+  "engranaje": {
+    "name": "Engranajes",
+    "desc": "La base de las máquinas: molinos, poleas, bombas.",
+    "cost": {},
+    "tier": 4,
+    "locked": "Capítulo 6"
+  }
+}

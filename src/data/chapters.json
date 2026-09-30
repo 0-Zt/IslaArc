@@ -109,15 +109,57 @@
   {
     "id": "fuego",
     "title": "Fuego",
-    "locked": true,
-    "desc": "La cueva del volcán, el aserradero, ladrillos y vidrio. Brasa aprende a fundir sin horno.",
-    "goals": []
+    "desc": "Brasa conoce el fuego. Con tablas, ladrillos y vidrio se pueden inventar cosas que nadie ha visto en la isla.",
+    "goals": [
+      {
+        "id": "aserradero",
+        "text": "Construye el aserradero",
+        "hint": "build"
+      },
+      {
+        "id": "tablas",
+        "text": "Corta 10 tablas en el aserradero ({t}/10)"
+      },
+      {
+        "id": "ladrillos",
+        "text": "Hornea 6 ladrillos en el horno ({l}/6)"
+      },
+      {
+        "id": "vidrio",
+        "text": "Funde 4 de vidrio en el horno ({v}/4)"
+      },
+      {
+        "id": "avivar",
+        "text": "Toca a Brasa y luego el horno para que avive el fuego"
+      },
+      {
+        "id": "taller",
+        "text": "Construye el taller de inventos",
+        "hint": "build"
+      },
+      {
+        "id": "inventos",
+        "text": "Crea 3 inventos en el taller ({i}/3)"
+      },
+      {
+        "id": "botellas",
+        "text": "Encuentra 2 botellas que traiga el mar ({b2}/2)"
+      },
+      {
+        "id": "linterna",
+        "text": "Inventa la linterna: la cueva está a oscuras"
+      }
+    ],
+    "reward": {
+      "stars": 8,
+      "text": "La entrada a la cueva del volcán (próxima versión) y +8 ★"
+    }
   },
   {
     "id": "mar",
     "title": "Mar adentro",
     "locked": true,
-    "desc": "Un barco de verdad, islas que nadie ha pisado y las primeras batallas.",
+    "desc": "Una balsa, islas que nadie ha pisado y las primeras batallas. (La cueva del volcán llega antes.)",
     "goals": []
   },
   {

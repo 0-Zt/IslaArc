@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { on, emit } from '../core/events';
 import { camera } from '../render/renderer';
 import { buildings, smokePoint, isDone, buildingDef, type Building } from '../game/buildings';
+import { makesThings, jobInfo, jobSeconds } from '../game/production';
 import { crew, select, selected, type Crew } from '../game/crew';
 import { sites, expandMode, hitsFor } from '../game/expansion';
 import { marks } from '../game/marks';
@@ -39,15 +40,18 @@ function pop(key: object) { const b = bubbles.get(key); if (b) { b.el.classList.
 
 /* ---------- furnace ---------- */
 const doneUntil = new Map<Building, number>();
-on('smelted', (b: Building) => {
+const lastJob = new Map<Building, string>();
+on('smelted', (b: Building, job: string) => {
+  lastJob.set(b, job);
   _v.copy(smokePoint(b)).project(camera);
-  if (_v.z > 1 || Math.abs(_v.x) > 1 || Math.abs(_v.y) > 1) emit('toast', 'Lingote listo en el horno');
+  if ((_v.z > 1 || Math.abs(_v.x) > 1 || Math.abs(_v.y) > 1) && !job.startsWith('inv:')) emit('toast', `${jobInfo(job).name} listo`);
   doneUntil.set(b, performance.now() + 3500); pop(b);
 });
 
 /* ---------- idle figures ---------- */
 const idleSince = new Map<Crew, number>();
 
+const BULB = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="10" r="6" fill="#ffd24a"/><rect x="9" y="15" width="6" height="5" fill="#b9c2cc"/></svg>';
 const HAMMER = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="4" width="11" height="6" rx="1.5" fill="#8a5a2e"/><rect x="11" y="9" width="3" height="12" rx="1" fill="#c9a06a"/></svg>';
 const SHOVEL = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="11" y="2" width="2.5" height="13" fill="#c9a06a"/><path d="M7 14h10v4a5 5 0 0 1-10 0z" fill="#b9c2cc"/></svg>';
 
@@ -67,13 +71,19 @@ export function tickLabels() {
       else show(b, at.clone(), `${HAMMER}<small>${name} · envía una figura</small>`, 'wait', `${name} esperando una figura`, () => emit('toast', 'Toca una figura y luego la obra para construirla'));
       continue;
     }
-    if (b.type === 'horno') {
-      const done = now < (doneUntil.get(b) || 0), working = b.queue > 0;
-      if (!done && !working) continue;
+    if (makesThings(b.type)) {
+      const done = now < (doneUntil.get(b) || 0), job = b.jobs[0];
+      if (!done && !job) continue;
       const at = _v.copy(smokePoint(b)); at.y += 0.35;
-      const pct = Math.round(b.prog * 100), secs = Math.ceil((1 - b.prog) * DATA.RECIPES.lingote.seconds);
-      if (working) show(b, at.clone(), `<img src="${ICON.lingote}" alt=""><span class="meter"><i style="width:${pct}%"></i></span><small>${secs}s${b.queue > 1 ? ` · ${b.queue} en cola` : ''}</small>`, '', `Horno fundiendo, ${pct} por ciento`, () => { if (!sheetOpen()) openSheet('horno', b); });
-      else show(b, at.clone(), `<img src="${ICON.lingote}" alt=""><b>¡Lingote listo!</b>`, 'done', 'Lingote listo', () => { if (!sheetOpen()) openSheet('horno', b); });
+      const open = () => { if (!sheetOpen()) openSheet(b.type === 'taller' ? 'taller' : 'prod', b); };
+      if (job) {
+        const info = jobInfo(job), pct = Math.round(b.prog * 100), secs = Math.ceil((1 - b.prog) * jobSeconds(b.type, job, b.stoked));
+        const icon = info.out ? `<img src="${(ICON as any)[info.out]}" alt="">` : BULB;
+        show(b, at.clone(), `${icon}<span class="meter"><i style="width:${pct}%"></i></span><small>${secs}s${b.jobs.length > 1 ? ` · ${b.jobs.length - 1} más` : ''}${b.stoked ? ' · 🔥' : ''}</small>`, '', `${info.name}, ${pct} por ciento`, open);
+      } else {
+        const last = lastJob.get(b) || '', info = jobInfo(last);
+        show(b, at.clone(), `${info.out ? `<img src="${(ICON as any)[info.out]}" alt="">` : BULB}<b>¡${info.name} listo!</b>`, 'done', `${info.name} listo`, open);
+      }
     }
     if (b.type === 'casa') {
       const ready = Object.entries(DATA.TOOLS).some(([k, d]: [string, any]) => !S.tools[k] && afford(d.cost));

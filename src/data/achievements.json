@@ -119,5 +119,38 @@
       15,
       40
     ]
+  },
+  {
+    "id": "playero",
+    "name": "Lo que trae el mar",
+    "desc": "Cajas recogidas en la playa",
+    "stat": "cajas",
+    "tiers": [
+      3,
+      15,
+      40
+    ]
+  },
+  {
+    "id": "lector",
+    "name": "Mensajes perdidos",
+    "desc": "Botellas con mensaje encontradas",
+    "stat": "botellas",
+    "tiers": [
+      2,
+      6,
+      12
+    ]
+  },
+  {
+    "id": "inventor",
+    "name": "Inventor",
+    "desc": "Inventos creados",
+    "stat": "inventos",
+    "tiers": [
+      2,
+      5,
+      7
+    ]
   }
 ]

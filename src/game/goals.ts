@@ -29,6 +29,15 @@ const CHECK: Record<string, () => boolean> = {
   braseros: () => builtBraziers() >= 5,
   llamas: () => S.ruins.lit.every(Boolean),
   brasa: () => !!S.ruins.awake,
+  aserradero: () => has('aserradero'),
+  tablas: () => (S.stats.tablas || 0) >= 10,
+  ladrillos: () => (S.stats.ladrillo || 0) >= 6,
+  vidrio: () => (S.stats.vidrio || 0) >= 4,
+  avivar: () => !!S.flags.avivado,
+  taller: () => has('taller'),
+  inventos: () => Object.keys(S.inv).length >= 3,
+  botellas: () => S.lore.length >= 2,
+  linterna: () => !!S.inv.linterna,
 };
 const builtBraziers = () => buildings.filter(b => b.type === 'brasero' && isDone(b)).length;
 
@@ -41,7 +50,10 @@ export function chapterStep() {
   return { n: list.indexOf(g) + 1, of: list.length, ch: g.ch };
 }
 /** Goal text with its live counters filled in. */
-export const goalText = (g: { text: string }) => g.text.replace('{n}', String(S.ruins.lit.filter(Boolean).length)).replace('{b}', String(builtBraziers()));
+export const goalText = (g: { text: string }) => g.text
+  .replace('{n}', String(S.ruins.lit.filter(Boolean).length)).replace('{b}', String(builtBraziers()))
+  .replace('{t}', String(Math.min(10, S.stats.tablas || 0))).replace('{l}', String(Math.min(6, S.stats.ladrillo || 0))).replace('{v}', String(Math.min(4, S.stats.vidrio || 0)))
+  .replace('{i}', String(Math.min(3, Object.keys(S.inv).length))).replace('{b2}', String(Math.min(2, S.lore.length)));
 export const goalDone = (i: number) => i < S.goal;
 
 export function checkGoals(quiet = false) {

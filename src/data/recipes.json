@@ -1,3 +1,45 @@
 {
-  "lingote": { "name": "Lingote", "desc": "2 de mineral y 1 de madera para el fuego", "cost": { "mineral": 2, "madera": 1 }, "seconds": 8, "maxQueue": 5 }
+  "lingote": {
+    "name": "Lingote",
+    "desc": "2 de mineral y 1 de madera para el fuego",
+    "cost": {
+      "mineral": 2,
+      "madera": 1
+    },
+    "out": "lingote",
+    "seconds": 8,
+    "at": "horno"
+  },
+  "ladrillo": {
+    "name": "Ladrillo",
+    "desc": "2 de tierra cocida con 1 de madera",
+    "cost": {
+      "tierra": 2,
+      "madera": 1
+    },
+    "out": "ladrillo",
+    "seconds": 6,
+    "at": "horno"
+  },
+  "vidrio": {
+    "name": "Vidrio",
+    "desc": "3 de arena fundida con 1 de madera",
+    "cost": {
+      "arena": 3,
+      "madera": 1
+    },
+    "out": "vidrio",
+    "seconds": 10,
+    "at": "horno"
+  },
+  "tablas": {
+    "name": "Tablas",
+    "desc": "2 de madera aserrada en tablas parejas",
+    "cost": {
+      "madera": 2
+    },
+    "out": "tablas",
+    "seconds": 5,
+    "at": "aserradero"
+  }
 }

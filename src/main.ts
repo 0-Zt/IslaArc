@@ -10,7 +10,9 @@ import { tickParticles } from './world/particles';
 import { updateWater, tickWater } from './world/water';
 import { buildIslet, spawnRuins, clearRuins, tickRuins, prepareBrazier, fixBrazierModels, brasaSpot, checkReach, rebuildBrazier, lightFlame, center as ruinCenter } from './game/ruins';
 import { buildHit } from './game/buildings';
-import { openFlame } from './ui/sheets';
+import { openFlame, openSheet } from './ui/sheets';
+import { unlockAudio, setSound, sfx, tickAmbience } from './audio/sfx';
+import { nightK } from './render/daynight';
 import { tickDay, refreshDay, phaseName, minutesToNight, isNight } from './render/daynight';
 import { S, setState, freshState, loadSave, save, hasSave, clearSave, DATA } from './game/state';
 import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected, select } from './game/crew';
@@ -23,8 +25,9 @@ import { restoreExpansions, restoreSites, clearSites, exitExpandMode, pulseMarke
 import { checkGoals } from './game/goals';
 import { initProgress, checkAchievements } from './game/progress';
 import { fillBoard } from './game/board';
+import { restoreBeach, clearBeach, tickBeach } from './game/beach';
 import { $, initHUD, refreshHUD, toast } from './ui/hud';
-import { initSheets, initSheetEvents, refreshSheet, closeSheet } from './ui/sheets';
+import { initSheets, initSheetEvents, refreshSheet, closeSheet, openMessage } from './ui/sheets';
 import { initInput, centreTile, tickMarker, onTap, debugPick } from './ui/input';
 import { tickLabels, clearLabels } from './ui/labels';
 
@@ -35,7 +38,7 @@ renderer.info.autoReset = false;
 setOccupiedTest(occupied);
 
 function newGame(state: typeof S | null) {
-  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearSites(); clearMarks(); clearRuins();
+  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearSites(); clearMarks(); clearRuins(); clearBeach();
   clearCrew(); clearBuildings(); clearForest(); clearLabels();
   while (worldGroup.children.length) worldGroup.remove(worldGroup.children[0]);
   clearTrees();
@@ -53,6 +56,7 @@ function newGame(state: typeof S | null) {
   buildTerrain();
   updateWater();
   restoreSites();
+  restoreBeach();
   restoreMarks();
   buildForestEdge();
   for (const b of S.buildings) { if (b.type === 'brasero') prepareBrazier(b.i, b.j); createBuilding(b.type, b.i, b.j, b.rot, false, b); }
@@ -89,6 +93,9 @@ on('placed', () => persist());
 on('expanded', () => { updateWater(); checkReach(crew[0] ? tileUnder(crew[0].root.position.x, crew[0].root.position.z) : null, bfs); persist(); });
 on('flameLit', () => persist());
 on('boardChanged', () => persist());
+on('beachChanged', () => persist());
+on('invented', () => persist());
+on('bottleRead', (i: number) => openMessage(i));
 on('levelUp', () => persist());
 on('finaleStart', (c: Tile) => { closeSheet(); select(null); flyTo(new THREE.Vector3(c.wx, 1, c.wz), Math.max(camera.zoom, 1.1)); toast('La tierra tiembla en las ruinas…'); });
 on('brasaAwake', (c: Tile) => {
@@ -111,6 +118,20 @@ $('tContinue').addEventListener('click', () => startGame(loadSave()));
 $('tNew').addEventListener('click', () => { clearSave(); startGame(null); });
 
 resize(); addEventListener('resize', resize);
+/* sound: browsers only allow it after the first tap */
+setSound(gfx.sound);
+addEventListener('pointerdown', () => unlockAudio(), { capture: true });
+on('treeFelled', () => sfx('fall'));
+on('gain', () => sfx('pop'));
+on('levelUp', () => sfx('level'));
+on('chapterDone', () => sfx('level'));
+on('achievement', () => sfx('coin'));
+on('obraDone', () => sfx('coin', 0.7));
+on('flameLit', () => sfx('solve'));
+on('expanded', () => sfx('splash'));
+on('boardChanged', () => sfx('tap'));
+on('invented', () => sfx('solve'));
+on('beachChanged', () => sfx('tap'));
 newGame(loadSave());
 
 /* the sharp band of the miniature effect follows what matters: the ghost, the selected figure, or the figure nearest the view */
@@ -146,6 +167,7 @@ function frame(now: number) {
   tickTrees(dt, T, t => onTreeFallen(t, T));
   tickForest(T);
   tickRuins(dt);
+  if (running) tickBeach(T);
   tickGrove(dt, T);
   tickRocks(dt, T);
   tickBuildings(dt);
@@ -156,6 +178,7 @@ function frame(now: number) {
   tickLabels();
   uiAcc += dt; if (uiAcc > 0.25) { refreshHUD(uiAcc); refreshSheet(); uiAcc = 0; }
   tickWater(T);
+  tickAmbience(raw, nightK);
   tickFly(raw); controls.update(); clampCamera();
   sunAcc += dt; if (sunAcc > 0.5) { sunAcc = 0; placeSun(); }
   const ft = focusTarget(); focusOn(ft ? ft.setY(ft.y + 0.5).project(camera).y : null, raw, !!place);
@@ -174,8 +197,8 @@ if (location.hash === '#debug') {
     get S() { return S; }, crew, buildings, trees, rocks, ancients, get mound() { return mound; }, grove: () => grove,
     renderer, camera, controls, order, tileAt, landTiles, checkGoals, pixelRatio,
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
-    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
+    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
-    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid,
+    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet,
   };
 }

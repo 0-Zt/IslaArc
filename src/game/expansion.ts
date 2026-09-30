@@ -86,8 +86,8 @@ export function cancelSite(s: Site) {
 }
 
 /** One shovelful. Returns true when the plot becomes land. */
-export function fillHit(s: Site) {
-  s.hits++;
+export function fillHit(s: Site, power = 1) {
+  s.hits = Math.min(hitsFor(s.kind), s.hits + power);
   const saved = S.sites.find(q => q.i === s.i && q.j === s.j); if (saved) saved.hits = s.hits;
   puff(s.tile.wx, s.fill.position.y + s.fill.scale.y / 2, s.tile.wz, s.kind === 'playa' ? '#f0d890' : '#8a6040', 6, 1.4, 1.2);
   setFill(s);

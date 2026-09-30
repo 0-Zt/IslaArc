@@ -6,11 +6,15 @@ import { refreshTools } from '../game/crew';
 import { KINDS, expandCost, startSite, enterExpandMode, exitExpandMode, type ExpandKind } from '../game/expansion';
 import { enterMarkMode } from '../game/marks';
 import { refreshDay } from '../render/daynight';
+import { setSound } from '../audio/sfx';
 import { unlocked } from '../game/progress';
+import { recipesAt, RECIPES, INV, invState, startInvention, jobInfo, MAX_QUEUE } from '../game/production';
+import { ICON } from './hud';
 import { diarioHTML, diarioClick, diarioSig, setTab, type DiarioTab } from './diario';
 import { BRAZIERS, rebuildBrazier } from '../game/ruins';
 import { initPuzzles, openPuzzle, closePuzzle, puzzleHTML, puzzleClick, puzzleSig } from './puzzles';
 import { runeSVG } from '../assets/ruins';
+import { LORE_TEXT } from '../game/beach';
 import { assignIdleBuilder } from '../game/crew';
 import { ICONS } from '../assets/buildings';
 import { $, img, toast } from './hud';
@@ -18,7 +22,7 @@ import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'fin';
+type SheetType = 'build' | 'casa' | 'prod' | 'taller' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
 let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {};
@@ -29,16 +33,22 @@ export function openSheet(t: SheetType, b: Building | null = null, c: [number, n
 export function closeSheet() { if (type === 'puzzle') closePuzzle(); type = null; $('sheet').hidden = true; }
 /** A ruined brazier: what it is and what rebuilding it costs. */
 let ruinK = -1;
+const BULB = '<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="17" r="10" fill="#ffd24a"/><rect x="15" y="26" width="10" height="7" fill="#b9c2cc"/><rect x="17" y="13" width="6" height="2" fill="#fff6c0"/></svg>';
+const LOCK = '<svg viewBox="0 0 12 12" width="18" height="18" aria-hidden="true"><rect x="2" y="5" width="8" height="6" rx="1" fill="#8a8478"/><path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="#8a8478" stroke-width="1.5" fill="none"/></svg>';
 export function openRuin(k: number) { ruinK = k; openSheet('ruina'); }
 export function openFlame(k: number) { openPuzzle(k); openSheet('puzzle'); }
+let msgK = 0;
+export function openMessage(k: number) { msgK = k; openSheet('mensaje'); }
 export function openDiario(t: DiarioTab = 'ruta') { setTab(t); openSheet('diario'); }
 
 const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => `<span class="${S.res[k as ResKey] >= (v as number) ? '' : 'no'}">${img(k as ResKey)}${S.res[k as ResKey]}/${v}</span>`).join('')}</div>`;
 // the settings sheet never re-renders by itself, so sliders keep working while dragged
-const signature = () => type === 'gfx' ? 'gfx' : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.queue, S.expanded.length]);
+const signature = () => type === 'gfx' ? 'gfx' : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.jobs?.length, arg?.jobs?.[0], S.inv, S.expanded.length]);
 
 function render() {
   sig = signature();
+  const seg = (key: string, opts: [string, string][], cur: string) => `<div class="seg" role="group">${opts.map(([v, n]) => `<button data-set="${key}" data-val="${v}" class="${cur === v ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+  const onoff = (key: 'bloom' | 'vignette' | 'shadows' | 'fps' | 'cap60' | 'daycycle' | 'sound') => seg(key, [['1', 'Sí'], ['0', 'No']], gfx[key] ? '1' : '0');
   let h = '<div class="grab"></div><button class="x" data-act="close" aria-label="Cerrar">×</button>';
   if (type === 'build') {
     h += '<h2>Construir</h2><p>Paga los materiales, ubica la obra con la guía amarilla y una figura la levanta a martillazos.</p>';
@@ -62,26 +72,46 @@ function render() {
     h += `<div class="row"><div class="thumb">${ICONS.plantar}</div><div class="info"><b>Plantar semillas</b><small>${S.res.semilla > 0 ? `Tienes ${S.res.semilla}. Elige la especie y dónde plantar; crece sola.` : 'Las semillas salen al talar árboles grandes.'}</small></div><button class="btn${S.res.semilla > 0 ? ' main' : ''}" data-act="plant" ${S.res.semilla > 0 ? '' : 'disabled'}>Plantar</button></div>`;
     h += `<div class="row"><div class="thumb">${ICONS.sendero}</div><div class="info"><b>Senderos</b><small>Una figura cava el pasto con la pala. Ahí no crecen árboles y se camina más rápido.</small></div><button class="btn main" data-act="path">Trazar</button></div>`;
   } else if (type === 'casa') {
-    h += '<h2>Casa · Taller</h2><p>Con lingotes del horno se fabrican herramientas de metal. Cambian lo que rinde cada figura.</p>';
+    h += '<h2>Casa · Herramientas</h2><p>Con lingotes del horno se fabrican herramientas de metal. Cambian lo que rinde cada figura. Los inventos más grandes se hacen en el taller.</p>';
     for (const [k, d] of Object.entries(DATA.TOOLS) as [string, any][]) {
       const ok = S.tools[k];
       h += `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${d.name}</b><small>${d.desc}</small>${ok ? '' : costHTML(d.cost)}</div>`
         + (ok ? '<span class="done">Hecho</span>' : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-tool="${k}" ${afford(d.cost) ? '' : 'disabled'}>Fabricar</button>`) + '</div>';
     }
-  } else if (type === 'horno' && arg) {
-    const R = DATA.RECIPES.lingote, b = arg;
-    h += `<h2>Horno</h2><p>Cada lingote tarda ${R.seconds} segundos. Puedes dejar varios en cola.</p>`
-      + `<div class="row"><div class="thumb">${ICONS.lingote}</div><div class="info"><b>${R.name}</b><small>${R.desc}</small>${costHTML(R.cost)}`
-      + (b.queue ? `<div class="bar"><i id="hbar" style="width:${Math.round(b.prog * 100)}%"></i></div><small>En el horno: ${b.queue}</small>` : '')
-      + `</div><button class="btn${afford(R.cost) ? ' main' : ''}" data-act="smelt" ${afford(R.cost) && b.queue < R.maxQueue ? '' : 'disabled'}>Fundir</button></div>`
-      + (S.res.mineral < 2 ? '<p>El mineral sale al picar las rocas grises con vetas azules.</p>' : '');
+  } else if (type === 'prod' && arg) {
+    const b = arg, d = buildingDef(b.type);
+    h += `<h2>${d.name}</h2><p>Cada cosa se hace una tras otra; puedes dejar hasta ${MAX_QUEUE} en cola.${b.type === 'horno' ? (S.crew.includes('brasa') ? ' Toca a Brasa y luego el horno: avivará el fuego y todo sale el doble de rápido.' : '') : ''}</p>`;
+    if (b.jobs.length) h += `<div class="qline">${b.jobs.map((j, k) => { const o = jobInfo(j).out; return `<span class="q${k ? '' : ' now'}">${o ? `<img src="${(ICON as any)[o]}" alt="">` : ''}</span>`; }).join('')}<div class="bar"><i id="hbar" style="width:${Math.round(b.prog * 100)}%"></i></div></div>`;
+    for (const [id, r] of recipesAt(b.type)) {
+      const ok = afford(r.cost) && b.jobs.length < MAX_QUEUE;
+      h += `<div class="row"><div class="thumb"><img class="pix" src="${(ICON as any)[r.out]}" alt=""></div><div class="info"><b>${r.name}</b><small>${r.desc} · ${r.seconds} s</small>${costHTML(r.cost)}</div>`
+        + `<button class="btn${ok ? ' main' : ''}" data-recipe="${id}" ${ok ? '' : 'disabled'}>Hacer</button></div>`;
+    }
+    if (b.type === 'horno' && S.res.mineral < 2) h += '<p>El mineral sale al picar las rocas grises con vetas azules.</p>';
+  } else if (type === 'taller' && arg) {
+    const b = arg;
+    h += '<h2>Taller de inventos</h2><p>Cada invento cambia algo para siempre. El taller trabaja en uno a la vez.</p>';
+    const cur = b.jobs.find(j => j.startsWith('inv:'));
+    if (cur) h += `<div class="qline"><span class="q now">${BULB}</span><b style="flex:1">${INV[cur.slice(4)].name}</b><div class="bar"><i id="hbar" style="width:${Math.round(b.prog * 100)}%"></i></div></div>`;
+    const tiers = [...new Set(Object.values(INV).map(d => d.tier))].sort();
+    for (const t of tiers) {
+      h += `<h3>Nivel ${t}</h3>`;
+      for (const [id, d] of Object.entries(INV)) {
+        if (d.tier !== t) continue;
+        const st = invState(id, b.jobs);
+        const right = st === 'done' ? '<span class="done">Hecho</span>' : st === 'working' ? '<span class="done">Inventando…</span>'
+          : st === 'locked' ? `<span class="done" style="color:var(--muted)">${LOCK}</span>`
+          : st === 'needs' ? `<span class="done" style="color:var(--muted)">Necesita ${d.needs!.filter(n => !S.inv[n]).map(n => INV[n].name.toLowerCase()).join(', ')}</span>`
+          : `<button class="btn${afford(d.cost) && !cur ? ' main' : ''}" data-invent="${id}" ${afford(d.cost) && !cur ? '' : 'disabled'}>Inventar</button>`;
+        h += `<div class="row${st === 'locked' ? ' dim' : ''}"><div class="thumb">${BULB}</div><div class="info"><b>${d.name}</b><small>${st === 'locked' ? d.locked : d.desc}${d.seconds && st !== 'done' && st !== 'locked' ? ` · ${d.seconds} s` : ''}</small>${st === 'ready' || st === 'needs' ? costHTML(d.cost) : ''}</div>${right}</div>`;
+      }
+    }
   } else if (type === 'menu') {
     h += '<h2>Menú</h2><p>La partida se guarda sola en este navegador.</p>'
+      + `<div class="row col"><div class="info"><b>Sonido</b><small>Efectos al trabajar, olas, pájaros de día y grillos de noche.</small></div>${onoff('sound')}</div>`
       + '<div class="row"><div class="info"><b>Ajustes gráficos</b><small>Efecto maqueta, sombras, brillo y calidad.</small></div><button class="btn" data-act="gfx">Abrir</button></div>'
       + `<div class="row"><div class="info"><b>Nueva partida</b><small>Borra el progreso y empieza de cero.</small></div>${confirmReset ? '<button class="btn main" data-act="reset2">Sí, borrar</button>' : '<button class="btn" data-act="reset">Empezar de cero</button>'}</div>`;
   } else if (type === 'gfx') {
-    const seg = (key: string, opts: [string, string][], cur: string) => `<div class="seg" role="group">${opts.map(([v, n]) => `<button data-set="${key}" data-val="${v}" class="${cur === v ? 'on' : ''}">${n}</button>`).join('')}</div>`;
-    const onoff = (key: 'bloom' | 'vignette' | 'shadows' | 'fps' | 'cap60' | 'daycycle') => seg(key, [['1', 'Sí'], ['0', 'No']], gfx[key] ? '1' : '0');
     h += '<h2>Ajustes gráficos</h2><p>Se guardan en este dispositivo.</p>'
       + `<div class="row col"><div class="info"><b>Efecto maqueta</b><small>Desenfoque arriba y abajo que da aspecto de miniatura. En 0 queda todo nítido.</small></div>
          <div class="slide"><input type="range" id="gTilt" min="0" max="100" step="5" value="${Math.round(gfx.tilt * 100)}" aria-label="Intensidad del efecto maqueta"><output id="gTiltOut">${Math.round(gfx.tilt * 100)}</output></div></div>`
@@ -111,6 +141,8 @@ function render() {
       + `<div class="row"><div class="thumb">${runeSVG(d.sym, '#ffb45a', 34)}</div><div class="info"><b>Reconstruir</b><small>Una figura lo levanta con el martillo. Después habrá que encender su llama.</small>${costHTML(d.cost)}</div><button class="btn${afford(d.cost) ? ' main' : ''}" data-rebuild="${ruinK}" ${afford(d.cost) ? '' : 'disabled'}>Reconstruir</button></div>`;
   } else if (type === 'puzzle') {
     h += puzzleHTML();
+  } else if (type === 'mensaje') {
+    h += `<h2>Mensaje en una botella</h2><p class="lore">${LORE_TEXT[msgK]}</p><p style="color:var(--muted)">Mensaje ${S.lore.length} de ${LORE_TEXT.length}. Los guardas en el Diario, pestaña Equipo.</p><button class="btn main" data-act="close" style="width:100%">Guardar</button>`;
   } else if (type === 'diario') {
     h += diarioHTML();
   } else if (type === 'fin') {
@@ -126,7 +158,7 @@ function render() {
 export function refreshSheet() {
   if (!type) return;
   if (signature() !== sig) render();
-  else if (type === 'horno' && arg) { const bar = document.getElementById('hbar'); if (bar) bar.style.width = Math.round(arg.prog * 100) + '%'; }
+  else if ((type === 'prod' || type === 'taller') && arg) { const bar = document.getElementById('hbar'); if (bar) bar.style.width = Math.round(arg.prog * 100) + '%'; }
 }
 
 export function initSheetEvents() {
@@ -152,7 +184,8 @@ export function initSheetEvents() {
       pay(d.cost); S.tools[b.dataset.tool] = true; refreshTools();
       toast(`Fabricaste: ${d.name}`); render(); return;
     }
-    if (b.dataset.act === 'smelt' && arg) { smelt(arg); render(); return; }
+    if (b.dataset.recipe && arg) { if (!smelt(arg, b.dataset.recipe)) toast('No se puede ahora'); render(); return; }
+    if (b.dataset.invent && arg) { const r = startInvention(b.dataset.invent, arg.jobs); if (r) toast(r); render(); return; }
     if (b.dataset.act === 'gfx') { openSheet('gfx'); return; }
     if (b.dataset.act === 'expand') { closeSheet(); enterExpandMode(); return; }
     if (b.dataset.act === 'plant') { openSheet('plantar'); return; }
@@ -168,6 +201,7 @@ export function initSheetEvents() {
       const k = b.dataset.set, v = b.dataset.val!;
       setGfx(k === 'ao' || k === 'quality' ? { [k]: v } as any : { [k]: v === '1' });
       if (k === 'daycycle') refreshDay();
+      if (k === 'sound') setSound(gfx.sound);
       render(); return;
     }
     if (b.dataset.act === 'reset') { confirmReset = true; render(); return; }

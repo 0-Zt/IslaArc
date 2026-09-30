@@ -50,10 +50,11 @@ export function removeMark(m: Mark, refund = false) {
 }
 
 /** A figure finished the work on a mark. */
-export function completeMark(m: Mark) {
+export function completeMark(m: Mark, by?: string) {
   const t = m.tile;
   removeMark(m);
-  if (m.kind === 'plant') { startGrowth(t, m.type || 'roble', 0); emit('planted'); emit('forestChanged'); }
+  // Musgo's green thumb: his seedlings start a stage ahead
+  if (m.kind === 'plant') { startGrowth(t, m.type || 'roble', by === 'musgo' ? 1 : 0); emit('planted'); emit('forestChanged'); }
   else { setPath(t); emit('pathsChanged', t); }
 }
 

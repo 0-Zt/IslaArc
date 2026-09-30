@@ -102,11 +102,12 @@ export interface Gfx {
   ao: 'off' | 'suave' | 'marcada';
   bloom: boolean; vignette: boolean; shadows: boolean; fps: boolean;
   daycycle: boolean;       // the day turns into night and back
+  sound: boolean;
   cap60: boolean;          // never draw more than 60 frames per second (120 Hz phones heat up and throttle)
   v?: number;
 }
 const GFX_KEY = 'isla-arcilla-gfx';
-export const GFX_DEFAULT: Gfx = { quality: IS_TOUCH ? 'baja' : 'alta', tilt: 0.35, tiltFollow: true, ao: 'off', bloom: true, vignette: true, shadows: true, fps: false, cap60: true, daycycle: true, v: 2 };
+export const GFX_DEFAULT: Gfx = { quality: IS_TOUCH ? 'baja' : 'alta', tilt: 0.35, tiltFollow: true, ao: 'off', bloom: true, vignette: true, shadows: true, fps: false, cap60: true, daycycle: true, sound: true, v: 2 };
 export const gfx: Gfx = { ...GFX_DEFAULT };
 try {
   const saved = JSON.parse(localStorage.getItem(GFX_KEY) || '{}');

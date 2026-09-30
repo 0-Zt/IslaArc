@@ -22,5 +22,17 @@
   "semilla": {
     "name": "Semillas",
     "hidden": true
+  },
+  "tablas": {
+    "name": "Tablas",
+    "hiddenUntil": "aserradero"
+  },
+  "ladrillo": {
+    "name": "Ladrillos",
+    "hiddenUntil": "horno"
+  },
+  "vidrio": {
+    "name": "Vidrio",
+    "hiddenUntil": "horno"
   }
 }

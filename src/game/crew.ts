@@ -3,6 +3,7 @@ import { emit, on } from '../core/events';
 import { lerp, smoothstep, angleLerp } from '../core/random';
 import { makeCanvas } from '../core/canvas';
 import { scene, glowMul } from '../render/renderer';
+import { lampK } from '../render/daynight';
 import { tileAt, tileUnder, topY, walkable, landTiles, DIRS, type Tile } from '../world/island';
 import { spawnLeaf, type Tree } from '../world/trees';
 import { puff } from '../world/particles';
@@ -13,14 +14,18 @@ import { completeMark, nearestMark, type Mark, type MarkKind } from './marks';
 import { fillHit, sites, type Site } from './expansion';
 import { S, DATA, gain } from './state';
 import { workSpeed } from './progress';
+import { walkBoost, shovelHits } from './production';
+import { collectAt } from './beach';
+import { sfx, type Sfx } from '../audio/sfx';
 import { buildings, buildHit, isDone, type Building } from './buildings';
 
-export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'plant' | 'path' | 'build' | 'walk';
+export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'plant' | 'path' | 'build' | 'avivar' | 'recoger' | 'walk';
 export interface Job { kind: JobKind; tile: Tile }
 export interface Crew extends Figure {
   job: Job | null; path: Tile[]; anim: 'idle' | 'walk' | 'work' | 'wave';
   t: number; phase: number; blink: number; dir: number; hits: number;
   toolKey: ToolKey; workHit: boolean; lastStep: number; off: number; offz: number;
+  light?: THREE.Mesh;
 }
 
 const blob = new THREE.CanvasTexture(makeCanvas(64, 64, x => {
@@ -30,6 +35,12 @@ const blob = new THREE.CanvasTexture(makeCanvas(64, 64, x => {
 }));
 
 export const crew: Crew[] = [];
+const lampGeo = new THREE.PlaneGeometry(2.2, 2.2);
+const lampTex = new THREE.CanvasTexture(makeCanvas(64, 64, x => {
+  const g = x.createRadialGradient(32, 32, 2, 32, 32, 31);
+  g.addColorStop(0, 'rgba(255,220,160,0.9)'); g.addColorStop(0.5, 'rgba(255,180,90,0.3)'); g.addColorStop(1, 'rgba(255,150,60,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+}));
 export let selected: CharId | null = null;
 export function select(id: CharId | null) { selected = id; emit('changed'); }
 export const tileOf = (c: Crew) => tileUnder(c.root.position.x, c.root.position.z);
@@ -50,7 +61,7 @@ export function clearCrew() { for (const c of crew) scene.remove(c.root); crew.l
 
 function setAnim(c: Crew, a: Crew['anim']) { if (c.anim !== a) { c.anim = a; c.t = 0; c.workHit = false; } }
 function setTool(c: Crew, kind: JobKind) {
-  c.toolKey = kind === 'tree' || kind === 'ancient' ? (S.tools.hacha ? 'axeM' : 'axe') : kind === 'rock' ? (S.tools.pico ? 'pickM' : 'pick') : kind === 'build' ? 'hammer' : 'shovel';
+  c.toolKey = kind === 'tree' || kind === 'ancient' ? (S.tools.hacha ? 'axeM' : 'axe') : kind === 'rock' ? (S.tools.pico ? 'pickM' : 'pick') : kind === 'build' ? 'hammer' : kind === 'avivar' ? ('' as ToolKey) : 'shovel';
 }
 export function refreshTools() { for (const c of crew) if (c.job) setTool(c, c.job.kind); }
 
@@ -74,8 +85,8 @@ export function bfs(start: Tile, goal: (t: Tile) => boolean): Tile[] | null {
 /** Sends a figure to work on (or walk to) a tile. Returns a reason when it cannot. */
 export function order(c: Crew, tile: Tile, kind: JobKind): true | string {
   const here = tileOf(c); if (!here) return 'No hay camino hasta ahí';
-  const standOn = kind === 'walk' || kind === 'sand' || kind === 'soil' || kind === 'path';
-  const b: Building | undefined = kind === 'build' ? tile.building : undefined;
+  const standOn = kind === 'walk' || kind === 'sand' || kind === 'soil' || kind === 'path' || kind === 'recoger';
+  const b: Building | undefined = kind === 'build' || kind === 'avivar' ? tile.building : undefined;
   const reach = standOn ? (t: Tile) => t === tile
     : b ? (t: Tile) => b.tiles.some(q => adjacent(t, q) && Math.abs(t.h - q.h) <= 1)   // any side of a building site
     : (t: Tile) => adjacent(t, tile) && Math.abs(t.h - tile.h) <= 1;
@@ -90,7 +101,8 @@ function arrive(c: Crew) {
   const j = c.job;
   if (!j || j.kind === 'walk') { c.job = null; setAnim(c, 'idle'); emit('changed'); return; }
   const p = c.root.position;
-  if (j.kind === 'build' && j.tile.building) { const bt = j.tile.building.tiles as Tile[]; const n = bt.reduce((a, q) => Math.hypot(q.wx - p.x, q.wz - p.z) < Math.hypot(a.wx - p.x, a.wz - p.z) ? q : a, bt[0]); c.dir = Math.atan2(n.wx - p.x, n.wz - p.z); }
+  if (j.kind === 'recoger') { collectAt(j.tile, c); c.job = null; setAnim(c, 'idle'); emit('changed'); return; }
+  if ((j.kind === 'build' || j.kind === 'avivar') && j.tile.building) { const bt = j.tile.building.tiles as Tile[]; const n = bt.reduce((a, q) => Math.hypot(q.wx - p.x, q.wz - p.z) < Math.hypot(a.wx - p.x, a.wz - p.z) ? q : a, bt[0]); c.dir = Math.atan2(n.wx - p.x, n.wz - p.z); }
   else if (j.kind !== 'sand' && j.kind !== 'soil' && j.kind !== 'path') c.dir = Math.atan2(j.tile.wx - p.x, j.tile.wz - p.z);
   setTool(c, j.kind); setAnim(c, 'work'); emit('changed');
 }
@@ -99,7 +111,7 @@ function stop(c: Crew) { c.job = null; c.path = []; setAnim(c, 'idle'); emit('ch
 export function statusOf(c: Crew) {
   if (c.path.length) return 'Caminando';
   const j = c.job; if (!j) return 'Esperando órdenes';
-  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', plant: 'Plantando', path: 'Haciendo sendero', build: 'Construyendo', walk: 'Esperando' } as const)[j.kind];
+  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', plant: 'Plantando', path: 'Haciendo sendero', build: 'Construyendo', avivar: 'Avivando el horno', recoger: 'Recogiendo', walk: 'Esperando' } as const)[j.kind];
 }
 
 function nearestTile(c: Crew, test: (t: Tile) => boolean, max = 6) {
@@ -142,11 +154,14 @@ function nextTree(c: Crew) {
 }
 
 /* ---------- what each swing does ---------- */
+const p0 = (c: Crew) => c.root.position;
 const headPos = (c: Crew, dy = 0) => c.root.position.clone().add(new THREE.Vector3(0, 1 + dy, 0));
 
+const HIT_SFX: Partial<Record<JobKind, Sfx>> = { tree: 'chop', ancient: 'chop', rock: 'pick', sand: 'dig', soil: 'dig', stump: 'dig', fill: 'dig', dig: 'dig', plant: 'dig', path: 'dig', build: 'hammer', avivar: 'fire' };
 function onWorkHit(c: Crew) {
   const j = c.job; if (!j) return;
   c.hits++;
+  const fx = HIT_SFX[j.kind]; if (fx) sfx(fx, selected === c.id || crew.length === 1 ? 1 : 0.7);
   const B = DATA.BALANCE;
   switch (j.kind) {
     case 'tree': {
@@ -163,7 +178,11 @@ function onWorkHit(c: Crew) {
       const m = j.tile.rock; if (m) m.userData.shake = 1;
       if (c.hits % B.stoneEveryHits === 0) {
         gain('piedra', 1, headPos(c));
-        if (Math.random() < (S.tools.pico ? B.mineralChanceMetal : B.mineralChance)) gain('mineral', 1, headPos(c, 0.35));
+        if (Math.random() < (S.tools.pico ? B.mineralChanceMetal : B.mineralChance)) {
+          // Brasa's heat melts some ore right in the rock
+          if (c.id === 'brasa' && Math.random() < 0.4) { gain('lingote', 1, headPos(c, 0.35)); S.made++; puff(p0(c).x, p0(c).y + 0.6, p0(c).z, '#ffb040', 6, 1.6, 1); }
+          else gain('mineral', 1, headPos(c, 0.35));
+        }
       }
       break;
     }
@@ -176,11 +195,11 @@ function onWorkHit(c: Crew) {
     case 'soil': {
       const p = c.root.position;
       puff(p.x + Math.sin(c.root.rotation.y) * 0.35, p.y + 0.06, p.z + Math.cos(c.root.rotation.y) * 0.35, '#7a5030', 6, 1.6, 1.2, p.y);
-      if (c.hits % B.soilEveryHits === 0) gain('tierra', 1, headPos(c));
+      if (c.hits % (S.inv.palaM ? 1 : B.soilEveryHits) === 0) gain('tierra', 1, headPos(c));
       break;
     }
     case 'stump': {
-      if (c.hits >= B.stumpDigHits) {
+      if (c.hits >= shovelHits(B.stumpDigHits)) {
         const r = removeStump(j.tile);
         if (r === 'stump') { gain('tierra', 1, headPos(c)); emit('toast', 'Tocón arrancado: ahí ya no volverá a crecer un árbol'); }
         if (r === 'sprout') { gain('semilla', 1, headPos(c)); emit('toast', 'Retoño arrancado: recuperas la semilla'); }
@@ -192,7 +211,7 @@ function onWorkHit(c: Crew) {
     case 'fill': {
       const s: Site | undefined = (j.tile as any).site;
       if (!s || !s.group.parent) { stop(c); return; }
-      if (fillHit(s)) { emit('toast', 'La isla creció una casilla'); nextSite(c); }
+      if (fillHit(s, S.inv.palaM ? 2 : 1)) { emit('toast', 'La isla creció una casilla'); nextSite(c); }
       break;
     }
     case 'plant': case 'path': {
@@ -200,8 +219,8 @@ function onWorkHit(c: Crew) {
       if (!m || m.kind !== j.kind) { nextMark(c, j.kind); return; }
       const p = c.root.position;
       puff(j.kind === 'path' ? p.x + Math.sin(c.root.rotation.y) * 0.3 : j.tile.wx, topY(j.tile) + 0.06, j.kind === 'path' ? p.z + Math.cos(c.root.rotation.y) * 0.3 : j.tile.wz, '#7a5030', 5, 1.4, 1.1, topY(j.tile));
-      if (c.hits >= (j.kind === 'plant' ? B.plantHits : B.pathHits)) {
-        completeMark(m);
+      if (c.hits >= shovelHits(j.kind === 'plant' ? B.plantHits : B.pathHits)) {
+        completeMark(m, c.id);
         if (j.kind === 'plant' && !S.flags.plantHint) { S.flags.plantHint = true; emit('toast', 'Semilla plantada. Crecerá sola con el tiempo.'); }
         c.hits = 0; nextMark(c, j.kind);
       }
@@ -210,7 +229,14 @@ function onWorkHit(c: Crew) {
     case 'build': {
       const b: Building | undefined = j.tile.building;
       if (!b || isDone(b)) { nextBuild(c); return; }
-      if (buildHit(b)) { c.hits = 0; setTimeout(() => { if (c.job?.kind === 'build') nextBuild(c); }, 500); }
+      if (buildHit(b, c.id === 'arci' ? 1.5 : 1)) { c.hits = 0; setTimeout(() => { if (c.job?.kind === 'build') nextBuild(c); }, 500); }
+      break;
+    }
+    case 'avivar': {
+      const b: Building | undefined = j.tile.building;
+      if (!b) { stop(c); return; }
+      const v = b.group.position; puff(v.x + (Math.random() - 0.5) * 0.4, v.y + 0.4, v.z + (Math.random() - 0.5) * 0.4, '#ffb040', 5, 1.6, 1);
+      if (!S.flags.avivado) { S.flags.avivado = true; emit('toast', 'Con Brasa soplando, el horno trabaja el doble de rápido'); emit('changed'); }
       break;
     }
     case 'ancient': {
@@ -245,7 +271,7 @@ export function updateCrew(dt: number, T: number) {
 function updateOne(c: Crew, dt: number, T: number) {
   c.t += dt; const p = c.root.position;
   if (c.path.length) {
-    const t = c.path[0], tx = t.wx + c.off, tz = t.wz + c.offz, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz), sp = DATA.BALANCE.walkSpeed * dt * (tileOf(c)?.type === 'sendero' ? DATA.BALANCE.pathSpeed : 1);
+    const t = c.path[0], tx = t.wx + c.off, tz = t.wz + c.offz, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz), sp = DATA.BALANCE.walkSpeed * dt * walkBoost() * (tileOf(c)?.type === 'sendero' ? DATA.BALANCE.pathSpeed : 1);
     if (d <= sp) { p.x = tx; p.z = tz; c.path.shift(); if (!c.path.length) arrive(c); }
     else { p.x += dx / d * sp; p.z += dz / d * sp; c.dir = Math.atan2(dx, dz); if (c.anim !== 'walk') setAnim(c, 'walk'); }
   }
@@ -282,6 +308,13 @@ function updateOne(c: Crew, dt: number, T: number) {
     const w = Math.sin(c.t * 11); R.rotation.z = -2.55 + w * 0.35; L.rotation.z = 0.15; sy = 1 + 0.03 * Math.sin(c.t * 5.5); hz = -0.12 + w * 0.04; bob = Math.max(0, Math.sin(c.t * 5.5)) * 0.03;
   }
   c.body.scale.set(sxz, sy, sxz); c.body.position.y = bob; c.body.rotation.x = lean; c.head.rotation.x = hx; c.head.rotation.z = hz;
+  if (c.job?.kind === 'avivar' && c.anim === 'work' && c.job.tile.building) c.job.tile.building.stoked = true;
+  // a small pool of light at night: Brasa always glows, the others once the lantern is invented
+  const glows = c.id === 'brasa' || !!S.inv.linterna;
+  if (glows && lampK > 0.02) {
+    if (!c.light) { c.light = new THREE.Mesh(lampGeo, new THREE.MeshBasicMaterial({ map: lampTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: c.id === 'brasa' ? '#ffa050' : '#ffe0a0' })); c.light.rotation.x = -Math.PI / 2; c.light.position.y = 0.03; c.root.add(c.light); }
+    c.light.visible = true; (c.light.material as THREE.MeshBasicMaterial).opacity = lampK * (c.id === 'brasa' ? 0.55 : 0.45);
+  } else if (c.light) c.light.visible = false;
   c.ring.visible = selected === c.id; if (c.ring.visible) { const s = 1 + Math.sin(T * 6) * 0.08; c.ring.scale.set(s, s, s); }
   if (c.def.glow) { const g = (1.1 + 0.35 * Math.sin(T * 3.1)) * glowMul; c.glowMat.color.setRGB(2.4 * g, 0.8 * g, 0.16 * g); }
   if (c.flame) { const f = Math.sin(T * 17 + c.phase) * 0.08 + Math.sin(T * 7.3) * 0.06; c.flame.scale.set(1 - f * 0.5, 1 + f, 1 - f * 0.5); c.flame.rotation.z = Math.sin(T * 5) * 0.08; }

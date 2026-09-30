@@ -19,6 +19,9 @@ export const ICON: Record<ResKey, string> = {
   arena: mkIcon(['.......', '.......', '...S...', '..SSL..', '.SSLSS.', 'SSSSSSS'], { S: '#f0d890', L: '#c8a860' }),
   tierra: mkIcon(['.......', '.......', '...D...', '..DLD..', '.DDDLD.', 'DDDDDDD'], { D: '#7a5030', L: '#a8764a' }),
   semilla: mkIcon(['.......', '...L...', '..LGL..', '..SSS..', '.SSHSS.', '..SSS..'], { L: '#8ad96b', G: '#4ea33c', S: '#a8763a', H: '#e0b070' }),
+  tablas: mkIcon(['.......', 'LLLLLLL', 'WWWWWWD', '.......', 'LLLLLLL', 'WWWWWWD', '.......'], { L: '#e0b070', W: '#c08a50', D: '#8a5a2a' }),
+  ladrillo: mkIcon(['.......', 'RRR.RRR', 'RHR.RHR', '.......', 'RR.RRRR', 'RH.RHRR', '.......'], { R: '#b85a3a', H: '#d87a52' }),
+  vidrio: mkIcon(['.......', '..GGG..', '.GHGGG.', '.GHGGG.', '.GGGGG.', '..GGG..', '.......'], { G: '#8fd4e0', H: '#e8fbff' }),
   lingote: mkIcon(['.......', '.......', '..MMMMM', '.MHMMMD', 'MMMMMD.', 'MDDDD..'], { M: '#b8c0cc', H: '#ffffff', D: '#6a7280' }),
 };
 export const img = (k: ResKey) => `<img src="${ICON[k]}" alt="">`;
