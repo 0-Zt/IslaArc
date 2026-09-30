@@ -1,0 +1,4 @@
+{
+  "hacha": { "name": "Hacha de metal", "desc": "Cada golpe al árbol da madera y puede cortar los árboles antiguos.", "cost": { "lingote": 2, "madera": 3 } },
+  "pico":  { "name": "Pico de metal",  "desc": "Sale mineral casi el doble de seguido al picar roca.", "cost": { "lingote": 2, "piedra": 4 } }
+}

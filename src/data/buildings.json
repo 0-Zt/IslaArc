@@ -1,0 +1,4 @@
+{
+  "casa":  { "name": "Casa",  "desc": "Refugio y taller. Aquí se fabrican herramientas.", "size": [2, 2], "cost": { "madera": 10 } },
+  "horno": { "name": "Horno", "desc": "Funde mineral con madera y saca lingotes.", "size": [2, 1], "cost": { "piedra": 6, "arena": 6, "madera": 4 }, "requires": "casa" }
+}

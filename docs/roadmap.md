@@ -35,14 +35,19 @@ Asignar figuras → producir → procesar (horno, cráter) → construir y expan
 | Fase | Contenido | Criterio de salida |
 | --- | --- | --- |
 | 0. Prototipos (hecho) | Prototipo 2D, taller 3D | El estilo 3D convence |
-| 1. Fundación técnica (en curso) | Corte vertical 3D (hecho), migración a TypeScript + Vite, datos en JSON | Asignar figuras y construir se siente bien |
+| 1. Fundación técnica (hecho) | Corte vertical 3D, migración a TypeScript + Vite, datos en JSON, optimización de rendimiento | Asignar figuras y construir se siente bien |
 | 2. Bucle núcleo | Expansión de tierra, eras 1 y 2 completas | 45 minutos con metas claras, probado por 3 personas |
 | 3. Contenido y secretos | Era 3, 3 puzzles, 2 zonas ocultas, eventos y barco fantasma | 6 horas sin atascos |
 | 4. Carrera del Bosque | Minijuego de carrera en 3 carriles | Una carrera de 60 s es divertida sin premio |
 | 5. Pulido y lanzamiento | Sonido, rendimiento, balance, demo pública | Lista para publicar |
 
+## Inicio del juego (v0.4)
+
+Arci empieza sola. Musgo está enterrado en un claro rodeado por cuatro árboles antiguos que el hacha de piedra no puede cortar. Hay que construir la casa y el horno, fundir lingotes, fabricar el hacha de metal, abrir paso en el claro y desenterrarlo con la pala.
+
 ## Decisiones tomadas
 
-- Motor: Three.js en el navegador (TypeScript al migrar).
+- Motor: Three.js + TypeScript + Vite, con build en un solo HTML.
+- Rendimiento: terreno fusionado, árboles instanciados, postprocessing + N8AO y resolución dinámica.
 - Plataforma principal: celular.
 - Estilo: voxel con texturas pixel, luz suave, oclusión ambiental y efecto maqueta.

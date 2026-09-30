@@ -1,0 +1,3 @@
+{
+  "lingote": { "name": "Lingote", "desc": "2 de mineral y 1 de madera para el fuego", "cost": { "mineral": 2, "madera": 1 }, "seconds": 8, "maxQueue": 5 }
+}

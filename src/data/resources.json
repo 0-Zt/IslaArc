@@ -1,0 +1,7 @@
+{
+  "madera":  { "name": "Madera" },
+  "piedra":  { "name": "Piedra" },
+  "mineral": { "name": "Mineral" },
+  "arena":   { "name": "Arena" },
+  "lingote": { "name": "Lingote", "hiddenUntil": "horno" }
+}

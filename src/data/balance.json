@@ -1,0 +1,15 @@
+{
+  "walkSpeed": 1.55,
+  "workCycle": 1.15,
+  "woodEveryHits": 2,
+  "woodEveryHitsMetal": 1,
+  "stoneEveryHits": 2,
+  "sandEveryHits": 2,
+  "mineralChance": 0.35,
+  "mineralChanceMetal": 0.65,
+  "treeRegrowSeconds": 40,
+  "treeRegrowSecondsMusgo": 12,
+  "ancientTreeHits": 10,
+  "moundDigHits": 8,
+  "saveEverySeconds": 6
+}

@@ -2,37 +2,54 @@
 
 Juego de progresión y descubrimiento inspirado en la serie GROW. Guías a figuras de arcilla que transforman una isla: talan, pican, construyen, funden metal y, poco a poco, despiertan sus secretos.
 
-Hecho con [Three.js](https://threejs.org/) en el navegador, pensado primero para celular.
+Hecho con [Three.js](https://threejs.org/) y TypeScript, pensado primero para celular.
 
-## Qué hay en este repositorio
+## Cómo correrlo
 
-| Archivo | Qué es |
-| --- | --- |
-| `index.html` | Corte vertical 3D jugable (unos 5 minutos): órdenes a las figuras, recolección, construcción con guía amarilla, horno, taller y 8 objetivos. |
-| `taller.html` | Taller de assets: personajes, suelos, árboles, iluminación por hora del día y efectos. Sirve para revisar y ajustar el arte. |
-| `prototipo-2d.html` | Primer prototipo en pixel art 2D, con el volcán, la marea, las runas y Brasa. Se conserva como referencia de reglas. |
-| `docs/roadmap.md` | Resumen de la visión, las eras y las fases de desarrollo. |
+```bash
+npm install
+npm run dev       # servidor local con recarga, accesible desde el celular en la misma red
+npm run build     # genera dist/index.html, un solo archivo listo para publicar
+```
 
-Todo el arte se genera por código: modelos voxel con bloques y texturas pixel de 16×16 dibujadas en canvas. No hay archivos de imagen ni modelos externos.
+El build es un único `index.html` con todo incluido (código, estilos y Three.js), así que se puede subir tal cual a GitHub Pages o a cualquier hosting estático.
 
-## Cómo jugarlo
+Agrega `#debug` a la URL para exponer `window.__isla`, con el estado del juego y un contador de llamadas de dibujo.
 
-Cada página funciona sola. Three.js se carga desde jsDelivr, así que necesita internet.
+## Estructura
 
-- **En línea:** activa GitHub Pages (Settings → Pages → rama `main`, carpeta raíz) y abre la URL que te entrega.
-- **En tu computador:** sirve la carpeta con cualquier servidor estático, por ejemplo `npx serve .` o `python3 -m http.server`, y abre `http://localhost:8000`. Abrir el archivo con doble clic puede fallar porque los navegadores bloquean los módulos desde `file://`.
+```
+src/
+  main.ts            arranque, bucle del juego y guardado
+  core/              utilidades: azar determinista, canvas, bus de eventos
+  render/            renderer, cámara, luces, post-proceso, calidad y resolución dinámica
+  world/             isla (generación y terreno), texturas del suelo, árboles, rocas, partículas
+  assets/            modelos voxel: texturas de detalle, personajes, edificios, el claro secreto
+  game/              lógica: estado, figuras y trabajos, edificios, bosque, claro de Musgo, objetivos
+  ui/                interfaz: HUD, paneles, entrada táctil
+  data/              balance y contenido en JSON (recursos, edificios, herramientas, recetas, objetivos)
+legacy/              prototipos anteriores (2D, taller de assets, corte vertical en un archivo)
+docs/roadmap.md      visión, eras y fases
+```
 
-### Controles
+Para equilibrar el juego (costos, tiempos, probabilidades) se editan los archivos de `src/data/`, sin tocar código.
+
+## Rendimiento
+
+- **Terreno fusionado:** solo se generan las caras visibles de cada columna, agrupadas en una malla por material.
+- **Árboles instanciados:** todos los árboles de una misma forma se dibujan en una sola llamada, y cada uno conserva su vaivén, sacudida y caída.
+- **Post-proceso en una pasada:** [postprocessing](https://github.com/pmndrs/postprocessing) une bloom, efecto maqueta, viñeta y tono en un solo efecto; la oclusión ambiental es [N8AO](https://github.com/N8python/n8ao).
+- **Resolución dinámica:** si el celular no alcanza unos 45 cuadros por segundo, baja un poco la resolución interna antes de tocar los efectos.
+
+Resultado medido: de unas 3.800 llamadas de dibujo por cuadro en el corte vertical anterior a unas 220.
+
+## Controles
 
 | Acción | Celular | PC |
 | --- | --- | --- |
 | Seleccionar figura | Tocarla, o su tarjeta abajo | Clic |
-| Dar una orden | Tocar árbol, roca gris o arena | Clic |
+| Dar una orden | Tocar árbol, roca gris, arena o el claro | Clic |
 | Mover la cámara | Un dedo | Arrastrar con clic izquierdo |
 | Zoom y giro | Dos dedos | Rueda y clic derecho |
 
 La partida se guarda en el navegador (`localStorage`).
-
-## Próximo paso técnico
-
-Migrar a TypeScript + Vite, separando el código en módulos (mundo, figuras, edificios, interfaz) y moviendo recursos, recetas, edificios y objetivos a archivos JSON. Ver `docs/roadmap.md`.
