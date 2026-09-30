@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { rng, hash } from '../core/random';
 import { vbox, MAT } from '../assets/voxel';
-import { worldGroup, landTiles, topY, grove, type Tile } from './island';
+import { worldGroup, landTiles, topY, grove, oi, oj, type Tile } from './island';
 
 /* Quarry rocks: stone with blue ore veins. Infinite source of stone and mineral. */
 
@@ -23,13 +23,13 @@ export const rocks: THREE.Mesh[] = [];
 export function placeRocks(seed: number, count = 5) {
   const r = rng(seed + 303); rocks.length = 0;
   const far = (t: Tile) => !grove || Math.abs(t.i - grove.center.i) + Math.abs(t.j - grove.center.j) > 3;
-  const cand = landTiles().filter(t => (t.type === 'piedras' || t.type === 'tierra') && !t.tree && far(t))
-    .sort((a, b) => hash(a.i, a.j, seed) - hash(b.i, b.j, seed));
+  const cand = landTiles().filter(t => !t.ruin && (t.type === 'piedras' || t.type === 'tierra') && !t.tree && far(t))
+    .sort((a, b) => hash(oi(a), oj(a), seed) - hash(oi(b), oj(b), seed));
   const chosen: Tile[] = [];
   const spaced = (t: Tile) => !chosen.some(o => Math.abs(o.i - t.i) + Math.abs(o.j - t.j) < 3);
   for (const t of cand) { if (chosen.length >= count) break; if (spaced(t)) chosen.push(t); }
   if (chosen.length < 3) {
-    const extra = landTiles().filter(t => t.type !== 'arena' && t.type !== 'musgo' && !t.tree && far(t)).sort((a, b) => hash(a.i, a.j, 5) - hash(b.i, b.j, 5));
+    const extra = landTiles().filter(t => !t.ruin && t.type !== 'arena' && t.type !== 'musgo' && !t.tree && far(t)).sort((a, b) => hash(oi(a), oj(a), 5) - hash(oi(b), oj(b), 5));
     for (const t of extra) { if (chosen.length >= 3) break; if (spaced(t)) chosen.push(t); }
   }
   chosen.forEach((t, k) => {

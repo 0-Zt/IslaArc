@@ -1,16 +1,19 @@
 import './style.css';
 import { on } from './core/events';
 import {
-  renderer, scene, camera, controls, resize, render, lockPixelRatio, benchRender, setGfx, sun, placeSun, applyTime, adaptResolution, tickShadows, pixelRatio, focusOn, gfx, tickFly,
+  renderer, scene, camera, controls, resize, render, flyTo, lockPixelRatio, benchRender, setGfx, sun, placeSun, applyTime, adaptResolution, tickShadows, pixelRatio, focusOn, gfx, tickFly,
 } from './render/renderer';
-import { N, generate, buildTerrain, rebuildDeco, worldGroup, tileAt, landTiles, walkable, grove, terrainDrawCalls, type Tile } from './world/island';
+import { N, generate, buildTerrain, rebuildDeco, worldGroup, tileAt, tileUnder, landTiles, walkable, grove, terrainDrawCalls, type Tile } from './world/island';
 import { plantIsland, clearTrees, tickTrees, tickLeaves, treeDrawCalls, trees } from './world/trees';
 import { placeRocks, tickRocks, rocks } from './world/rocks';
 import { tickParticles } from './world/particles';
 import { updateWater, tickWater } from './world/water';
+import { buildIslet, spawnRuins, clearRuins, tickRuins, prepareBrazier, fixBrazierModels, brasaSpot, checkReach, rebuildBrazier, lightFlame, center as ruinCenter } from './game/ruins';
+import { buildHit } from './game/buildings';
+import { openFlame } from './ui/sheets';
 import { tickDay, refreshDay, phaseName, minutesToNight, isNight } from './render/daynight';
 import { S, setState, freshState, loadSave, save, hasSave, clearSave, DATA } from './game/state';
-import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected } from './game/crew';
+import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected, select } from './game/crew';
 import * as THREE from 'three';
 import { buildings, createBuilding, clearBuildings, tickBuildings, cancelPlace, saved, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, place } from './game/buildings';
 import { spawnGrove, tickGrove, ancients, mound } from './game/grove';
@@ -30,12 +33,13 @@ renderer.info.autoReset = false;
 setOccupiedTest(occupied);
 
 function newGame(state: typeof S | null) {
-  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearSites(); clearMarks();
+  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearSites(); clearMarks(); clearRuins();
   clearCrew(); clearBuildings(); clearForest(); clearLabels();
   while (worldGroup.children.length) worldGroup.remove(worldGroup.children[0]);
   clearTrees();
   setState(state || freshState());
   generate(SEED);
+  buildIslet(SEED);          // the ruins islet, far out to sea
   plantIsland(SEED);
   spawnGrove();
   placeRocks(SEED);
@@ -48,7 +52,8 @@ function newGame(state: typeof S | null) {
   restoreSites();
   restoreMarks();
   buildForestEdge();
-  for (const b of S.buildings) createBuilding(b.type, b.i, b.j, b.rot, false, b);
+  for (const b of S.buildings) { if (b.type === 'brasero') prepareBrazier(b.i, b.j); createBuilding(b.type, b.i, b.j, b.rot, false, b); }
+  spawnRuins(); fixBrazierModels();
   rebuildDeco();
   // start near the centre, on open flat ground
   const c0 = tileAt(Math.floor(N / 2), Math.floor(N / 2)) || landTiles()[0];
@@ -57,6 +62,8 @@ function newGame(state: typeof S | null) {
   const start = path === null ? landTiles().find(walkable)! : path.length ? path[path.length - 1] : c0;
   spawnCrew('arci', start);
   if (S.flags.musgoFree && grove) spawnCrew('musgo', grove.center);
+  if (S.ruins.awake && brasaSpot()) spawnCrew('brasa', brasaSpot()!);
+  checkReach(start, bfs, true);
   controls.target.set(start.wx, 0.5, start.wz);
   camera.position.set(start.wx + 18, 18, start.wz + 18);
   camera.zoom = innerWidth < innerHeight ? 0.85 : 1.35;
@@ -75,7 +82,14 @@ initHUD(); initSheetEvents(); initInput();
 initSheets({ centreTile, onReset: () => { clearSave(); newGame(null); persist(); } });
 on('built', () => persist());
 on('placed', () => persist());
-on('expanded', () => { updateWater(); persist(); });
+on('expanded', () => { updateWater(); checkReach(crew[0] ? tileUnder(crew[0].root.position.x, crew[0].root.position.z) : null, bfs); persist(); });
+on('flameLit', () => persist());
+on('finaleStart', (c: Tile) => { closeSheet(); select(null); flyTo(new THREE.Vector3(c.wx, 1, c.wz), Math.max(camera.zoom, 1.1)); toast('La tierra tiembla en las ruinas…'); });
+on('brasaAwake', (c: Tile) => {
+  const b = spawnCrew('brasa', c); b.anim = 'wave'; b.t = 0; S.crew.push('brasa');
+  setTimeout(() => { if (!b.job) { b.anim = 'idle'; } }, 2800);
+  toast('Brasa despierta, se estira y se une al equipo'); persist();
+});
 on('forestChanged', () => persist());
 on('siteChanged', () => persist());
 on('marksChanged', () => persist());
@@ -125,6 +139,7 @@ function frame(now: number) {
   updateCrew(dt, T);
   tickTrees(dt, T, t => onTreeFallen(t, T));
   tickForest(T);
+  tickRuins(dt);
   tickGrove(dt, T);
   tickRocks(dt, T);
   tickBuildings(dt);
@@ -153,8 +168,8 @@ if (location.hash === '#debug') {
     get S() { return S; }, crew, buildings, trees, rocks, ancients, get mound() { return mound; }, grove: () => grove,
     renderer, camera, controls, order, tileAt, landTiles, checkGoals, pixelRatio,
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
-    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
+    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
-    scene, sites, marks, refreshDay, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid,
+    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid,
   };
 }

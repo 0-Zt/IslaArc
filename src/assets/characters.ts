@@ -33,7 +33,7 @@ export type CharId = 'arci' | 'musgo' | 'brasa';
 export const CHAR_DEFS: Record<CharId, { name: string; color: string; glow?: boolean }> = {
   arci: { name: 'Arci', color: '#c98655' },
   musgo: { name: 'Musgo', color: '#7e9c58' },
-  brasa: { name: 'Brasa', color: '#a8432a', glow: true },
+  brasa: { name: 'Brasa', color: '#5c3d31', glow: true },
 };
 
 export function part(list: THREE.BufferGeometry[], mat: THREE.Material = MAT.clay) {
@@ -55,11 +55,28 @@ export interface Figure {
   root: THREE.Group; body: THREE.Group; head: THREE.Group;
   hips: THREE.Group[]; arms: THREE.Group[]; eyes: THREE.Group[];
   tools: Record<ToolKey, THREE.Group>; glowMat: THREE.MeshBasicMaterial; ring: THREE.Mesh;
+  flame?: THREE.Group;   // Brasa's little flame on top of the head
+}
+
+/* Brasa's ember cracks: a few random walks over the surface of a unit sphere.
+   A surface voxel close to one of them glows instead of being clay. */
+function crackPaths(seed: number, n: number, steps: number) {
+  const r = rng(seed), pts: THREE.Vector3[] = [];
+  for (let k = 0; k < n; k++) {
+    const p = new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize(), d = new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5);
+    for (let s = 0; s < steps; s++) {
+      d.add(new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).multiplyScalar(0.9)).normalize();
+      p.addScaledVector(d, 0.09).normalize(); pts.push(p.clone());
+      if (r() < 0.15) { const q = p.clone(); const e = new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize(); for (let b = 0; b < 3; b++) { q.addScaledVector(e, 0.08).normalize(); pts.push(q.clone()); } }
+    }
+  }
+  return (nx: number, ny: number, nz: number, thr: number) => { const v = new THREE.Vector3(nx, ny, nz).normalize(); return pts.some(p => p.distanceToSquared(v) < thr); };
 }
 
 export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
   const d = CHAR_DEFS[id], r = rng(id.length * 977 + 13), base = d.color, INK = '#1f140e';
   const glowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 1, 0.25) });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 1.9, 0.55) });
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   // legs
   const hips: THREE.Group[] = [];
@@ -70,9 +87,10 @@ export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
     hp.add(part(L)); hips.push(hp);
   }
   // torso
-  const T: THREE.BufferGeometry[] = [];
+  const T: THREE.BufferGeometry[] = [], TG: THREE.BufferGeometry[] = [];
+  const bodyCrack = crackPaths(71, 6, 10), headCrack = crackPaths(59, 8, 12);
   const torsoExtra: ColorFn | null = id === 'musgo' ? (_nx, ny, _nz, rr) => (ny > 0.45 && rr() < 0.55 ? shade('#5f8a3a', 1 + (rr() - 0.5) * 0.2) : undefined)
-    : id === 'brasa' ? (_nx, _ny, _nz, rr) => (rr() < 0.05 ? shade('#4a3a3a', 1 + (rr() - 0.5) * 0.2) : undefined) : null;
+    : id === 'brasa' ? (nx, ny, nz, rr, wx, wy, wz) => { if (bodyCrack(nx, ny, nz, 0.02)) { cbox(TG, wx, wy, wz, QC * 1.08, QC * 1.08, QC * 1.08, '#fff'); return shade('#2a1410', 1); } return rr() < 0.12 ? shade('#4a3028', 1 + (rr() - 0.5) * 0.2) : undefined; } : null;
   vsphere(T, 0, 0.36, 0, 0.19, 0.2, 0.16, clay(base, torsoExtra), r);
   vsphere(T, 0, 0.29, 0.03, 0.16, 0.12, 0.14, clay(base), r);
   if (id === 'arci') {
@@ -80,6 +98,7 @@ export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
     cbox(T, 0.2, 0.26, 0.03, 0.08, 0.11, 0.14, '#6b4a2a'); cbox(T, 0.2, 0.3, 0.03, 0.085, 0.04, 0.145, '#8a6238'); cbox(T, 0.24, 0.27, 0.03, 0.02, 0.02, 0.02, '#e0b050');
   }
   body.add(part(T));
+  if (TG.length) body.add(part(TG, glowMat));
   // arms
   const arms: THREE.Group[] = [];
   for (const s of [1, -1]) {
@@ -91,19 +110,23 @@ export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
   const head = new THREE.Group(); head.position.set(0, 0.66, 0); body.add(head);
   const H: THREE.BufferGeometry[] = [], G: THREE.BufferGeometry[] = [];
   const headExtra: ColorFn | null = id === 'musgo' ? (_nx, ny, _nz, rr) => { const edge = ny + (rr() - 0.5) * 0.22; return edge > 0.3 ? shade(rr() < 0.2 ? '#79a84a' : '#5f8a3a', 1 + (rr() - 0.5) * 0.18) : undefined; }
-    : id === 'brasa' ? (nx, ny, nz, rr, wx, wy, wz) => { if (nz > 0.6 && Math.abs(nx) < 0.55 && ny > -0.6 && ny < 0.5) return undefined; const q = rr(); if (q < 0.045) { cbox(G, wx, wy, wz, QC * 1.25, QC * 1.25, QC * 1.25, '#fff'); return shade('#3a1a14', 1); } if (q < 0.09) return shade('#4a3a3a', 1 + (rr() - 0.5) * 0.2); return undefined; } : null;
+    : id === 'brasa' ? (nx, ny, nz, rr, wx, wy, wz) => {
+      const face = nz > 0.55 && Math.abs(nx) < 0.6 && ny > -0.55 && ny < 0.45;
+      if (!face && headCrack(nx, ny, nz, 0.016)) { cbox(G, wx, wy, wz, QC * 1.08, QC * 1.08, QC * 1.08, '#fff'); return shade('#2a1410', 1); }
+      const q = rr(); return q < 0.14 ? shade(q < 0.07 ? '#4a3028' : '#6e4a3c', 1 + (rr() - 0.5) * 0.15) : undefined;
+    } : null;
   vsphere(H, 0, 0, 0, 0.27, 0.25, 0.26, clay(base, headExtra), r); head.add(part(H));
   // face
   const eyes: THREE.Group[] = [], F: THREE.BufferGeometry[] = [];
   for (const s of [1, -1]) {
     const e = new THREE.Group(); e.position.set(0.09 * s, 0.02, 0.235); head.add(e); const E: THREE.BufferGeometry[] = [];
-    if (id === 'brasa') { cbox(E, 0, 0, 0, 0.1, 0.055, 0.03, '#2a1010'); e.add(part(E)); const gl: THREE.BufferGeometry[] = []; cbox(gl, 0, 0, 0.006, 0.08, 0.03, 0.03, '#fff'); e.add(part(gl, glowMat)); }
+    if (id === 'brasa') { cbox(E, 0, 0, 0, 0.095, 0.1, 0.03, '#2a1410'); e.add(part(E)); const gl: THREE.BufferGeometry[] = []; cbox(gl, 0, 0, 0.008, 0.07, 0.08, 0.03, '#fff'); e.add(part(gl, eyeMat)); }
     else if (id === 'musgo') { cbox(E, 0, -0.01, 0, 0.075, 0.07, 0.03, INK); cbox(E, -0.018 * s, 0, 0.012, 0.026, 0.026, 0.02, '#fff'); cbox(E, 0, 0.03, 0.004, 0.085, 0.035, 0.036, shade(base, 0.9)); e.add(part(E)); }
     else { cbox(E, 0, 0, 0, 0.075, 0.09, 0.03, INK); cbox(E, -0.02 * s, 0.025, 0.012, 0.028, 0.028, 0.02, '#fff'); e.add(part(E)); }
     eyes.push(e);
   }
   if (id === 'arci') { cbox(F, 0, -0.085, 0.25, 0.09, 0.028, 0.02, INK); cbox(F, -0.045, -0.07, 0.245, 0.025, 0.025, 0.02, INK); cbox(F, 0.045, -0.07, 0.245, 0.025, 0.025, 0.02, INK); for (const s of [1, -1]) cbox(F, 0.165 * s, -0.045, 0.19, 0.05, 0.03, 0.03, '#e39a7a'); }
-  if (id === 'brasa') { cbox(F, 0, -0.085, 0.25, 0.14, 0.03, 0.02, '#2a1010'); cbox(F, -0.04, -0.075, 0.255, 0.03, 0.025, 0.02, '#fff0d0'); cbox(F, 0.04, -0.075, 0.255, 0.03, 0.025, 0.02, '#fff0d0'); }
+  if (id === 'brasa') { cbox(F, 0, -0.095, 0.25, 0.06, 0.025, 0.02, '#1a0c08'); cbox(F, -0.04, -0.08, 0.248, 0.025, 0.025, 0.02, '#1a0c08'); cbox(F, 0.04, -0.08, 0.248, 0.025, 0.025, 0.02, '#1a0c08'); }
   if (id === 'musgo') { cbox(F, 0, -0.09, 0.25, 0.05, 0.025, 0.02, INK); for (const s of [1, -1]) cbox(F, 0.165 * s, -0.05, 0.19, 0.05, 0.03, 0.03, '#a8b86a'); }
   head.add(part(F));
   // accessories
@@ -113,9 +136,18 @@ export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
     cbox(X, 0.03, 0.09, -0.255, 0.06, 0.06, 0.05, '#e0b050'); cbox(X, -0.03, 0.08, -0.255, 0.06, 0.06, 0.05, '#d0a040'); cbox(X, 0.045, 0, -0.265, 0.035, 0.12, 0.03, '#e0b050'); cbox(X, -0.02, -0.02, -0.27, 0.035, 0.14, 0.03, '#d0a040');
     cbox(X, -0.08, 0.26, 0.02, 0.06, 0.05, 0.06, shade(base, 1.05)); cbox(X, 0.06, 0.27, -0.02, 0.05, 0.06, 0.05, shade(base, 1.05));
   }
+  let flame: THREE.Group | undefined;
   if (id === 'brasa') {
-    [0.09, 0.14, 0.1, 0.16, 0.08, 0.12].forEach((hh, k) => { const a = k / 6 * Math.PI * 2 + 0.3, x = Math.cos(a) * 0.17, z = Math.sin(a) * 0.16, y0 = 0.12 + 0.05 * Math.cos(a * 2); cbox(X, x, y0 + hh / 2, z, 0.06, hh, 0.06, '#2a1d3a'); cbox(X, x, y0 + hh + 0.01, z, 0.035, 0.03, 0.035, '#6a4aa8'); });
-    cbox(X, 0, 0.245, 0, 0.05, 0.05, 0.05, '#2a1d3a'); cbox(X, 0, 0.28, 0, 0.03, 0.03, 0.03, '#6a4aa8');
+    // a pixel flame: orange outside, yellow core, a couple of loose sparks
+    const O: THREE.BufferGeometry[] = [], Y: THREE.BufferGeometry[] = [];
+    [[0, 0.02, 0.15, 0.06], [0, 0.07, 0.12, 0.06], [0.01, 0.12, 0.08, 0.06], [0.02, 0.165, 0.05, 0.05]].forEach(([x, y, w, h]) => cbox(O, x, y, 0, w, h, w, '#fff'));
+    [[0, 0.03, 0.08, 0.05], [0.005, 0.08, 0.05, 0.05]].forEach(([x, y, w, h]) => cbox(Y, x, y, 0.035, w, h, 0.02, '#fff'));
+    cbox(O, -0.07, 0.19, 0.01, 0.025, 0.025, 0.025, '#fff'); cbox(O, 0.07, 0.24, -0.01, 0.022, 0.022, 0.022, '#fff');
+    flame = new THREE.Group(); flame.position.set(0, 0.23, 0);
+    flame.add(part(O, new THREE.MeshBasicMaterial({ color: new THREE.Color(2.8, 0.9, 0.15) })));
+    flame.add(part(Y, new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.2, 0.6) })));
+    flame.traverse(o => { (o as THREE.Mesh).castShadow = false; });
+    head.add(flame);
   }
   if (id === 'musgo') {
     cbox(X, 0, 0.3, 0, 0.03, 0.1, 0.03, '#4f7a34'); cbox(X, 0.07, 0.36, 0, 0.1, 0.03, 0.05, '#8ccf5a'); cbox(X, -0.07, 0.36, 0, 0.1, 0.03, 0.05, '#8ccf5a'); cbox(X, 0, 0.39, 0, 0.03, 0.03, 0.03, '#a8e070');
@@ -137,5 +169,5 @@ export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.62), new THREE.MeshBasicMaterial({ map: blob, transparent: true, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.012; root.add(shadow);
   root.traverse(o => { if ((o as THREE.Mesh).isMesh) o.userData.char = id; });
-  return { id, def: d, root, body, head, hips, arms, eyes, tools, glowMat, ring };
+  return { id, def: d, root, body, head, hips, arms, eyes, tools, glowMat, ring, flame };
 }

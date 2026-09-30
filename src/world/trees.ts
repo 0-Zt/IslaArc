@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { rng, vnoise } from '../core/random';
 import { vbox, MAT } from '../assets/voxel';
-import { worldGroup, landTiles, topY, tileUnder, type Tile } from './island';
+import { worldGroup, landTiles, topY, tileUnder, oi, oj, type Tile } from './island';
 import { camera, controls } from '../render/renderer';
 
 export type TreeType = 'pino' | 'roble' | 'abedul';
@@ -12,6 +12,8 @@ export const SIZES = [0.7, 1, 1.35];
 /* ---------- geometry (voxel) ---------- */
 function buildTree(type: TreeType, s: number, seed: number) {
   const r = rng(seed); const trunk: THREE.BufferGeometry[] = [], can: THREE.BufferGeometry[] = [];
+  const boxes: number[][] = []; // canopy blocks, for the leafy detail added at the end
+  const cv = (x: number, y: number, z: number, sx: number, sy: number, sz: number, col: string) => { vbox(can, x, y, z, sx, sy, sz, col); boxes.push([x, y, z, sx, sy, sz]); };
   const jitter = (a: number) => (r() - 0.5) * a;
   let pivot: number;
   if (type === 'pino') {
@@ -22,24 +24,24 @@ function buildTree(type: TreeType, s: number, seed: number) {
     const greens = ['#285c34', '#2f6b3a', '#3b7d44', '#24522f'];
     for (let k = 0; k < n; k++) {
       const Wk = W0 * (1 - k / (n + 0.7)), y = tH * 0.72 + k * th * 0.8;
-      vbox(can, 0, y + th * 0.25, 0, Wk, th * 0.5, Wk, greens[(k + 1) % 2]);
-      vbox(can, 0, y + th * 0.62, 0, Wk * 0.72, th * 0.42, Wk * 0.72, greens[k % 2 ? 1 : 2]);
-      for (let e = 0; e < 4; e++) { const side = e % 2 ? 1 : -1, along = jitter(Wk * 0.6), alongX = e < 2; const x = alongX ? side * Wk * 0.5 : along, z = alongX ? along : side * Wk * 0.5; if (r() < 0.75) vbox(can, x, y - th * 0.02, z, 0.09 * s, th * 0.35, 0.09 * s, greens[3]); }
-      vbox(can, jitter(Wk * 0.3), y + th * 0.9, jitter(Wk * 0.3), Wk * 0.25, th * 0.12, Wk * 0.25, '#4f9a58');
+      cv(0, y + th * 0.25, 0, Wk, th * 0.5, Wk, greens[(k + 1) % 2]);
+      cv(0, y + th * 0.62, 0, Wk * 0.72, th * 0.42, Wk * 0.72, greens[k % 2 ? 1 : 2]);
+      for (let e = 0; e < 4; e++) { const side = e % 2 ? 1 : -1, along = jitter(Wk * 0.6), alongX = e < 2; const x = alongX ? side * Wk * 0.5 : along, z = alongX ? along : side * Wk * 0.5; if (r() < 0.75) cv(x, y - th * 0.02, z, 0.09 * s, th * 0.35, 0.09 * s, greens[3]); }
+      cv(jitter(Wk * 0.3), y + th * 0.9, jitter(Wk * 0.3), Wk * 0.25, th * 0.12, Wk * 0.25, '#4f9a58');
     }
     const top = tH * 0.72 + n * th * 0.8;
-    vbox(can, 0, top + 0.06 * s, 0, 0.12 * s, 0.14 * s, 0.12 * s, '#3b7d44'); vbox(can, 0, top + 0.16 * s, 0, 0.06 * s, 0.1 * s, 0.06 * s, '#4f9a58');
+    cv(0, top + 0.06 * s, 0, 0.12 * s, 0.14 * s, 0.12 * s, '#3b7d44'); cv(0, top + 0.16 * s, 0, 0.06 * s, 0.1 * s, 0.06 * s, '#4f9a58');
   } else if (type === 'roble') {
     const tH = 0.64 * s, w = 0.18 * s;
     vbox(trunk, 0, tH / 2, 0, w, tH, w, '#7a4a2a'); vbox(trunk, -w * 0.28, tH * 0.5, 0, w * 0.42, tH, w * 1.02, '#6a3f22');
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) vbox(trunk, dx * w * 0.6, 0.035, dz * w * 0.6, w * 0.55, 0.07, w * 0.55, '#6a3f22');
     vbox(trunk, w * 0.7, tH * 0.8, 0, w * 0.9, w * 0.45, w * 0.45, '#7a4a2a'); vbox(trunk, -w * 0.3, tH * 0.92, w * 0.6, w * 0.45, w * 0.45, w * 0.8, '#6a3f22');
     pivot = tH * 0.9; const cy = tH + 0.3 * s; const P = ['#3f8f34', '#4ea33c', '#5cb847', '#46993a'];
-    vbox(can, 0, cy, 0, 0.82 * s, 0.52 * s, 0.82 * s, P[1]);
+    cv(0, cy, 0, 0.82 * s, 0.52 * s, 0.82 * s, P[1]);
     const nb = 6 + Math.floor(r() * 4);
-    for (let k = 0; k < nb; k++) { const a = r() * Math.PI * 2, rad = 0.28 * s + r() * 0.14 * s, sz = (0.3 + r() * 0.2) * s; vbox(can, Math.cos(a) * rad, cy + jitter(0.3 * s), Math.sin(a) * rad, sz, sz * 0.85, sz, P[Math.floor(r() * 4)]); }
-    for (let k = 0; k < 4; k++) vbox(can, jitter(0.45 * s), cy + 0.26 * s + r() * 0.08 * s, jitter(0.45 * s), (0.22 + r() * 0.12) * s, 0.14 * s, (0.22 + r() * 0.12) * s, k % 2 ? '#6fc955' : '#7fd66a');
-    for (let k = 0; k < 4; k++) vbox(can, jitter(0.5 * s), cy - 0.22 * s, jitter(0.5 * s), 0.2 * s, 0.12 * s, 0.2 * s, '#357a2e');
+    for (let k = 0; k < nb; k++) { const a = r() * Math.PI * 2, rad = 0.28 * s + r() * 0.14 * s, sz = (0.3 + r() * 0.2) * s; cv(Math.cos(a) * rad, cy + jitter(0.3 * s), Math.sin(a) * rad, sz, sz * 0.85, sz, P[Math.floor(r() * 4)]); }
+    for (let k = 0; k < 4; k++) cv(jitter(0.45 * s), cy + 0.26 * s + r() * 0.08 * s, jitter(0.45 * s), (0.22 + r() * 0.12) * s, 0.14 * s, (0.22 + r() * 0.12) * s, k % 2 ? '#6fc955' : '#7fd66a');
+    for (let k = 0; k < 4; k++) cv(jitter(0.5 * s), cy - 0.22 * s, jitter(0.5 * s), 0.2 * s, 0.12 * s, 0.2 * s, '#357a2e');
   } else {
     const tH = 0.98 * s, w = 0.11 * s;
     vbox(trunk, 0, tH / 2, 0, w, tH, w, '#ece6da'); vbox(trunk, w * 0.28, tH / 2, 0, w * 0.45, tH, w * 1.01, '#d8d0c0');
@@ -48,10 +50,25 @@ function buildTree(type: TreeType, s: number, seed: number) {
     vbox(trunk, w * 0.9, tH * 0.62, 0, w * 1.2, w * 0.35, w * 0.35, '#ece6da'); vbox(trunk, -w * 0.7, tH * 0.78, 0, w * 0.9, w * 0.3, w * 0.3, '#d8d0c0');
     pivot = tH * 0.75; const cy = tH + 0.18 * s; const P = ['#94c046', '#a8cf52', '#bfdc6a', '#7fae3c'];
     [[-0.2, 0.42], [0, 0.56], [0.22, 0.5], [0.42, 0.32], [0.58, 0.16]].forEach(([dy, wd], k) => {
-      vbox(can, jitter(0.06 * s), cy + dy * s, jitter(0.06 * s), wd * s, 0.24 * s, wd * s, P[k % 3]);
-      if (k < 4) for (let e = 0; e < 2; e++) vbox(can, jitter(wd * s * 0.8), cy + dy * s + jitter(0.1 * s), jitter(wd * s * 0.8), 0.14 * s, 0.14 * s, 0.14 * s, P[Math.floor(r() * 4)]);
+      cv(jitter(0.06 * s), cy + dy * s, jitter(0.06 * s), wd * s, 0.24 * s, wd * s, P[k % 3]);
+      if (k < 4) for (let e = 0; e < 2; e++) cv(jitter(wd * s * 0.8), cy + dy * s + jitter(0.1 * s), jitter(wd * s * 0.8), 0.14 * s, 0.14 * s, 0.14 * s, P[Math.floor(r() * 4)]);
     });
-    for (let k = 0; k < 3; k++) vbox(can, jitter(0.3 * s), cy - 0.32 * s, jitter(0.3 * s), 0.08 * s, 0.12 * s, 0.08 * s, '#7fae3c');
+    for (let k = 0; k < 3; k++) cv(jitter(0.3 * s), cy - 0.32 * s, jitter(0.3 * s), 0.08 * s, 0.12 * s, 0.08 * s, '#7fae3c');
+  }
+  // leafy detail: many small cubes sprinkled over the canopy, light on top and dark underneath,
+  // so the crown reads as a clump of leaves instead of a few big blocks
+  const PAL: Record<TreeType, [string, string, string]> = { pino: ['#4f9a58', '#2f6b3a', '#1f4a2a'], roble: ['#8ae070', '#56ad42', '#2f6e2a'], abedul: ['#d4ea7a', '#a8cf52', '#6f9a34'] };
+  const [light, mid, dark] = PAL[type];
+  const big = boxes.filter(b => b[3] > 0.12 * s);
+  const count = Math.round((type === 'pino' ? 26 : 46) * s);
+  for (let k = 0; k < count && big.length; k++) {
+    const [x, y, z, sx, sy, sz] = big[Math.floor(r() * big.length)];
+    const face = r(), q = (0.06 + r() * 0.05) * Math.max(0.8, s);
+    let px = x + (r() - 0.5) * sx, py = y + (r() - 0.5) * sy, pz = z + (r() - 0.5) * sz, col = mid;
+    if (face < 0.4) { py = y + sy / 2 + q * 0.3; col = r() < 0.7 ? light : mid; }                 // top
+    else if (face < 0.55) { py = y - sy / 2 - q * 0.2; col = dark; }                                 // underside
+    else { const side = Math.floor(r() * 4); if (side < 2) px = x + (side ? 1 : -1) * (sx / 2 + q * 0.25); else pz = z + (side === 3 ? 1 : -1) * (sz / 2 + q * 0.25); col = py > y ? (r() < 0.5 ? light : mid) : (r() < 0.6 ? dark : mid); }
+    vbox(can, px, py, pz, q, q * (0.7 + r() * 0.5), q, col);
   }
   const tg = mergeGeometries(trunk), cg = mergeGeometries(can);
   cg.translate(0, -pivot, 0); cg.computeBoundingBox();
@@ -119,10 +136,10 @@ export const canopyInfo = (t: Tree) => { const c = combos.get(`${t.type}|${t.si}
 export function plantIsland(seed: number) {
   const r = rng(seed + 77);
   for (const t of landTiles()) {
-    if (!['pasto', 'matas', 'trebol', 'flores'].includes(t.type)) continue;
-    const f = vnoise(t.i, t.j, 4, seed + 21); let p = f > 0.6 ? 0.5 : 0.05; if (t.h >= 2) p += 0.18;
+    if (t.ruin || !['pasto', 'matas', 'trebol', 'flores'].includes(t.type)) continue;
+    const f = vnoise(oi(t), oj(t), 4, seed + 21); let p = f > 0.6 ? 0.5 : 0.05; if (t.h >= 2) p += 0.18;
     if (r() > p) continue;
-    const type: TreeType = t.h >= 2 ? (r() < 0.7 ? 'pino' : 'roble') : vnoise(t.i, t.j, 5, seed + 31) > 0.58 ? 'abedul' : r() < 0.25 ? 'pino' : 'roble';
+    const type: TreeType = t.h >= 2 ? (r() < 0.7 ? 'pino' : 'roble') : vnoise(oi(t), oj(t), 5, seed + 31) > 0.58 ? 'abedul' : r() < 0.25 ? 'pino' : 'roble';
     const q = r(); addTree(t, type, q < 0.35 ? 0 : q < 0.75 ? 1 : 2);
   }
 }

@@ -18,9 +18,14 @@ const CHECK: Record<string, () => boolean> = {
   despejar: () => !!S.flags.claroAbierto,
   desenterrar: () => !!S.flags.musgoFree,
   expandir: () => S.expanded.length > 0,
+  islote: () => !!S.flags.islote,
+  llamas: () => S.ruins.lit.every(Boolean),
+  brasa: () => !!S.ruins.awake,
 };
 
 export const currentGoal = () => GOALS[S.goal] || null;
+/** Goal text with its live counter filled in. */
+export const goalText = (g: { text: string }) => g.text.replace('{n}', String(S.ruins.lit.filter(Boolean).length));
 
 export function checkGoals() {
   let advanced = false;

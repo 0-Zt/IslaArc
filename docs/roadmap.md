@@ -36,7 +36,7 @@ Asignar figuras → producir → procesar (horno, cráter) → construir y expan
 | --- | --- | --- |
 | 0. Prototipos (hecho) | Prototipo 2D, taller 3D | El estilo 3D convence |
 | 1. Fundación técnica (hecho) | Corte vertical 3D, migración a TypeScript + Vite, datos en JSON, optimización de rendimiento | Asignar figuras y construir se siente bien |
-| 2. Bucle núcleo (en curso) | Expansión de tierra (v0.5), bosque, semillas y senderos (v0.6), decoración y obras con tiempo, eras 1 y 2 completas | 45 minutos con metas claras, probado por 3 personas |
+| 2. Bucle núcleo (en curso) | Expansión (v0.5), bosque y senderos (v0.6), día y noche, obras, decoración y el secreto de Brasa (v0.8); falta la era 2 | 45 minutos con metas claras, probado por 3 personas |
 | 3. Contenido y secretos | Era 3, 3 puzzles, 2 zonas ocultas, eventos y barco fantasma | 6 horas sin atascos |
 | 4. Carrera del Bosque | Minijuego de carrera en 3 carriles | Una carrera de 60 s es divertida sin premio |
 | 5. Pulido y lanzamiento | Sonido, rendimiento, balance, demo pública | Lista para publicar |
@@ -63,12 +63,30 @@ Arci empieza sola. Musgo está enterrado en un claro rodeado por cuatro árboles
 - **Senderos.** En Construir → Jardín → Senderos se tocan casillas de pasto y una figura las cava con la pala. En los senderos no crecen árboles y las figuras caminan un 35 % más rápido.
 - **Trabajo en cadena.** Al terminar una marca, la figura sigue con la más cercana del mismo tipo. Al tocar "Listo", la figura libre más cercana empieza sola.
 
-## Pendiente: decoración y construcción con tiempo
+## Día y noche, obras y decoración (v0.8)
 
-- **Decoración.** Faroles, cercos, bancas, macetas y bordes de piedra solo decoran. Se fabrican en la casa o el taller con materiales y tiempo de fabricación, y se colocan con la guía amarilla. Los faroles se encienden de noche.
-- **Construcción con tiempo.** Todo lo construido pasa por la misma cola: materiales, luego una obra y un tiempo de trabajo con una figura asignada. Dos figuras lo hacen más rápido.
-- **Linde del bosque.** Postes fabricables para agrandar o achicar una zona de bosque.
-- **Volver a pasto.** Semillas de pasto para deshacer un sendero.
+- **Ciclo de día y noche:** un día dura unos 9 minutos (mañana, mediodía, atardecer, noche y amanecer). El sol cruza el cielo y las sombras giran con él. Un botón con sol o luna, bajo Menú, dice cuánto falta para la noche. Se puede apagar en Ajustes.
+- **Obras con tiempo:** casa, horno y decoración se pagan, se ubican y quedan como obra con andamio. La figura libre más cercana la levanta a martillazos. Un edificio sin terminar no funciona.
+- **Decoración:** farol (se enciende al atardecer y deja un círculo de luz), cerco, banca y macetero. Después de colocar uno sigue el modo de ubicar mientras alcancen los materiales.
+
+## El islote de las ruinas y Brasa (v0.8)
+
+- El islote está mar adentro, arriba a la derecha. Para llegar se tiende un **puente** de madera (3 de madera por tramo, precio fijo) o se expande con tierra.
+- En la plataforma hay cinco braseros en ruinas. Cada uno se **reconstruye** (materiales + obra con martillo) y después se **enciende** resolviendo su acertijo:
+  1. **Runas:** repetir la canción de las runas, en tres rondas cada vez más largas.
+  2. **Cauce:** girar piedras de canal hasta que la lava llegue al brasero.
+  3. **Losas:** cada losa cambia a sus vecinas; hay que encender las nueve.
+  4. **Obeliscos:** acertijo grabado («lo que da el árbol, lo que trae el mar, lo que guarda la montaña»).
+  5. **Luna:** guiar la luz de la luna con espejos. Solo de noche y con las otras cuatro encendidas.
+- Cada llama encendida hace correr lava por su canal hacia la estatua. Con las cinco, se levantan seis muros tallados en hexágono, se iluminan las runas, la estatua pasa de piedra a arcilla ardiente y **Brasa** se une al equipo.
+- Estilo tomado de las imágenes de referencia: losas gastadas con musgo, braseros en forma de cáliz con almenas, arco en ruinas, rocas en el agua. Brasa es de arcilla oscura, con grietas de brasa, una llama en la cabeza y ojos amarillos.
+
+## Pendiente
+
+- **Habilidades por figura:** Brasa podría fundir sin horno o encender faroles; Musgo, hacer crecer retoños más rápido.
+- **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
+- **Volver a pasto:** semillas de pasto para deshacer un sendero.
+- **Era 2:** la cueva del volcán.
 
 ## Decisiones tomadas
 

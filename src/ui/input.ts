@@ -4,15 +4,16 @@ import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
 import { tileProxies, topY, type Tile } from '../world/island';
 import { pickTree } from '../world/trees';
 import { rocks } from '../world/rocks';
-import { crew, selected, select, order, tileOf, nextSite, nextBuild, type JobKind } from '../game/crew';
+import { crew, selected, select, order, tileOf, nextSite, assignIdleBuilder, type JobKind } from '../game/crew';
 import { buildings, place, movePlace, rotatePlace, cancelPlace, confirmPlace, isDone, buildingDef } from '../game/buildings';
 import { ancients, mound } from '../game/grove';
 import { stumps, sproutMeshes, growing, growthProgress } from '../game/forest';
 import { marks, markMode, toggleMark, exitMarkMode, nearestMark, type MarkKind } from '../game/marks';
 import { sites, expandMode, pickCell, exitExpandMode, startSite, cancelSite, refreshMarkers, expandCost, expandKind, setExpandKind, KINDS, type ExpandKind } from '../game/expansion';
 import { S } from '../game/state';
+import { ruinPropMeshes, shrineMeshes, slotOf, isIslet } from '../game/ruins';
 import { $, toast, refreshHUD, img } from './hud';
-import { openSheet, closeSheet, sheetOpen } from './sheets';
+import { openSheet, closeSheet, sheetOpen, openRuin, openFlame } from './sheets';
 import type { CharId } from '../assets/characters';
 
 /* Touch-first input: a quick tap selects or orders; drags and pinches move the camera. */
@@ -30,7 +31,7 @@ export function centreTile(): Tile | null {
   return h ? h.object.userData.tile : null;
 }
 
-type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'sprout' | 'mark' | 'site' | 'tile'; mk?: MarkKind; tile?: Tile; id?: CharId; b?: any };
+type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'sprout' | 'mark' | 'site' | 'ruin' | 'shrine' | 'tile'; mk?: MarkKind; k?: number; tile?: Tile; id?: CharId; b?: any };
 function pick(): Hit | null {
   const hits: Hit[] = [];
   const up = (o: THREE.Object3D | null, key: string) => { while (o && o.userData[key] === undefined) o = o.parent; return o ? o.userData[key] : undefined; };
@@ -44,6 +45,8 @@ function pick(): Hit | null {
   const xh = ray.intersectObjects(sites.map(s => s.group), true)[0]; if (xh) { const s = up(xh.object, 'site'); if (s) hits.push({ d: xh.distance - 0.6, kind: 'site', tile: s.tile }); }
   const ph = ray.intersectObjects(sproutMeshes(), true)[0]; if (ph) hits.push({ d: ph.distance - 0.3, kind: 'sprout', tile: up(ph.object, 'sproutTile') });
   const mh2 = ray.intersectObjects(marks.map(m => m.group), true)[0]; if (mh2) { const m = up(mh2.object, 'mark'); if (m) hits.push({ d: mh2.distance - 0.3, kind: 'mark', tile: m.tile, mk: m.kind }); }
+  const uh = ray.intersectObjects(ruinPropMeshes(), true)[0]; if (uh) hits.push({ d: uh.distance - 0.3, kind: 'ruin', k: up(uh.object, 'ruinSlot') });
+  const qh = ray.intersectObjects(shrineMeshes(), true)[0]; if (qh) hits.push({ d: qh.distance, kind: 'shrine' });
   const gh = ray.intersectObjects(tileProxies, false)[0]; if (gh) hits.push({ d: gh.distance + 0.05, kind: 'tile', tile: gh.object.userData.tile });
   hits.sort((a, b) => a.d - b.d);
   // with a figure selected, tapping "through" it at a job behind it gives the order instead of deselecting
@@ -98,6 +101,8 @@ export function onTap(x: number, y: number) {
   const h = pick();
   if (!h) { select(null); return; }
   if (h.kind === 'char') { select(selected === h.id ? null : h.id!); return; }
+  if (h.kind === 'ruin') { select(null); openRuin(h.k!); return; }
+  if (h.kind === 'shrine') { toast(S.ruins.awake ? 'El santuario de Brasa. La lava todavía tibia corre hacia el centro.' : 'Una estatua de arcilla oscura, sentada en el centro. Parece dormida.'); return; }
   if (h.kind === 'building') {
     const b = h.b; if (!b) return;
     if (!isDone(b)) {
@@ -107,6 +112,7 @@ export function onTap(x: number, y: number) {
       return;
     }
     if (b.type === 'casa' || b.type === 'horno') { select(null); openSheet(b.type, b); }
+    if (b.type === 'brasero') { const k = slotOf(b.tiles[0]); select(null); if (S.ruins.lit[k]) toast('Esta llama ya arde.'); else openFlame(k); }
     return;
   }
   if (h.kind === 'ancient' || h.kind === 'mound') seeGrove();
@@ -124,13 +130,19 @@ export function onTap(x: number, y: number) {
 }
 
 let lastMode: MarkKind = 'plant';
+/** The nearest free figure picks up the hammer; tells the player who, or what to do. */
+export function announceBuilder(type: string) {
+  if (crew.some(c => c.job?.kind === 'build')) { toast('Obra marcada. Se construirá cuando termine la anterior.'); return; }
+  const c = assignIdleBuilder();
+  toast(c ? `${c.def.name} va a construir: ${buildingDef(type).name.toLowerCase()}` : 'Obra marcada. Toca una figura y luego la obra para construirla.');
+}
 function refreshExpandBar() {
   const pending = sites.filter(q => q.hits === 0).length;
   const c = expandCost(expandKind);
   const cost = Object.entries(c).map(([k, v]) => `${v} de ${k}`).join(' y ');
   const t = `Toca el agua marcada para agregar parcelas (la siguiente cuesta ${cost}). Toca una parcela para quitarla.${pending ? ` Marcadas: ${pending}.` : ''}`;
   const span = $('expandBar').querySelector('span')!; if (span.textContent !== t) span.textContent = t;
-  const h = (Object.keys(KINDS) as ExpandKind[]).map(k => `<button data-kind="${k}" class="${k === expandKind ? 'on' : ''}">${img(k === 'playa' ? 'arena' : 'tierra')}${KINDS[k].name}</button>`).join('');
+  const h = (Object.keys(KINDS) as ExpandKind[]).map(k => `<button data-kind="${k}" class="${k === expandKind ? 'on' : ''}">${img(k === 'playa' ? 'arena' : k === 'puente' ? 'madera' : 'tierra')}${KINDS[k].name}</button>`).join('');
   const box = $('xKinds'); if (box.dataset.sig !== h) { box.dataset.sig = h; box.innerHTML = h; }
 }
 export function initInput() {
@@ -150,12 +162,7 @@ export function initInput() {
     const r = confirmPlace();
     if (typeof r === 'string') { toast(r); return; }
     emit('changed');
-    // the nearest free figure picks up the hammer
-    if (!crew.some(c => c.job?.kind === 'build')) {
-      const idle = crew.filter(c => !c.job && !c.path.length);
-      for (const c of idle) { nextBuild(c); if (c.job?.kind === 'build') { toast(`${c.def.name} va a construir: ${buildingDef(r.type).name.toLowerCase()}`); return; } }
-      toast('Obra marcada. Toca una figura y luego la obra para construirla.');
-    } else toast('Obra marcada. Se construirá cuando termine la anterior.');
+    announceBuilder(r.type);
   });
   $('xExit').addEventListener('click', () => { exitExpandMode(); exitMarkMode(); });
   $('xKinds').addEventListener('click', e => {
@@ -187,7 +194,7 @@ export function initInput() {
       // the nearest idle figure starts on the new plots
       if (sites.length && !crew.some(c => c.job?.kind === 'fill')) {
         const idle = crew.find(c => !c.job && !c.path.length);
-        if (idle) { nextSite(idle); if (idle.job?.kind === 'fill') toast(`${idle.def.name} va a rellenar ${sites.length === 1 ? 'la parcela' : `${sites.length} parcelas`}`); }
+        if (idle) { nextSite(idle); toast(idle.job?.kind === 'fill' ? `${idle.def.name} va a rellenar ${sites.length === 1 ? 'la parcela' : `${sites.length} parcelas`}` : 'Nadie llega a las parcelas: despeja la orilla (árboles o rocas) junto a ellas'); }
         else toast('Toca una figura y luego una parcela para rellenarla');
       }
     }

@@ -1,0 +1,56 @@
+{
+  "center": [
+    37,
+    6
+  ],
+  "braziers": [
+    {
+      "name": "Llama de las Runas",
+      "sym": "spiral",
+      "puzzle": "runas",
+      "cost": {
+        "piedra": 6
+      },
+      "hint": "Las runas repiten una canción. Obsérvala y tócala igual."
+    },
+    {
+      "name": "Llama del Cauce",
+      "sym": "wave",
+      "puzzle": "cauce",
+      "cost": {
+        "piedra": 5,
+        "arena": 4
+      },
+      "hint": "Gira las piedras del cauce hasta que la lava llegue al brasero."
+    },
+    {
+      "name": "Llama de las Losas",
+      "sym": "stone",
+      "puzzle": "losas",
+      "cost": {
+        "piedra": 8
+      },
+      "hint": "Cada losa que pisas despierta a sus vecinas. Enciéndelas todas."
+    },
+    {
+      "name": "Llama de los Obeliscos",
+      "sym": "leaf",
+      "puzzle": "obeliscos",
+      "cost": {
+        "piedra": 5,
+        "madera": 5
+      },
+      "hint": "Tres obeliscos con caras talladas que giran. En la base hay un grabado."
+    },
+    {
+      "name": "Llama de la Luna",
+      "sym": "moon",
+      "puzzle": "luna",
+      "cost": {
+        "piedra": 5,
+        "lingote": 2
+      },
+      "hint": "Solo la luz de la luna la enciende, y solo cuando las otras cuatro arden."
+    }
+  ]
+}

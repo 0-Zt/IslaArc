@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { vnoise } from '../core/random';
-import { worldGroup, topY, tileAt, landTiles, DIRS, GRASS, type Tile } from '../world/island';
+import { worldGroup, topY, tileAt, landTiles, DIRS, GRASS, oi, oj, type Tile } from '../world/island';
 import { addTree, removeTree, trees, type Tree, type TreeType } from '../world/trees';
 import { puff } from '../world/particles';
 import { modelStump, modelSprout } from '../assets/grove';
@@ -29,8 +29,8 @@ export let forestTiles: Tile[] = [];
 export function markForestZone(seed: number) {
   forestTiles = [];
   for (const t of landTiles()) {
-    const f = vnoise(t.i, t.j, 4, seed + 21);  // the same noise that makes the woods dense in plantIsland
-    t.forest = GRASS.includes(t.type) && !t.ancient && !t.mound && (f > 0.56 || (t.h >= 2 && f > 0.46));
+    const f = vnoise(oi(t), oj(t), 4, seed + 21);  // the same noise that makes the woods dense in plantIsland
+    t.forest = !t.ruin && GRASS.includes(t.type) && !t.ancient && !t.mound && (f > 0.56 || (t.h >= 2 && f > 0.46));
     if (t.forest) forestTiles.push(t);
   }
 }

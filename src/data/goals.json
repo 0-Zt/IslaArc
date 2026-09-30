@@ -50,5 +50,18 @@
     "id": "expandir",
     "text": "Expande la isla: Construir → Expandir la isla",
     "hint": "build"
+  },
+  {
+    "id": "islote",
+    "text": "Llega al islote de las ruinas: tiende un puente (Construir → Expandir → Puente)",
+    "hint": "build"
+  },
+  {
+    "id": "llamas",
+    "text": "Reconstruye los braseros y enciende las llamas ({n}/5)"
+  },
+  {
+    "id": "brasa",
+    "text": "Espera a que despierte lo que duerme en las ruinas"
   }
 ]

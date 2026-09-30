@@ -32,12 +32,14 @@ export interface State {
   marks: { i: number; j: number; kind: 'plant' | 'path'; type?: string }[];  // orders waiting for a figure
   time: number;
   clock: number;                       // time of day, 0..1 (0 = morning)
+  grid: number;                        // 2 = coordinates on the 44×44 grid (v0.8)
+  ruins: { lit: boolean[]; awake: boolean; seen: boolean };
   done: boolean;
 }
 
 const zero = () => Object.fromEntries(RES_KEYS.map(k => [k, 0])) as Record<ResKey, number>;
 export function freshState(): State {
-  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], grown: [], paths: [], marks: [], time: 0, clock: 0.04, done: false };
+  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], grown: [], paths: [], marks: [], time: 0, clock: 0.04, grid: 2, ruins: { lit: [false, false, false, false, false], awake: false, seen: false }, done: false };
 }
 export let S: State = freshState();
 export function setState(s: State) { S = s; }
@@ -52,8 +54,16 @@ export function loadSave(): State | null {
     const s = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!s) return null;
     const f = freshState();
-    return { ...f, ...s, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags }, gone: s.gone || [], stumps: s.stumps || [], sites: s.sites || [], expanded: s.expanded || [], grown: s.grown || [], paths: s.paths || [], marks: s.marks || [] };
+    if (!s.grid) migrateGrid(s);
+    return { ...f, ...s, ruins: { ...f.ruins, ...(s.ruins || {}) }, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags }, gone: s.gone || [], stumps: s.stumps || [], sites: s.sites || [], expanded: s.expanded || [], grown: s.grown || [], paths: s.paths || [], marks: s.marks || [] };
   } catch { return null; }
+}
+/** v0.7 saves used a 30×30 grid; the island now sits OFF cells in from the corner of a 44×44 grid. */
+function migrateGrid(s: any, OFF = 7) {
+  const k = (x: string) => { const [i, j] = x.split(',').map(Number); return `${i + OFF},${j + OFF}`; };
+  for (const list of [s.buildings, s.sites, s.expanded, s.grown, s.marks]) for (const o of list || []) { o.i += OFF; o.j += OFF; }
+  for (const key of ['gone', 'stumps', 'paths']) if (s[key]) s[key] = s[key].map(k);
+  s.grid = 2;
 }
 export function clearSave() { try { localStorage.removeItem(KEY); } catch { /* ignore */ } }
 export function hasSave() { try { return !!localStorage.getItem(KEY); } catch { return false; } }

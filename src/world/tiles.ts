@@ -31,7 +31,7 @@ function blades(x: CanvasRenderingContext2D, r: Rng, n: number, w: number, h: nu
   for (let k = 0; k < n; k++) { const X = Math.floor(r() * w), Y = 1 + Math.floor(r() * (h - 1)); px(x, X, Y, PAL.gDark); px(x, X, Y - 1, PAL.gLight); }
 }
 
-type Side = 'grass' | 'dirt' | 'path' | 'sand';
+type Side = 'grass' | 'dirt' | 'path' | 'sand' | 'stone' | 'wood';
 type Draw = (x: CanvasRenderingContext2D, r: Rng, w: number, h: number) => void;
 export const TILE_DEFS: Record<string, { name: string; side: Side; draw: Draw }> = {
   pasto: { name: 'Pasto', side: 'grass', draw: (x, r, w, h) => { field(x, w, h, PAL.grass, r, 5); blades(x, r, 9, w, h); } },
@@ -68,6 +68,19 @@ export const TILE_DEFS: Record<string, { name: string; side: Side; draw: Draw }>
     for (let k = 0; k < 10; k++) px(x, Math.floor(r() * w), Math.floor(r() * h), r() < 0.5 ? '#c8a860' : '#fff0c8');
     if (r() < 0.6) { const X = 2 + Math.floor(r() * 11), Y = 2 + Math.floor(r() * 11); px(x, X, Y, '#ff9ab8'); px(x, X + 1, Y, '#ffd6e2'); }
   } },
+  // wooden bridge: planks across, nails and gaps
+  puente: { name: 'Puente', side: 'wood', draw: (x, r, w, h) => {
+    for (let j = 0; j < h; j++) { const plank = Math.floor(j / 4), v = ['#b07a44', '#a8743e', '#bc8650', '#9c6a38'][(plank + Math.floor(r() * 2)) % 4]; for (let i = 0; i < w; i++) px(x, i, j, j % 4 === 3 ? '#5e3a1e' : r() < 0.1 ? '#8a5a2e' : v); }
+    for (let k = 0; k < 4; k++) { px(x, 2, k * 4 + 1, '#4a3020'); px(x, 13, k * 4 + 1, '#4a3020'); }
+  } },
+  // old paving of the ruins: square slabs, cracks and moss in the joints
+  losa: { name: 'Losa antigua', side: 'stone', draw: (x, r, w, h) => {
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x, i, j, pick(r, ['#9a9488', '#a39d90', '#8e887c']));
+    for (let k = 0; k < w; k++) { px(x, k, 7, '#6a645c'); px(x, k, 15, '#6a645c'); px(x, 7, k, '#6a645c'); px(x, 15, k, '#6a645c'); }
+    for (let k = 0; k < 6; k++) { const X = Math.floor(r() * w), Y = Math.floor(r() * h); px(x, X, Y, '#b4aea2'); }
+    for (let k = 0; k < 7; k++) { const e = r() < 0.5, X = e ? 7 : Math.floor(r() * w), Y = e ? Math.floor(r() * h) : 7; px(x, X, Y, r() < 0.6 ? '#4e8a3a' : '#63a348'); }
+    let X = Math.floor(r() * 6) + 1, Y = Math.floor(r() * 6) + 1; for (let s = 0; s < 4; s++) { px(x, X, Y, '#5e584f'); X += 1; Y += r() < 0.5 ? 1 : 0; }
+  } },
 };
 
 const topTex: Record<string, THREE.Texture[]> = {};
@@ -91,6 +104,14 @@ const SIDE_TEX = {
   path: sideTex(88, (x, r, w, h) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x, i, j, j < 2 ? pick(r, PAL.path) : j > 5 ? '#6a4226' : pick(r, PAL.dirt));
     for (let i = 0; i < w; i++) if (r() < 0.3) px(x, i, 2, PAL.pDark);
+  }),
+  wood: sideTex(141, (x, r, w, h) => {
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x, i, j, j < 2 ? pick(r, ['#b07a44', '#a8743e']) : i % 8 < 2 ? '#5e3a1e' : pick(r, ['#6a4226', '#74482a']));
+    for (let i = 0; i < w; i++) px(x, i, 2, '#4a3020');
+  }),
+  stone: sideTex(131, (x, r, w, h) => {
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x, i, j, j === 0 ? '#b4aea2' : j > 5 ? '#5e584f' : pick(r, ['#8e887c', '#827c70', '#9a9488']));
+    for (let i = 0; i < w; i++) px(x, i, 3, '#6a645c'); px(x, 5, 1, '#6a645c'); px(x, 5, 2, '#6a645c'); px(x, 12, 4, '#6a645c'); px(x, 12, 5, '#6a645c');
   }),
   sand: sideTex(123, (x, r, w, h) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x, i, j, j < 3 ? pick(r, ['#ecd49a', '#e4ca8c', '#dcc084']) : j > 5 ? '#8a6a44' : pick(r, ['#c8a870', '#b89860', '#a88850']));

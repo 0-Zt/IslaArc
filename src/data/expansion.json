@@ -1,4 +1,28 @@
 {
-  "pradera": { "name": "Pradera", "desc": "Tierra con pasto, lista para construir o plantar.", "tile": "pasto", "cost": { "tierra": 3 } },
-  "playa":   { "name": "Playa",   "desc": "Arena junto al mar. Da más arena para el horno.", "tile": "arena", "cost": { "tierra": 2, "arena": 3 } }
+  "pradera": {
+    "name": "Pradera",
+    "desc": "Tierra con pasto, lista para construir o plantar.",
+    "tile": "pasto",
+    "cost": {
+      "tierra": 3
+    }
+  },
+  "playa": {
+    "name": "Playa",
+    "desc": "Arena junto al mar. Da más arena para el horno.",
+    "tile": "arena",
+    "cost": {
+      "tierra": 2,
+      "arena": 3
+    }
+  },
+  "puente": {
+    "name": "Puente",
+    "desc": "Tablones sobre el agua. Solo sirve para caminar; es la forma barata de llegar lejos.",
+    "tile": "puente",
+    "cost": {
+      "madera": 3
+    },
+    "hits": 4
+  }
 }

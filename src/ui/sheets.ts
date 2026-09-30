@@ -6,25 +6,33 @@ import { refreshTools } from '../game/crew';
 import { KINDS, expandCost, startSite, enterExpandMode, exitExpandMode, type ExpandKind } from '../game/expansion';
 import { enterMarkMode } from '../game/marks';
 import { refreshDay } from '../render/daynight';
+import { BRAZIERS, rebuildBrazier } from '../game/ruins';
+import { initPuzzles, openPuzzle, closePuzzle, puzzleHTML, puzzleClick, puzzleSig } from './puzzles';
+import { runeSVG } from '../assets/ruins';
+import { assignIdleBuilder } from '../game/crew';
 import { ICONS } from '../assets/buildings';
 import { $, img, toast } from './hud';
 import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'fin';
+type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'fin';
 let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {};
 export function initSheets(opts: { centreTile: () => Tile | null; onReset: () => void }) { centreTile = opts.centreTile; onReset = opts.onReset; }
 
 export const sheetOpen = () => type !== null;
-export function openSheet(t: SheetType, b: Building | null = null, c: [number, number] | null = null) { type = t; arg = b; cell = c; confirmReset = false; render(); $('sheet').hidden = false; }
-export function closeSheet() { type = null; $('sheet').hidden = true; }
+export function openSheet(t: SheetType, b: Building | null = null, c: [number, number] | null = null) { if (type === 'puzzle' && t !== 'puzzle') closePuzzle(); type = t; arg = b; cell = c; confirmReset = false; render(); $('sheet').hidden = false; $('sheet').classList.toggle('tall', t === 'puzzle'); }
+export function closeSheet() { if (type === 'puzzle') closePuzzle(); type = null; $('sheet').hidden = true; }
+/** A ruined brazier: what it is and what rebuilding it costs. */
+let ruinK = -1;
+export function openRuin(k: number) { ruinK = k; openSheet('ruina'); }
+export function openFlame(k: number) { openPuzzle(k); openSheet('puzzle'); }
 
 const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => `<span class="${S.res[k as ResKey] >= (v as number) ? '' : 'no'}">${img(k as ResKey)}${S.res[k as ResKey]}/${v}</span>`).join('')}</div>`;
 // the settings sheet never re-renders by itself, so sliders keep working while dragged
-const signature = () => type === 'gfx' ? 'gfx' : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.queue, S.expanded.length]);
+const signature = () => type === 'gfx' ? 'gfx' : type === 'puzzle' ? 'puzzle' + puzzleSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.queue, S.expanded.length]);
 
 function render() {
   sig = signature();
@@ -41,7 +49,7 @@ function render() {
           : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-place="${k}" ${afford(d.cost) ? '' : 'disabled'}>Ubicar</button>`) + '</div>';
     };
     const all = Object.entries(DATA.BUILDINGS) as [string, any][];
-    for (const [k, d] of all) if (!d.deco) h += row(k, d);
+    for (const [k, d] of all) if (!d.deco && !d.hidden) h += row(k, d);
     h += '<h3>Decoración</h3>';
     for (const [k, d] of all) if (d.deco) h += row(k, d);
     h += '<h3>Isla</h3>';
@@ -94,9 +102,15 @@ function render() {
     h += `<h2>Plantar semillas</h2><p>Tienes ${S.res.semilla} ${S.res.semilla === 1 ? 'semilla' : 'semillas'}. Cada una se vuelve un retoño y luego un árbol. Dentro del bosque (borde verde) los árboles también se esparcen solos; fuera, solo crece lo que plantas.</p>`;
     const SP: [string, string, string][] = [['roble', 'Roble', 'Copa ancha y redonda.'], ['pino', 'Pino', 'Alto y oscuro, bueno para bordes.'], ['abedul', 'Abedul', 'Tronco blanco y hojas claras.']];
     for (const [k, n, d] of SP) h += `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${n}</b><small>${d}</small></div><button class="btn main" data-species="${k}" ${S.res.semilla > 0 ? '' : 'disabled'}>Elegir</button></div>`;
+  } else if (type === 'ruina' && ruinK >= 0) {
+    const d = BRAZIERS[ruinK];
+    h += `<h2>Brasero en ruinas</h2><p>${d.name}. La piedra está rota y la runa, casi borrada.</p>`
+      + `<div class="row"><div class="thumb">${runeSVG(d.sym, '#ffb45a', 34)}</div><div class="info"><b>Reconstruir</b><small>Una figura lo levanta con el martillo. Después habrá que encender su llama.</small>${costHTML(d.cost)}</div><button class="btn${afford(d.cost) ? ' main' : ''}" data-rebuild="${ruinK}" ${afford(d.cost) ? '' : 'disabled'}>Reconstruir</button></div>`;
+  } else if (type === 'puzzle') {
+    h += puzzleHTML();
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
-    h += `<h2>¡La isla despierta!</h2><p>Fundiste metal, abriste el claro, desenterraste a Musgo e hiciste crecer la isla en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}.</p>`
+    h += `<h2>¡La isla despierta!</h2><p>Fundiste metal, desenterraste a Musgo, llegaste a las ruinas y despertaste a Brasa en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}.</p>`
       + '<p>Sigue expandiendo y ordenando tu isla: planta semillas, traza senderos y deja espacio para lo que viene: decoración, la cueva del volcán y el secreto de Brasa.</p>'
       + '<button class="btn main" data-act="close" style="width:100%">Seguir jugando</button>';
   }
@@ -111,10 +125,20 @@ export function refreshSheet() {
 }
 
 export function initSheetEvents() {
+  initPuzzles({ rerender: () => { if (type === 'puzzle') render(); }, close: () => { if (type === 'puzzle') closeSheet(); } });
   $('sheet').addEventListener('click', e => {
     const b = (e.target as HTMLElement).closest('button') as HTMLButtonElement | null;
+    if (type === 'puzzle' && !(b && b.dataset.act === 'close')) { puzzleClick(e.target as HTMLElement); return; }
     if (!b || b.disabled) return;
     if (b.dataset.act === 'close') return closeSheet();
+    if (b.dataset.rebuild) {
+      const r = rebuildBrazier(Number(b.dataset.rebuild));
+      if (typeof r === 'string') { toast(r); return; }
+      closeSheet();
+      const c = assignIdleBuilder();
+      toast(c ? `${c.def.name} va a reconstruir el brasero` : 'Obra marcada. Toca una figura y luego el brasero.');
+      return;
+    }
     if (b.dataset.place) { const t = centreTile(); if (t) { closeSheet(); startPlace(b.dataset.place, t); } return; }
     if (b.dataset.tool) {
       const d = (DATA.TOOLS as any)[b.dataset.tool];

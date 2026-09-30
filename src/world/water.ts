@@ -19,12 +19,14 @@ shoreTex.wrapS = shoreTex.wrapT = THREE.ClampToEdgeWrapping;
 
 export function updateWater() {
   // land cells, then distance from every texel to the nearest land cell (as a box)
-  const land: [number, number][] = [];
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) if (tileAt(i, j)) land.push([i, j]);
+  const isLand = (i: number, j: number) => { const t = tileAt(i, j); return !!t && t.type !== 'puente'; }; // the sea runs under bridges
+  const W = Math.ceil(MAXD) + 1;
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
     const px = (x + 0.5) / RES, py = (y + 0.5) / RES;
     let best = MAXD * MAXD;
-    for (const [i, j] of land) {
+    const ci = Math.floor(px), cj = Math.floor(py);
+    for (let j = cj - W; j <= cj + W; j++) for (let i = ci - W; i <= ci + W; i++) {
+      if (!isLand(i, j)) continue;
       const dx = Math.max(i - px, 0, px - (i + 1)), dy = Math.max(j - py, 0, py - (j + 1));
       const d = dx * dx + dy * dy; if (d < best) best = d;
     }

@@ -3,7 +3,12 @@ import { scene } from '../render/renderer';
 import { rng, hash, vnoise, pick } from '../core/random';
 import { LEVEL, topMat, sideMatFor, SIDE_MAT } from './tiles';
 
-export const N = 30;          // grid size: the island leaves a ring of sea to expand into
+export const N = 44;          // grid size: room for the sea, expansions, a bridge and the ruins islet
+// The main island is generated on a 30×30 grid (as in v0.7) and set in the middle of this one,
+// so it keeps the same shape, trees and rocks. Saves from v0.7 are shifted by OFF (see state.ts).
+const G0 = 30;
+export const OFF = (N - G0) / 2;
+const GRID = N;
 const R = 10.6;               // island radius in tiles
 
 export interface Tile {
@@ -15,6 +20,8 @@ export interface Tile {
   forest?: boolean;   // inside a forest zone: trees regrow and spread here on their own
   sprout?: any;       // a seedling still growing into a tree
   mark?: any;         // a planting or path order waiting for a figure
+  solid?: boolean;    // ruins and statues: cannot be walked through
+  ruin?: boolean;     // part of the ruins islet
 }
 
 export let island: (Tile | null)[][] = [];
@@ -26,7 +33,9 @@ export const tileAt = (i: number, j: number): Tile | null => (island[j] && islan
 export const tileUnder = (x: number, z: number) => tileAt(Math.floor(x + N / 2), Math.floor(z + N / 2));
 export const topY = (t: Tile) => t.h * LEVEL;
 export function landTiles() { const a: Tile[] = []; for (const row of island) for (const t of row) if (t) a.push(t); return a; }
-export const blocked = (t: Tile | null) => !t || !!t.tree || !!t.rock || !!t.building || !!t.ancient || !!t.mound;
+export const blocked = (t: Tile | null) => !t || !!t.tree || !!t.rock || !!t.building || !!t.ancient || !!t.mound || !!t.solid;
+/** Grid coordinates as they were on the original 30×30 map: noise keyed on these keeps the island identical. */
+export const oi = (t: Tile) => t.i - OFF, oj = (t: Tile) => t.j - OFF;
 export const GRASS = ['pasto', 'matas', 'flores', 'trebol'];
 export const walkable = (t: Tile | null) => !blocked(t);
 export const DIRS: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -44,6 +53,7 @@ export function addLand(i: number, j: number, type: string) {
 
 /* ---------- generation ---------- */
 export function generate(seed: number) {
+  const N = G0; // everything below runs on the original grid; the result is shifted into place at the end
   const r = rng(seed), g: (Tile | null)[][] = [], c = (N - 1) / 2;
   for (let j = 0; j < N; j++) {
     g[j] = [];
@@ -100,7 +110,6 @@ export function generate(seed: number) {
     if (!ok) continue;
     const d = Math.hypot(q.i - target[0], q.j - target[1]); if (d < bd) { bd = d; best = q; }
   }
-  island = g;
   grove = null;
   if (best) {
     const ring: Tile[] = [];
@@ -112,7 +121,12 @@ export function generate(seed: number) {
     for (let b = -2; b <= 2; b++) for (let a = -2; a <= 2; a++) { const q = g[best.j + b] && g[best.j + b][best.i + a]; if (q && (Math.abs(a) === 2 || Math.abs(b) === 2)) { q.h = Math.min(q.h, 2); if (q.type === 'arena') continue; if (hash(q.i, q.j, 3) < 0.5) q.type = 'musgo'; } }
     grove = { center: best, ring };
   }
-  return g;
+  // set the island in the middle of the bigger grid
+  const big: (Tile | null)[][] = [];
+  for (let j = 0; j < GRID; j++) big[j] = new Array(GRID).fill(null);
+  for (const row of g) for (const q of row) { if (!q) continue; q.i += OFF; q.j += OFF; [q.wx, q.wz] = tileWorld(q.i, q.j); big[q.j][q.i] = q; }
+  island = big;
+  return big;
 }
 
 /* ---------- terrain mesh: visible faces only, one merged mesh per material ---------- */
@@ -158,6 +172,17 @@ export function buildTerrain() {
   };
   for (const t of landTiles()) {
     const top = topMat(t.type, t.variant);
+    if (t.type === 'puente') {
+      // a deck of planks on four posts, with the sea showing underneath
+      const y = t.h * LEVEL;
+      quad(B(top), t.wx, y, t.wz, [0, 1, 0], [1, 0, 0], [0, 0, -1], 0.5, 0.5, 0);
+      for (const s of sides) { const nb = tileAt(t.i + s.di, t.j + s.dj); if (nb && nb.h >= t.h) continue; quad(B(SIDE_MAT.wood), t.wx + s.n[0] * 0.5, y - 0.06, t.wz + s.n[2] * 0.5, s.n, s.right, [0, 1, 0], 0.5, 0.06, 0, [0.8, 0.8, 1, 1]); }
+      for (const [px, pz] of [[-0.38, -0.38], [0.38, -0.38], [-0.38, 0.38], [0.38, 0.38]]) for (const s of sides) {
+        const ph = (y - 0.12 + 0.45) / 2;
+        quad(B(SIDE_MAT.wood), t.wx + px + s.n[0] * 0.05, y - 0.12 - ph, t.wz + pz + s.n[2] * 0.05, s.n, s.right, [0, 1, 0], 0.05, ph, 0, [0.6, 0.6, 0.9, 0.9]);
+      }
+      continue;
+    }
     // quad corners in order: (-x,+z) (+x,+z) (+x,-z) (-x,-z) for right=+x, up=-z
     const tao = [cornerAO(t, -1, 1), cornerAO(t, 1, 1), cornerAO(t, 1, -1), cornerAO(t, -1, -1)];
     quad(B(top), t.wx, t.h * LEVEL, t.wz, [0, 1, 0], [1, 0, 0], [0, 0, -1], 0.5, 0.5, t.rot, tao);
@@ -206,13 +231,14 @@ export function rebuildDeco() {
   if (deco) { worldGroup.remove(deco); deco.dispose(); }
   const list: [number, number, number, number, number, number, string][] = [];
   const add = (x: number, y: number, z: number, sx: number, sy: number, sz: number, col: string) => list.push([x, y, z, sx, sy, sz, col]);
+  const daisy = (x: number, y: number, z: number, r: () => number) => { const hg = 0.06 + r() * 0.05; add(x, y + hg / 2, z, 0.02, hg, 0.02, '#3f9434'); add(x, y + hg + 0.015, z, 0.07, 0.025, 0.035, '#fbf8ee'); add(x, y + hg + 0.015, z, 0.035, 0.025, 0.07, '#fbf8ee'); add(x, y + hg + 0.03, z, 0.025, 0.015, 0.025, '#ffd84a'); };
   const tuft = (x: number, y: number, z: number, r: () => number) => { const cols = ['#3c8a32', '#4ea33c', '#63c24d']; for (let k = 0; k < 3; k++) { const hg = 0.08 + r() * 0.08; add(x + (k - 1) * 0.035, y + hg / 2, z + (r() - 0.5) * 0.04, 0.035, hg, 0.035, cols[k]); } };
   for (const t of landTiles()) {
-    if (t.building || t.rock || t.ancient || t.mound) continue;
-    const r = rng(Math.floor(hash(t.i * 31, t.j * 17, t.variant + t.type.length) * 1e9));
+    if (t.building || t.rock || t.ancient || t.mound || t.solid) continue;
+    const r = rng(Math.floor(hash(oi(t) * 31, oj(t) * 17, t.variant + t.type.length) * 1e9));
     const y = topY(t), spot = (): [number, number] => [t.wx + (r() - 0.5) * 0.8, t.wz + (r() - 0.5) * 0.8];
     switch (t.type) {
-      case 'pasto': if (r() < 0.45) { const [x, z] = spot(); tuft(x, y, z, r); } break;
+      case 'pasto': if (r() < 0.55) { const [x, z] = spot(); tuft(x, y, z, r); } if (r() < 0.22) { const [x, z] = spot(); daisy(x, y, z, r); } break;
       case 'matas': for (let k = 0; k < 3 + Math.floor(r() * 3); k++) { const [x, z] = spot(); tuft(x, y, z, r); } break;
       case 'flores': for (let k = 0; k < 3; k++) { const [x, z] = spot(); const hg = 0.1 + r() * 0.07; add(x, y + hg / 2, z, 0.025, hg, 0.025, '#3f9434'); add(x, y + hg + 0.03, z, 0.07, 0.05, 0.07, pick(r, ['#fff6e0', '#ff9ec4', '#8ab8ff', '#ffd84a'])); add(x, y + hg + 0.06, z, 0.03, 0.02, 0.03, '#ffd84a'); } break;
       case 'trebol': for (let k = 0; k < 2; k++) { const [x, z] = spot(); add(x, y + 0.02, z, 0.12, 0.04, 0.12, '#8ad96b'); } break;
@@ -221,6 +247,7 @@ export function rebuildDeco() {
       case 'piedras': for (let k = 0; k < 2 + Math.floor(r() * 2); k++) { const [x, z] = spot(); const s = 0.1 + r() * 0.12; add(x, y + s * 0.35, z, s * 1.2, s * 0.7, s, pick(r, ['#9a948a', '#8a847a', '#aaa498'])); } break;
       case 'arada': for (let a = 0; a < 3; a++) if (r() < 0.55) { const x = t.wx + (r() - 0.5) * 0.7, z = t.wz - 0.33 + a * 0.33; add(x, y + 0.05, z, 0.03, 0.1, 0.03, '#4ea33c'); add(x + 0.03, y + 0.09, z, 0.06, 0.03, 0.03, '#8ad96b'); } break;
       case 'arena': if (r() < 0.25) { const [x, z] = spot(); add(x, y + 0.012, z, 0.07, 0.024, 0.055, pick(r, ['#ffb3c6', '#fff0d8', '#ffd0a0'])); } break;
+      case 'losa': if (r() < 0.35) { const [x, z] = spot(); const s2 = 0.06 + r() * 0.06; add(x, y + s2 / 2, z, s2 * 1.3, s2, s2, pick(r, ['#8e887c', '#a39d90'])); } if (r() < 0.3) { const [x, z] = spot(); tuft(x, y, z, r); } break;
       case 'sendero': if (r() < 0.6) { const [x, z] = spot(); add(x, y + 0.015, z, 0.09, 0.03, 0.07, '#d8d2c6'); } break;
     }
   }

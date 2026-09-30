@@ -22,11 +22,11 @@ Agrega `#debug` a la URL para exponer `window.__isla`, con el estado del juego y
 src/
   main.ts            arranque, bucle del juego y guardado
   core/              utilidades: azar determinista, canvas, bus de eventos
-  render/            renderer, cámara, luces, post-proceso, calidad y resolución dinámica
-  world/             isla (generación y terreno), texturas del suelo, árboles, rocas, partículas
-  assets/            modelos voxel: texturas de detalle, personajes, edificios, el claro secreto
-  game/              lógica: estado, figuras y trabajos, edificios, bosque (zonas, tocones, retoños), marcas de plantar y senderos, expansión, claro de Musgo, objetivos
-  ui/                interfaz: HUD, paneles, burbujas de estado, entrada táctil
+  render/            renderer, cámara, luces, post-proceso, calidad, resolución dinámica y ciclo de día y noche
+  world/             isla (generación y terreno), texturas del suelo, agua, árboles, rocas, partículas
+  assets/            modelos voxel: texturas de detalle, personajes, edificios, decoración, el claro secreto, las ruinas
+  game/              lógica: estado, figuras y trabajos, edificios, bosque (zonas, tocones, retoños), marcas de plantar y senderos, expansión, ruinas de Brasa, claro de Musgo, objetivos
+  ui/                interfaz: HUD, paneles, acertijos de las llamas, burbujas de estado, entrada táctil
   data/              balance y contenido en JSON (recursos, edificios, herramientas, recetas, objetivos)
 legacy/              prototipos anteriores (2D, taller de assets, corte vertical en un archivo)
 docs/roadmap.md      visión, eras y fases
@@ -56,6 +56,7 @@ Medido en la misma escena y resolución de pantalla de celular: la v0.6 tardaba 
 | Dar una orden | Tocar árbol, roca gris, arena, tierra, tocón, parcela o el claro | Clic |
 | Expandir la isla | Construir → Expandir la isla, elegir una casilla de agua | Igual |
 | Plantar o trazar senderos | Construir → Jardín, tocar el pasto y luego Listo | Igual |
+| Llegar a las ruinas | Construir → Expandir → Puente, marcar tramos hacia el islote | Igual |
 | Mover la cámara | Un dedo | Arrastrar con clic izquierdo |
 | Zoom y giro | Dos dedos | Rueda y clic derecho |
 

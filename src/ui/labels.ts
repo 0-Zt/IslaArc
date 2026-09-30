@@ -3,7 +3,7 @@ import { on, emit } from '../core/events';
 import { camera } from '../render/renderer';
 import { buildings, smokePoint, isDone, buildingDef, type Building } from '../game/buildings';
 import { crew, select, selected, type Crew } from '../game/crew';
-import { sites, expandMode } from '../game/expansion';
+import { sites, expandMode, hitsFor } from '../game/expansion';
 import { marks } from '../game/marks';
 import { S, DATA, afford } from '../game/state';
 import { ICON } from './hud';
@@ -95,7 +95,7 @@ export function tickLabels() {
   for (const s of expandMode ? [] : sites) {
     const worker = crew.find(c => c.job?.tile === s.tile);
     const at = _v.set(s.tile.wx, 1.05, s.tile.wz);
-    const pct = Math.round(s.hits / DATA.BALANCE.fillHits * 100);
+    const pct = Math.round(s.hits / hitsFor(s.kind) * 100);
     if (worker) show(s, at.clone(), `${SHOVEL}<span class="meter"><i style="width:${pct}%"></i></span><small>${worker.def.name}</small>`, '', `Parcela ${pct} por ciento rellena`, () => {});
     else show(s, at.clone(), `${SHOVEL}<small>Envía una figura</small>`, 'wait', 'Parcela esperando una figura', () => emit('toast', 'Toca una figura y luego la parcela para rellenarla'));
   }

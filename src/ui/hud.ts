@@ -5,7 +5,7 @@ import { camera } from '../render/renderer';
 import { S, RES_KEYS, DATA, type ResKey } from '../game/state';
 import { crew, selected, select, statusOf } from '../game/crew';
 import { has, place } from '../game/buildings';
-import { currentGoal, GOALS } from '../game/goals';
+import { currentGoal, GOALS, goalText } from '../game/goals';
 import { nightK, phaseName } from '../render/daynight';
 import type { CharId } from '../assets/characters';
 
@@ -53,18 +53,20 @@ export function refreshHUD(dt = 0) {
   }
   const g = currentGoal();
   $('goalN').textContent = g ? `${S.goal + 1}/${GOALS.length}` : 'Listo';
-  const gt = g ? g.text : 'Isla despierta. Sigue jugando libremente.';
+  const gt = g ? goalText(g) : 'Isla despierta. Sigue jugando libremente.';
   if ($('goalT').textContent !== gt) $('goalT').textContent = gt;
   const hint = g && !place ? g.hint : undefined;
   // crew cards
-  const sig2 = crew.map(c => c.id).join();
+  const sig2 = crew.map(c => c.id).join() + (S.flags.musgoFree ? 'm' : '') + (S.ruins.awake ? 'b' : '');
   const box = $('crew');
   if (box.dataset.sig !== sig2) {
     box.dataset.sig = sig2;
     box.innerHTML = crew.map(c => `<button class="wcard" data-c="${c.id}"><i style="background:${c.def.color}">${c.def.name[0]}</i><div style="min-width:0"><b>${c.def.name}</b><span></span></div></button>`).join('')
-      + (S.flags.musgoFree ? '' : `<div class="wcard locked"><i>?</i><div><b>???</b><span>${S.flags.claroVisto ? 'Enterrado en el claro' : 'Alguien falta'}</span></div></div>`);
+      + (!S.flags.musgoFree ? `<div class="wcard locked"><i>?</i><div><b>???</b><span></span></div></div>`
+        : !S.ruins.awake ? `<div class="wcard locked"><i>?</i><div><b>???</b><span></span></div></div>` : '');
   }
-  const lockedSpan = box.querySelector('.locked span'); if (lockedSpan) { const t = S.flags.claroVisto ? 'Enterrado en el claro' : 'Alguien falta'; if (lockedSpan.textContent !== t) lockedSpan.textContent = t; }
+  const lockedSpan = box.querySelector('.locked span');
+  if (lockedSpan) { const t = !S.flags.musgoFree ? (S.flags.claroVisto ? 'Enterrado en el claro' : 'Alguien falta') : S.flags.islote ? 'Duerme en las ruinas' : 'Algo brilla mar adentro'; if (lockedSpan.textContent !== t) lockedSpan.textContent = t; }
   for (const c of crew) {
     const el = box.querySelector(`[data-c="${c.id}"]`); if (!el) continue;
     el.classList.toggle('sel', selected === c.id);

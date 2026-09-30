@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { vbox, MAT, type MatKey } from './voxel';
+import { modelBrasero, type Sym, type Design } from './ruins';
+/** Which brazier the next 'brasero' model is (set by the ruins code just before it creates one). */
+let braseroNext: [Design, Sym] = ['runas', 'spiral'];
+export function setBraseroNext(d: Design, s: Sym) { braseroNext = [d, s]; }
 
 /* Building models. Local origin = footprint centre on the ground; +z is the front. */
 
@@ -97,7 +101,7 @@ export function modelScaffold(w: number, d: number, h: number) {
   return group({ plank: P });
 }
 
-export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero };
+export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
 
 export const ICONS: Record<string, string> = {
   casa: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="18" width="24" height="16" fill="#d9a066"/><rect x="17" y="24" width="6" height="10" fill="#7a4f2a"/><path d="M4 20L20 7L36 20Z" fill="#e0b050"/><rect x="27" y="8" width="4" height="8" fill="#8a847a"/></svg>',

@@ -121,6 +121,12 @@ export function nextBuild(c: Crew) {
   for (const b of open) if (order(c, b.tiles[0], 'build') === true) return;
   stop(c);
 }
+/** Sends the nearest free figure to an unfinished building. Returns it, or null when everyone is busy. */
+export function assignIdleBuilder(): Crew | null {
+  if (crew.some(c => c.job?.kind === 'build')) return null;
+  for (const c of crew.filter(q => !q.job && !q.path.length)) { nextBuild(c); if (c.job?.kind === 'build') return c; }
+  return null;
+}
 /** After filling a plot, the figure walks on to the nearest plot that still needs filling. */
 export function nextSite(c: Crew) {
   const here = tileOf(c); if (!here) { stop(c); return; }
@@ -276,7 +282,8 @@ function updateOne(c: Crew, dt: number, T: number) {
   }
   c.body.scale.set(sxz, sy, sxz); c.body.position.y = bob; c.body.rotation.x = lean; c.head.rotation.x = hx; c.head.rotation.z = hz;
   c.ring.visible = selected === c.id; if (c.ring.visible) { const s = 1 + Math.sin(T * 6) * 0.08; c.ring.scale.set(s, s, s); }
-  if (c.def.glow) { const g = (1.2 + 0.5 * Math.sin(T * 3.1)) * glowMul; c.glowMat.color.setRGB(2.6 * g, 1.05 * g, 0.28 * g); }
+  if (c.def.glow) { const g = (1.1 + 0.35 * Math.sin(T * 3.1)) * glowMul; c.glowMat.color.setRGB(2.4 * g, 0.8 * g, 0.16 * g); }
+  if (c.flame) { const f = Math.sin(T * 17 + c.phase) * 0.08 + Math.sin(T * 7.3) * 0.06; c.flame.scale.set(1 - f * 0.5, 1 + f, 1 - f * 0.5); c.flame.rotation.z = Math.sin(T * 5) * 0.08; }
 }
 
 /* Figures standing where a building goes step out of its footprint. */

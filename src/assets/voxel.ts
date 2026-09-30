@@ -45,6 +45,14 @@ export function vbox(list: THREE.BufferGeometry[], x: number, y: number, z: numb
   list.push(g);
 }
 
+/** Block turned around the vertical axis (for hexagons and diagonal channels). Not snapped. */
+export function vboxR(list: THREE.BufferGeometry[], x: number, y: number, z: number, sx: number, sy: number, sz: number, col: THREE.ColorRepresentation, rotY: number) {
+  const g = new THREE.BoxGeometry(sx, sy, sz);
+  paint(g, col); worldUV(g, 2, true);
+  g.rotateY(rotY); g.translate(x, y, z);
+  list.push(g);
+}
+
 /** Character block: not snapped, denser clay texture, continuous across the body. */
 export function cbox(list: THREE.BufferGeometry[], x: number, y: number, z: number, sx: number, sy: number, sz: number, col: THREE.ColorRepresentation) {
   const g = new THREE.BoxGeometry(sx, sy, sz);

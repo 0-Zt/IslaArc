@@ -57,7 +57,7 @@ export function createBuilding(type: string, i: number, j: number, rot: number, 
   g.traverse(o => { o.userData.building = b; });
   tiles.forEach(t => { t.building = b; });
   worldGroup.add(g); buildings.push(b);
-  if (type === 'farol') {
+  if (type === 'farol' || type === 'brasero') {
     const l = new THREE.Mesh(lightGeo, new THREE.MeshBasicMaterial({ map: lightTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }));
     l.position.set(cx, cy + 0.03, cz); l.renderOrder = 2; worldGroup.add(l); b.light = l;
   }
@@ -87,7 +87,7 @@ export function buildHit(b: Building) {
   if (!isDone(b)) { emit('changed'); return false; }
   if (b.scaffold) { worldGroup.remove(b.scaffold); b.scaffold = null; }
   for (const q of b.tiles) puff(q.wx, topY(q) + 0.4, q.wz, '#fff0c0', 10, 2, 1.6, topY(q));
-  emit('toast', `${def(b.type).name}: ¡terminada!`);
+  emit('toast', `Obra terminada: ${def(b.type).name.toLowerCase()}`);
   emit('built', b); emit('changed');
   return true;
 }

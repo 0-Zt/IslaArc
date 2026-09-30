@@ -18,9 +18,8 @@ export const sites: Site[] = [];
 
 /** Each expansion, finished or marked, makes the next one cost a little more soil. */
 export function expandCost(kind: ExpandKind): Cost {
-  const extra = DATA.BALANCE.expandCostStep * (S.expanded.length + sites.length);
   const c: Cost = { ...(KINDS[kind].cost as Cost) };
-  c.tierra = (c.tierra || 0) + extra;
+  if (c.tierra) c.tierra += DATA.BALANCE.expandCostStep * (S.expanded.length + sites.length); // bridges keep a flat price
   return c;
 }
 
@@ -29,7 +28,7 @@ function siteModel(kind: ExpandKind) {
   for (const [x, z] of [[-0.42, -0.42], [0.42, -0.42], [-0.42, 0.42], [0.42, 0.42]]) { vbox(P, x, 0.35, z, 0.07, 0.7, 0.07, '#8a5a2e'); vbox(P, x, 0.72, z, 0.09, 0.04, 0.09, '#e0b050'); }
   for (const s of [-1, 1]) { vbox(P, 0, 0.6, s * 0.42, 0.84, 0.02, 0.02, '#d8c8a0'); vbox(P, s * 0.42, 0.6, 0, 0.02, 0.02, 0.84, '#d8c8a0'); }
   const g = group({ plank: P });
-  const fill = new THREE.Mesh(new THREE.BoxGeometry(0.96, 1, 0.96), new THREE.MeshStandardMaterial({ color: kind === 'playa' ? '#dcc084' : '#7a5030', roughness: 1 }));
+  const fill = new THREE.Mesh(new THREE.BoxGeometry(0.96, 1, 0.96), new THREE.MeshLambertMaterial({ color: kind === 'playa' ? '#dcc084' : kind === 'puente' ? '#a8743e' : '#7a5030' }));
   fill.castShadow = true; fill.receiveShadow = true;
   g.add(fill);
   const pick = new THREE.Mesh(new THREE.BoxGeometry(1, 0.9, 1), new THREE.MeshBasicMaterial({ visible: false }));
@@ -37,8 +36,10 @@ function siteModel(kind: ExpandKind) {
   return { g, fill };
 }
 
+/** Shovelfuls a plot needs: a bridge goes up faster than new land. */
+export const hitsFor = (kind: ExpandKind) => (KINDS[kind] as any).hits || DATA.BALANCE.fillHits;
 function setFill(s: Site) {
-  const k = s.hits / DATA.BALANCE.fillHits;           // 0..1
+  const k = s.hits / hitsFor(s.kind);                 // 0..1
   const top = -0.35 + k * 0.85;                        // from under water up to land level (0.5)
   const h = top + 0.5;
   s.fill.scale.y = Math.max(0.01, h); s.fill.position.y = top - h / 2;
@@ -90,7 +91,7 @@ export function fillHit(s: Site) {
   const saved = S.sites.find(q => q.i === s.i && q.j === s.j); if (saved) saved.hits = s.hits;
   puff(s.tile.wx, s.fill.position.y + s.fill.scale.y / 2, s.tile.wz, s.kind === 'playa' ? '#f0d890' : '#8a6040', 6, 1.4, 1.2);
   setFill(s);
-  if (s.hits < DATA.BALANCE.fillHits) return false;
+  if (s.hits < hitsFor(s.kind)) return false;
   worldGroup.remove(s.group); sites.splice(sites.indexOf(s), 1);
   S.sites = S.sites.filter(q => !(q.i === s.i && q.j === s.j));
   S.expanded.push({ i: s.i, j: s.j, kind: s.kind });
