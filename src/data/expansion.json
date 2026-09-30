@@ -1,0 +1,4 @@
+{
+  "pradera": { "name": "Pradera", "desc": "Tierra con pasto, lista para construir o plantar.", "tile": "pasto", "cost": { "tierra": 3 } },
+  "playa":   { "name": "Playa",   "desc": "Arena junto al mar. Da más arena para el horno.", "tile": "arena", "cost": { "tierra": 2, "arena": 3 } }
+}

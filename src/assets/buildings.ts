@@ -55,5 +55,6 @@ export const ICONS: Record<string, string> = {
   horno: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="30" width="32" height="5" fill="#a49e92"/><path d="M6 30Q6 14 18 14Q30 14 30 30Z" fill="#b86a42"/><rect x="13" y="23" width="10" height="7" rx="3" fill="#ff7a2a"/><rect x="22" y="6" width="4" height="10" fill="#8a847a"/></svg>',
   hacha: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="18" y="8" width="4" height="28" rx="1" fill="#8a5a2e"/><path d="M20 8H32V20Q26 20 20 16Z" fill="#dde3ea"/><path d="M30 8H32V20H30Z" fill="#fff"/></svg>',
   pico: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="18" y="10" width="4" height="26" rx="1" fill="#8a5a2e"/><path d="M6 12Q20 4 34 12L34 14Q20 8 6 14Z" fill="#b9c2cc"/></svg>',
+  expandir: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="22" width="36" height="14" fill="#3a8fd6"/><rect x="4" y="16" width="16" height="10" fill="#5cb847"/><rect x="4" y="24" width="16" height="6" fill="#8b5a35"/><rect x="22" y="18" width="14" height="10" fill="none" stroke="#f2c14e" stroke-width="2" stroke-dasharray="3 2"/><path d="M29 8v8M25 12h8" stroke="#f2c14e" stroke-width="2.5"/></svg>',
   lingote: '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 26L14 16H32L26 26Z" fill="#dde3ea"/><path d="M8 26H26V30H8Z" fill="#8a929e"/><path d="M26 26L32 16V20L26 30Z" fill="#6a7280"/></svg>',
 };

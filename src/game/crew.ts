@@ -8,10 +8,12 @@ import { spawnLeaf, type Tree } from '../world/trees';
 import { puff } from '../world/particles';
 import { buildFigure, type CharId, type Figure, type ToolKey } from '../assets/characters';
 import { hitAncient, digMound, type Ancient } from './grove';
+import { removeStump } from './forest';
+import { fillHit, type Site } from './expansion';
 import { S, DATA, gain } from './state';
 import type { Building } from './buildings';
 
-export type JobKind = 'tree' | 'rock' | 'sand' | 'ancient' | 'dig' | 'walk';
+export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'walk';
 export interface Job { kind: JobKind; tile: Tile }
 export interface Crew extends Figure {
   job: Job | null; path: Tile[]; anim: 'idle' | 'walk' | 'work' | 'wave';
@@ -70,7 +72,8 @@ export function bfs(start: Tile, goal: (t: Tile) => boolean): Tile[] | null {
 /** Sends a figure to work on (or walk to) a tile. Returns a reason when it cannot. */
 export function order(c: Crew, tile: Tile, kind: JobKind): true | string {
   const here = tileOf(c); if (!here) return 'No hay camino hasta ahí';
-  const reach = kind === 'walk' || kind === 'sand' ? (t: Tile) => t === tile : (t: Tile) => adjacent(t, tile) && Math.abs(t.h - tile.h) <= 1;
+  const standOn = kind === 'walk' || kind === 'sand' || kind === 'soil';
+  const reach = standOn ? (t: Tile) => t === tile : (t: Tile) => adjacent(t, tile) && Math.abs(t.h - tile.h) <= 1;
   const path = bfs(here, reach);
   if (!path) return kind === 'dig' ? 'Los árboles antiguos no dejan pasar' : 'No hay camino hasta ahí';
   c.job = { kind, tile }; c.path = path; c.hits = 0;
@@ -82,7 +85,7 @@ function arrive(c: Crew) {
   const j = c.job;
   if (!j || j.kind === 'walk') { c.job = null; setAnim(c, 'idle'); emit('changed'); return; }
   const p = c.root.position;
-  if (j.kind !== 'sand') c.dir = Math.atan2(j.tile.wx - p.x, j.tile.wz - p.z);
+  if (j.kind !== 'sand' && j.kind !== 'soil') c.dir = Math.atan2(j.tile.wx - p.x, j.tile.wz - p.z);
   setTool(c, j.kind); setAnim(c, 'work'); emit('changed');
 }
 function stop(c: Crew) { c.job = null; c.path = []; setAnim(c, 'idle'); emit('changed'); }
@@ -90,7 +93,7 @@ function stop(c: Crew) { c.job = null; c.path = []; setAnim(c, 'idle'); emit('ch
 export function statusOf(c: Crew) {
   if (c.path.length) return 'Caminando';
   const j = c.job; if (!j) return 'Esperando órdenes';
-  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', ancient: 'Talando árbol antiguo', dig: 'Cavando', walk: 'Esperando' } as const)[j.kind];
+  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', walk: 'Esperando' } as const)[j.kind];
 }
 
 function nearestTile(c: Crew, test: (t: Tile) => boolean, max = 6) {
@@ -134,6 +137,23 @@ function onWorkHit(c: Crew) {
       const p = c.root.position;
       puff(p.x + Math.sin(c.root.rotation.y) * 0.35, p.y + 0.06, p.z + Math.cos(c.root.rotation.y) * 0.35, '#f0d890', 6, 1.6, 1.2, p.y);
       if (c.hits % B.sandEveryHits === 0) gain('arena', 1, headPos(c));
+      break;
+    }
+    case 'soil': {
+      const p = c.root.position;
+      puff(p.x + Math.sin(c.root.rotation.y) * 0.35, p.y + 0.06, p.z + Math.cos(c.root.rotation.y) * 0.35, '#7a5030', 6, 1.6, 1.2, p.y);
+      if (c.hits % B.soilEveryHits === 0) gain('tierra', 1, headPos(c));
+      break;
+    }
+    case 'stump': {
+      if (c.hits >= B.stumpDigHits) { if (removeStump(j.tile)) { gain('tierra', 1, headPos(c)); emit('toast', 'Tocón arrancado: ahí ya no volverá a crecer un árbol'); } stop(c); }
+      else puff(j.tile.wx, topY(j.tile) + 0.1, j.tile.wz, '#7a5030', 5, 1.4, 1.2, topY(j.tile));
+      break;
+    }
+    case 'fill': {
+      const s: Site | undefined = (j.tile as any).site;
+      if (!s || !s.group.parent) { stop(c); return; }
+      if (fillHit(s)) { stop(c); emit('toast', 'La isla creció una casilla'); }
       break;
     }
     case 'ancient': {
@@ -197,7 +217,7 @@ function updateOne(c: Crew, dt: number, T: number) {
     if (q >= 0.66 && !c.workHit) {
       c.workHit = true;
       const fx = p.x + Math.sin(c.root.rotation.y) * 0.4, fz = p.z + Math.cos(c.root.rotation.y) * 0.4, k = c.job?.kind;
-      if (k !== 'sand' && k !== 'dig') puff(fx, p.y + 0.25, fz, k === 'rock' ? '#b8b2a8' : '#c9a06a', 6, 1.8, 1.4, p.y);
+      if (k !== 'sand' && k !== 'dig' && k !== 'soil' && k !== 'fill') puff(fx, p.y + 0.25, fz, k === 'rock' ? '#b8b2a8' : '#c9a06a', 6, 1.8, 1.4, p.y);
       onWorkHit(c);
     }
     if (q < 0.3) c.workHit = false;

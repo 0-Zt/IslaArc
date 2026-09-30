@@ -3,7 +3,8 @@ import { scene } from '../render/renderer';
 import { rng, hash, vnoise, pick } from '../core/random';
 import { LEVEL, topMat, sideMatFor, SIDE_MAT } from './tiles';
 
-export const N = 24;
+export const N = 30;          // grid size: the island leaves a ring of sea to expand into
+const R = 10.6;               // island radius in tiles
 
 export interface Tile {
   i: number; j: number; h: number;
@@ -25,10 +26,21 @@ export function landTiles() { const a: Tile[] = []; for (const row of island) fo
 export const blocked = (t: Tile | null) => !t || !!t.tree || !!t.rock || !!t.building || !!t.ancient || !!t.mound;
 export const walkable = (t: Tile | null) => !blocked(t);
 export const DIRS: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+export const tileWorld = (i: number, j: number): [number, number] => [i - N / 2 + 0.5, j - N / 2 + 0.5];
+export const inGrid = (i: number, j: number) => i >= 1 && j >= 1 && i < N - 1 && j < N - 1;
+/** Water cell next to land, inside the grid: a place the island can grow into. */
+export const canExpand = (i: number, j: number) => inGrid(i, j) && !tileAt(i, j) && DIRS.some(([a, b]) => tileAt(i + a, j + b));
+/** Turns a water cell into new flat land. The caller rebuilds the terrain. */
+export function addLand(i: number, j: number, type: string) {
+  const [wx, wz] = tileWorld(i, j);
+  const t: Tile = { i, j, h: 1, type, variant: Math.floor(Math.random() * 3), rot: Math.floor(Math.random() * 4), wx, wz };
+  island[j][i] = t;
+  return t;
+}
 
 /* ---------- generation ---------- */
 export function generate(seed: number) {
-  const r = rng(seed), g: (Tile | null)[][] = [], c = (N - 1) / 2, R = N * 0.44;
+  const r = rng(seed), g: (Tile | null)[][] = [], c = (N - 1) / 2;
   for (let j = 0; j < N; j++) {
     g[j] = [];
     for (let i = 0; i < N; i++) {

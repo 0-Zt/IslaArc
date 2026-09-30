@@ -3,25 +3,26 @@ import { gfx, setGfx, resetGfx } from '../render/renderer';
 import { S, DATA, afford, pay, type Cost, type ResKey } from '../game/state';
 import { buildings, has, smelt, startPlace, buildingDef, type Building } from '../game/buildings';
 import { refreshTools } from '../game/crew';
+import { KINDS, expandCost, startSite, enterExpandMode, exitExpandMode, type ExpandKind } from '../game/expansion';
 import { ICONS } from '../assets/buildings';
 import { $, img, toast } from './hud';
 import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'fin';
-let type: SheetType | null = null, arg: Building | null = null, confirmReset = false, sig = '';
+type SheetType = 'build' | 'casa' | 'horno' | 'menu' | 'gfx' | 'expandir' | 'fin';
+let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {};
 export function initSheets(opts: { centreTile: () => Tile | null; onReset: () => void }) { centreTile = opts.centreTile; onReset = opts.onReset; }
 
 export const sheetOpen = () => type !== null;
-export function openSheet(t: SheetType, b: Building | null = null) { type = t; arg = b; confirmReset = false; render(); $('sheet').hidden = false; }
+export function openSheet(t: SheetType, b: Building | null = null, c: [number, number] | null = null) { type = t; arg = b; cell = c; confirmReset = false; render(); $('sheet').hidden = false; }
 export function closeSheet() { type = null; $('sheet').hidden = true; }
 
 const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => `<span class="${S.res[k as ResKey] >= (v as number) ? '' : 'no'}">${img(k as ResKey)}${S.res[k as ResKey]}/${v}</span>`).join('')}</div>`;
 // the settings sheet never re-renders by itself, so sliders keep working while dragged
-const signature = () => type === 'gfx' ? 'gfx' : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type), arg?.queue]);
+const signature = () => type === 'gfx' ? 'gfx' : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type), arg?.queue, S.expanded.length]);
 
 function render() {
   sig = signature();
@@ -35,6 +36,8 @@ function render() {
         + (built ? '<span class="done">Construida</span>' : locked ? `<span class="done" style="color:var(--muted)">Necesita ${buildingDef(d.requires).name.toLowerCase()}</span>`
           : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-place="${k}" ${afford(d.cost) ? '' : 'disabled'}>Ubicar</button>`) + '</div>';
     }
+    const cheapest = Math.min(...(Object.keys(KINDS) as ExpandKind[]).map(k => expandCost(k).tierra || 0));
+    h += `<div class="row"><div class="thumb">${ICONS.expandir}</div><div class="info"><b>Expandir la isla</b><small>Rellena una casilla de mar junto a la costa. Desde ${cheapest} de tierra; la tierra se saca cavando en suelo café.</small></div><button class="btn main" data-act="expand">Elegir lugar</button></div>`;
   } else if (type === 'casa') {
     h += '<h2>Casa · Taller</h2><p>Con lingotes del horno se fabrican herramientas de metal. Cambian lo que rinde cada figura.</p>';
     for (const [k, d] of Object.entries(DATA.TOOLS) as [string, any][]) {
@@ -67,10 +70,16 @@ function render() {
       + `<div class="row col"><div class="info"><b>Calidad</b><small>Alta: sombras más finas y bordes más suaves. Baja: mejor en celulares antiguos.</small></div>${seg('quality', [['alta', 'Alta'], ['baja', 'Baja']], gfx.quality)}</div>`
       + `<div class="row col"><div class="info"><b>Mostrar cuadros por segundo</b><small>Útil para probar qué tan fluido va.</small></div>${onoff('fps')}</div>`
       + '<div class="row"><button class="btn" data-act="gfxReset" style="width:100%">Volver a los valores recomendados</button></div>';
+  } else if (type === 'expandir' && cell) {
+    h += '<h2>Nueva parcela</h2><p>Paga los materiales y después envía una figura a rellenarla con la pala.</p>';
+    for (const k of Object.keys(KINDS) as ExpandKind[]) {
+      const d = KINDS[k], c = expandCost(k);
+      h += `<div class="row"><div class="info"><b>${d.name}</b><small>${d.desc}</small>${costHTML(c)}</div><button class="btn${afford(c) ? ' main' : ''}" data-expand="${k}" ${afford(c) ? '' : 'disabled'}>Marcar</button></div>`;
+    }
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
-    h += `<h2>¡Musgo está libre!</h2><p>Talaste, construiste, fundiste metal, abriste el claro y desenterraste a Musgo en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}.</p>`
-      + '<p>Ahora tienes dos figuras. Los árboles que tala Musgo vuelven a crecer mucho más rápido. Lo que viene: expansión de tierra, la cueva del volcán y el secreto de Brasa.</p>'
+    h += `<h2>¡La isla despierta!</h2><p>Fundiste metal, abriste el claro, desenterraste a Musgo e hiciste crecer la isla en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}.</p>`
+      + '<p>Sigue expandiendo y ordenando tu isla. Lo que viene: semillas y zonas de bosque, caminos, decoración, la cueva del volcán y el secreto de Brasa.</p>'
       + '<button class="btn main" data-act="close" style="width:100%">Seguir jugando</button>';
   }
   $('sheet').innerHTML = h;
@@ -97,6 +106,12 @@ export function initSheetEvents() {
     }
     if (b.dataset.act === 'smelt' && arg) { smelt(arg); render(); return; }
     if (b.dataset.act === 'gfx') { openSheet('gfx'); return; }
+    if (b.dataset.act === 'expand') { closeSheet(); enterExpandMode(); return; }
+    if (b.dataset.expand && cell) {
+      const r = startSite(cell[0], cell[1], b.dataset.expand as ExpandKind);
+      if (typeof r === 'string') { toast(r); return; }
+      closeSheet(); exitExpandMode(); toast('Parcela marcada. Toca una figura y luego la parcela para rellenarla'); return;
+    }
     if (b.dataset.act === 'gfxReset') { resetGfx(); render(); return; }
     if (b.dataset.set) {
       const k = b.dataset.set, v = b.dataset.val!;

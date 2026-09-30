@@ -17,6 +17,7 @@ const CHECK: Record<string, () => boolean> = {
   hacha: () => !!S.tools.hacha,
   despejar: () => !!S.flags.claroAbierto,
   desenterrar: () => !!S.flags.musgoFree,
+  expandir: () => S.expanded.length > 0,
 };
 
 export const currentGoal = () => GOALS[S.goal] || null;

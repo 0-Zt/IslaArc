@@ -109,3 +109,13 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .bubble.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
 @keyframes pop{0%{scale:.6}100%{scale:1}}
 @media (prefers-reduced-motion:reduce){.bubble.pop{animation:none}}
+
+/* expand mode bar */
+#expandBar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:10px;align-items:center;z-index:5;background:var(--glass);border:2px solid var(--sun);border-radius:14px;padding:8px 8px 8px 14px}
+#expandBar span{flex:1;font-size:14px;line-height:1.3}
+#expandBar button{flex:none;height:48px;padding:0 20px;border-radius:12px;background:var(--sun);color:var(--sun-ink);border:2px solid #b0822a;font-size:15px;font-weight:600}
+.bubble.idle{padding:2px 9px;border-color:var(--line);opacity:.92}
+.bubble .zz{font-family:var(--display);font-size:14px;color:var(--muted);letter-spacing:.05em}
+.bubble .zz small{font-size:11px}
+.bubble.wait{border-color:var(--sun)}
+.bubble.wait small{color:var(--text)}

@@ -11,5 +11,10 @@
   "treeRegrowSecondsMusgo": 12,
   "ancientTreeHits": 10,
   "moundDigHits": 8,
-  "saveEverySeconds": 6
+  "saveEverySeconds": 6,
+  "soilEveryHits": 2,
+  "stumpDigHits": 3,
+  "fillHits": 8,
+  "expandBaseCost": 3,
+  "expandCostStep": 1
 }

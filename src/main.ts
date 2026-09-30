@@ -1,7 +1,7 @@
 import './style.css';
 import { on } from './core/events';
 import {
-  renderer, scene, camera, controls, resize, render, placeSun, applyTime, adaptResolution, waterTex, pixelRatio, focusOn, gfx,
+  renderer, scene, camera, controls, resize, render, placeSun, applyTime, adaptResolution, waterTex, pixelRatio, focusOn, gfx, tickFly,
 } from './render/renderer';
 import { N, generate, buildTerrain, rebuildDeco, worldGroup, tileAt, landTiles, walkable, grove, terrainDrawCalls, type Tile } from './world/island';
 import { plantIsland, clearTrees, tickTrees, tickLeaves, treeDrawCalls, trees } from './world/trees';
@@ -12,20 +12,22 @@ import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected 
 import * as THREE from 'three';
 import { buildings, createBuilding, clearBuildings, tickBuildings, cancelPlace, saved, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, place } from './game/buildings';
 import { spawnGrove, tickGrove, ancients, mound } from './game/grove';
-import { onTreeFallen, tickForest, clearForest, setOccupiedTest } from './game/forest';
+import { onTreeFallen, tickForest, clearForest, setOccupiedTest, restoreForest } from './game/forest';
+import { restoreExpansions, restoreSites, clearSites, exitExpandMode, pulseMarkers, sites } from './game/expansion';
 import { checkGoals } from './game/goals';
 import { $, initHUD, refreshHUD } from './ui/hud';
 import { initSheets, initSheetEvents, refreshSheet, closeSheet } from './ui/sheets';
-import { initInput, centreTile, tickMarker } from './ui/input';
+import { initInput, centreTile, tickMarker, onTap, debugPick } from './ui/input';
 import { tickLabels, clearLabels } from './ui/labels';
 
 const SEED = 4242;
+let T = 0; // game clock in seconds (declared early: newGame uses it)
 $('scene').appendChild(renderer.domElement);
 renderer.info.autoReset = false;
 setOccupiedTest(occupied);
 
 function newGame(state: typeof S | null) {
-  cancelPlace(); closeSheet();
+  cancelPlace(); closeSheet(); exitExpandMode(); clearSites();
   clearCrew(); clearBuildings(); clearForest(); clearLabels();
   while (worldGroup.children.length) worldGroup.remove(worldGroup.children[0]);
   clearTrees();
@@ -34,7 +36,10 @@ function newGame(state: typeof S | null) {
   plantIsland(SEED);
   spawnGrove();
   placeRocks(SEED);
+  restoreForest(T);          // felled trees stay felled, cleared stumps stay cleared
+  restoreExpansions();       // land the player added
   buildTerrain();
+  restoreSites();
   for (const b of S.buildings) createBuilding(b.type, b.i, b.j, b.rot, false, b);
   rebuildDeco();
   // start near the centre, on open flat ground
@@ -60,6 +65,9 @@ const persist = () => save(saved());
 initHUD(); initSheetEvents(); initInput();
 initSheets({ centreTile, onReset: () => { clearSave(); newGame(null); persist(); } });
 on('built', () => persist());
+on('expanded', () => persist());
+on('forestChanged', () => persist());
+on('siteChanged', () => persist());
 on('goalAdvanced', () => persist());
 
 $('tContinue').hidden = !hasSave();
@@ -89,7 +97,7 @@ function clampCamera() {
   if (cx !== t.x || cz !== t.z) { camera.position.x += cx - t.x; camera.position.z += cz - t.z; t.x = cx; t.z = cz; }
 }
 
-let T = 0, last = performance.now(), saveAcc = 0, uiAcc = 0, sunAcc = 0;
+let last = performance.now(), saveAcc = 0, uiAcc = 0, sunAcc = 0;
 function frame(now: number) {
   const raw = Math.min(0.25, (now - last) / 1000); last = now;
   const dt = Math.min(0.05, raw); T += dt;
@@ -103,10 +111,11 @@ function frame(now: number) {
   tickParticles(dt);
   tickLeaves(dt);
   tickMarker(dt);
+  pulseMarkers(T);
   tickLabels();
   uiAcc += dt; if (uiAcc > 0.25) { refreshHUD(uiAcc); refreshSheet(); uiAcc = 0; }
   waterTex.offset.x = (T * 0.012) % 1; waterTex.offset.y = Math.sin(T * 0.4) * 0.01;
-  controls.update(); clampCamera();
+  tickFly(raw); controls.update(); clampCamera();
   sunAcc += dt; if (sunAcc > 0.5) { sunAcc = 0; placeSun(); }
   const ft = focusTarget(); focusOn(ft ? ft.setY(ft.y + 0.5).project(camera).y : null, raw, !!place);
   fpsAcc += raw; fpsFrames++;
@@ -124,7 +133,7 @@ if (location.hash === '#debug') {
     renderer, camera, controls, order, tileAt, landTiles, checkGoals, pixelRatio,
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
     step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
-    screen: (x: number, y: number, z: number) => { const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
-    scene, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid,
+    screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
+    scene, sites, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid,
   };
 }

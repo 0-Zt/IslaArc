@@ -1,7 +1,22 @@
 {
-  "madera":  { "name": "Madera" },
-  "piedra":  { "name": "Piedra" },
-  "mineral": { "name": "Mineral" },
-  "arena":   { "name": "Arena" },
-  "lingote": { "name": "Lingote", "hiddenUntil": "horno" }
+  "madera": {
+    "name": "Madera"
+  },
+  "piedra": {
+    "name": "Piedra"
+  },
+  "mineral": {
+    "name": "Mineral"
+  },
+  "arena": {
+    "name": "Arena"
+  },
+  "tierra": {
+    "name": "Tierra",
+    "hiddenUntil": "casa"
+  },
+  "lingote": {
+    "name": "Lingote",
+    "hiddenUntil": "horno"
+  }
 }

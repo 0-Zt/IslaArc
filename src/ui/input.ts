@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { on, emit } from '../core/events';
-import { renderer, camera, scene } from '../render/renderer';
+import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
 import { tileProxies, topY, type Tile } from '../world/island';
 import { pickTree } from '../world/trees';
 import { rocks } from '../world/rocks';
 import { crew, selected, select, order, type JobKind } from '../game/crew';
 import { buildings, place, movePlace, rotatePlace, cancelPlace, confirmPlace } from '../game/buildings';
 import { ancients, mound } from '../game/grove';
+import { stumps } from '../game/forest';
+import { sites, expandMode, pickCell, exitExpandMode } from '../game/expansion';
 import { S } from '../game/state';
 import { $, toast, refreshHUD } from './hud';
 import { openSheet, closeSheet, sheetOpen } from './sheets';
@@ -27,7 +29,7 @@ export function centreTile(): Tile | null {
   return h ? h.object.userData.tile : null;
 }
 
-type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'tile'; tile?: Tile; id?: CharId; b?: any };
+type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'site' | 'tile'; tile?: Tile; id?: CharId; b?: any };
 function pick(): Hit | null {
   const hits: Hit[] = [];
   const up = (o: THREE.Object3D | null, key: string) => { while (o && o.userData[key] === undefined) o = o.parent; return o ? o.userData[key] : undefined; };
@@ -37,8 +39,12 @@ function pick(): Hit | null {
   const rh = ray.intersectObjects(rocks, false)[0]; if (rh) hits.push({ d: rh.distance, kind: 'rock', tile: rh.object.userData.tile });
   const ah = ray.intersectObjects(ancients.map(a => a.group), true)[0]; if (ah) { const a = up(ah.object, 'ancient'); if (a && !a.falling) hits.push({ d: ah.distance, kind: 'ancient', tile: a.tile }); }
   if (mound) { const mh = ray.intersectObject(mound.group, true)[0]; if (mh) hits.push({ d: mh.distance - 0.2, kind: 'mound', tile: mound.tile }); }
+  const sh = ray.intersectObjects([...stumps.values()], true)[0]; if (sh) hits.push({ d: sh.distance - 0.15, kind: 'stump', tile: up(sh.object, 'stumpTile') });
+  const xh = ray.intersectObjects(sites.map(s => s.group), true)[0]; if (xh) { const s = up(xh.object, 'site'); if (s) hits.push({ d: xh.distance - 0.6, kind: 'site', tile: s.tile }); }
   const gh = ray.intersectObjects(tileProxies, false)[0]; if (gh) hits.push({ d: gh.distance + 0.05, kind: 'tile', tile: gh.object.userData.tile });
   hits.sort((a, b) => a.d - b.d);
+  // with a figure selected, tapping "through" it at a job behind it gives the order instead of deselecting
+  if (hits[0]?.kind === 'char' && hits[0].id === selected && hits[1] && hits[1].kind !== 'char' && hits[1].kind !== 'tile') return hits[1];
   return hits[0] || null;
 }
 
@@ -58,10 +64,15 @@ function seeGrove() {
   emit('changed');
 }
 
-function onTap(x: number, y: number) {
+export function onTap(x: number, y: number) {
   scene.updateMatrixWorld();
   aim(x, y);
   if (place) { const g = ray.intersectObjects(tileProxies, false)[0]; if (g) movePlace(g.object.userData.tile); return; }
+  if (expandMode) {
+    const cell = pickCell(ray);
+    if (cell) openSheet('expandir', null, cell); else toast('Toca una de las casillas de agua marcadas');
+    return;
+  }
   if (sheetOpen()) { closeSheet(); return; }
   const h = pick();
   if (!h) { select(null); return; }
@@ -70,9 +81,10 @@ function onTap(x: number, y: number) {
   if (h.kind === 'ancient' || h.kind === 'mound') seeGrove();
   const c = selected && crew.find(q => q.id === selected);
   const t = h.tile!;
-  const kind: JobKind = h.kind === 'tree' ? 'tree' : h.kind === 'rock' ? 'rock' : h.kind === 'ancient' ? 'ancient' : h.kind === 'mound' ? 'dig' : t.type === 'arena' ? 'sand' : 'walk';
-  if (!c) { if (kind !== 'walk' && !(h.kind === 'ancient' || h.kind === 'mound')) toast(crew.length > 1 ? 'Primero toca a una figura' : 'Primero toca a Arci'); return; }
-  if (kind === 'tree' && crew.some(o => o !== c && o.job?.tile === t)) { toast('Otra figura ya trabaja ese árbol'); return; }
+  const kind: JobKind = h.kind === 'tree' ? 'tree' : h.kind === 'rock' ? 'rock' : h.kind === 'ancient' ? 'ancient' : h.kind === 'mound' ? 'dig'
+    : h.kind === 'stump' ? 'stump' : h.kind === 'site' ? 'fill' : t.type === 'arena' ? 'sand' : t.type === 'tierra' || (t.type === 'piedras' && !t.rock) ? 'soil' : 'walk';
+  if (!c) { if (kind !== 'walk' && !(h.kind === 'ancient' || h.kind === 'mound')) toast(h.kind === 'site' ? 'Toca una figura y luego la parcela para rellenarla' : crew.length > 1 ? 'Primero toca a una figura' : 'Primero toca a Arci'); return; }
+  if ((kind === 'tree' || kind === 'fill' || kind === 'stump') && crew.some(o => o !== c && o.job?.tile === t)) { toast('Otra figura ya está trabajando ahí'); return; }
   const r = order(c, t, kind);
   if (r !== true) { toast(r); return; }
   marker.position.set(t.wx, topY(t) + 0.03, t.wz); marker.visible = true; markerT = 1;
@@ -97,9 +109,17 @@ export function initInput() {
     if (typeof r === 'string') { toast(r); return; }
     toast(`${r.type === 'casa' ? 'Casa construida' : 'Horno construido'}`); emit('changed');
   });
+  $('xExit').addEventListener('click', () => exitExpandMode());
+  let before: { target: THREE.Vector3; zoom: number } | null = null;
+  on('expandMode', (on_: boolean) => {
+    $('bottom').hidden = on_; $('expandBar').hidden = !on_; refreshHUD();
+    if (on_) { before = { target: controls.target.clone(), zoom: camera.zoom }; flyTo(new THREE.Vector3(0, 0.5, 0), Math.min(camera.zoom, innerWidth < innerHeight ? 0.5 : 0.8)); }
+    else if (before) { flyTo(before.target, before.zoom); before = null; }
+  });
   on('placeChanged', (p: any) => {
     $('bottom').hidden = !!p; $('placeBar').hidden = !p; $('placeHint').hidden = !p;
     if (p) ($('pOk') as HTMLButtonElement).disabled = !p.valid;
     refreshHUD();
   });
 }
+export function debugPick(x: number, y: number) { scene.updateMatrixWorld(); aim(x, y); const h = pick(); return h && { kind: h.kind, d: h.d, ij: h.tile && [h.tile.i, h.tile.j], sites: sites.length, siteHits: ray.intersectObjects(sites.map(s => s.group), true).length, origin: ray.ray.origin.toArray() }; }

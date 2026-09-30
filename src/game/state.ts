@@ -23,18 +23,22 @@ export interface State {
   crew: string[];
   flags: Record<string, boolean>;
   ancientLeft: number;
+  gone: string[];                      // tiles whose original tree was felled ("i,j")
+  stumps: string[];                    // tiles that still hold a stump (the tree will regrow)
+  sites: { i: number; j: number; kind: string; hits: number }[];   // expansion plots being filled
+  expanded: { i: number; j: number; kind: string }[];              // finished expansions
   time: number;
   done: boolean;
 }
 
 const zero = () => Object.fromEntries(RES_KEYS.map(k => [k, 0])) as Record<ResKey, number>;
 export function freshState(): State {
-  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, time: 0, done: false };
+  return { res: zero(), got: zero(), buildings: [], tools: {}, goal: 0, made: 0, crew: ['arci'], flags: {}, ancientLeft: 4, gone: [], stumps: [], sites: [], expanded: [], time: 0, done: false };
 }
 export let S: State = freshState();
 export function setState(s: State) { S = s; }
 
-const KEY = 'isla-arcilla-v04';
+const KEY = 'isla-arcilla-v05'; // the island grid grew in v0.5, so older saves start fresh
 export function save(buildings: SavedBuilding[]) {
   S.buildings = buildings;
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch { /* storage may be blocked */ }
@@ -44,7 +48,7 @@ export function loadSave(): State | null {
     const s = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!s) return null;
     const f = freshState();
-    return { ...f, ...s, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags } };
+    return { ...f, ...s, res: { ...f.res, ...s.res }, got: { ...f.got, ...s.got }, tools: { ...s.tools }, flags: { ...s.flags }, gone: s.gone || [], stumps: s.stumps || [], sites: s.sites || [], expanded: s.expanded || [] };
   } catch { return null; }
 }
 export function clearSave() { try { localStorage.removeItem(KEY); } catch { /* ignore */ } }
