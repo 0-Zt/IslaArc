@@ -7,9 +7,21 @@
       2
     ],
     "cost": {
-      "madera": 10
+      "madera": 20
     },
-    "work": 14
+    "work": 14,
+    "levels": [
+      {
+        "cost": {
+          "tablas": 15,
+          "piedra": 30,
+          "madera": 30,
+          "vidrio": 4
+        },
+        "work": 14,
+        "text": "+20 de espacio para cada material de la isla y +5 para cada refinado"
+      }
+    ]
   },
   "horno": {
     "name": "Horno",
@@ -19,12 +31,23 @@
       1
     ],
     "cost": {
-      "piedra": 6,
-      "arena": 6,
-      "madera": 4
+      "piedra": 15,
+      "arena": 12,
+      "madera": 8
     },
     "requires": "casa",
-    "work": 12
+    "work": 12,
+    "levels": [
+      {
+        "cost": {
+          "ladrillo": 20,
+          "piedra": 25,
+          "carbon": 8
+        },
+        "work": 14,
+        "text": "Dos fuegos: hace dos cosas a la vez"
+      }
+    ]
   },
   "tablon": {
     "name": "Tablón",
@@ -34,10 +57,46 @@
       1
     ],
     "cost": {
-      "madera": 6
+      "madera": 12
     },
     "work": 5,
     "requires": "casa"
+  },
+  "almacen": {
+    "name": "Almacén",
+    "desc": "Guarda más de cada material. Sin almacén caben 40 de cada material de la isla y 15 de cada refinado.",
+    "size": [
+      2,
+      1
+    ],
+    "cost": {
+      "madera": 30,
+      "piedra": 20
+    },
+    "work": 10,
+    "requires": "casa",
+    "levels": [
+      {
+        "cost": {
+          "tablas": 25,
+          "ladrillo": 15,
+          "madera": 40
+        },
+        "work": 14,
+        "text": "Caben 250 de cada material de la isla y 60 de cada refinado"
+      },
+      {
+        "cost": {
+          "tablas": 40,
+          "ladrillo": 30,
+          "vidrio": 10,
+          "cobre": 4
+        },
+        "work": 20,
+        "text": "Caben 600 y 150",
+        "locked": "Necesita cobre de la cueva del volcán (próximamente)"
+      }
+    ]
   },
   "aserradero": {
     "name": "Aserradero",
@@ -47,12 +106,23 @@
       1
     ],
     "cost": {
-      "madera": 12,
-      "piedra": 6,
-      "lingote": 2
+      "madera": 30,
+      "piedra": 15,
+      "lingote": 3
     },
     "work": 10,
-    "requires": "horno"
+    "requires": "horno",
+    "levels": [
+      {
+        "cost": {
+          "ladrillo": 10,
+          "lingote": 4,
+          "madera": 30
+        },
+        "work": 12,
+        "text": "Corta 3 tablas con 4 de madera (antes 1 con 2)"
+      }
+    ]
   },
   "taller": {
     "name": "Taller de inventos",
@@ -62,9 +132,10 @@
       1
     ],
     "cost": {
-      "tablas": 8,
-      "ladrillo": 6,
-      "lingote": 2
+      "tablas": 16,
+      "ladrillo": 14,
+      "lingote": 5,
+      "piedra": 20
     },
     "work": 12,
     "requires": "aserradero"

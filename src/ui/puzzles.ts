@@ -1,6 +1,6 @@
 import { BRAZIERS, lightFlame } from '../game/ruins';
 import { S } from '../game/state';
-import { isNight } from '../render/daynight';
+import { isNight, waitForNight, waitingNight } from '../render/daynight';
 import { runeSVG, SYM_NAME, type Sym } from '../assets/ruins';
 
 /* The five flame puzzles. Each renders into the bottom sheet and keeps its own state;
@@ -150,7 +150,8 @@ function lunaHTML() {
   svg += `<circle cx="${BEAM_COL * C + C / 2}" cy="-14" r="11" fill="${night ? '#eef3ff' : '#9aa4b8'}"/>`;
   svg += `<rect x="${5 * C + 4}" y="${TARGET_ROW * C + 6}" width="22" height="${C - 12}" rx="4" fill="#6a645c"/><rect x="${5 * C + 8}" y="${TARGET_ROW * C + 10}" width="14" height="10" fill="${hit ? ORANGE : '#3a342c'}"/>`;
   const msg = others < 4 ? 'La quinta llama solo despierta cuando las otras cuatro arden.' : !night ? 'Ahora el sol es muy fuerte. Vuelve de noche, cuando la luna ilumine los espejos.' : 'Toca los espejos para desviar la luz de la luna hasta el brasero.';
-  return `<svg class="pz-svg" viewBox="-6 -30 ${5 * C + 36} ${5 * C + 36}" role="img" aria-label="Espejos de luna de 5 por 5">${svg}</svg><p class="pz-msg">${msg}</p>`;
+  const wait = others >= 4 && !night ? `<button class="btn main" data-pz="sleep" style="width:100%;margin-top:6px" ${waitingNight() ? 'disabled' : ''}>${waitingNight() ? 'Esperando la noche…' : 'Esperar a la noche'}</button>` : '';
+  return `<svg class="pz-svg" viewBox="-6 -30 ${5 * C + 36} ${5 * C + 36}" role="img" aria-label="Espejos de luna de 5 por 5">${svg}</svg><p class="pz-msg">${msg}</p>${wait}`;
 }
 function lunaCheck() { if (isNight() && S.ruins.lit.filter((l, i) => l && i !== k).length >= 4 && traceBeam().hit) win(); }
 
@@ -176,7 +177,7 @@ export function puzzleHTML() {
   return `<h2>${d.name}</h2><p>${d.hint}</p><div class="pz${solved ? ' solved' : ''}">${body}</div>${solved ? '<p class="pz-win">¡La llama despierta!</p>' : ''}`;
 }
 /** Re-render signature: the moon puzzle changes with the time of day. */
-export const puzzleSig = () => (k >= 0 && BRAZIERS[k].puzzle === 'luna' ? `luna${isNight()}` : '');
+export const puzzleSig = () => (k >= 0 && BRAZIERS[k].puzzle === 'luna' ? `luna${isNight()}${waitingNight()}` : '');
 
 export function puzzleClick(t: HTMLElement) {
   const el = t.closest('[data-pz]') as HTMLElement | null; if (!el || solved || k < 0) return false;
@@ -187,6 +188,7 @@ export function puzzleClick(t: HTMLElement) {
   else if (a === 'slab') { press(Number(el.dataset.i)); moves++; rerender(); if (slabs.every(Boolean)) win(); }
   else if (a === 'reset') { losasReset(); rerender(); }
   else if (a === 'ob') { const i = Number(el.dataset.i); ob[i] = (ob[i] + 1) % OB_SYMS.length; rerender(); if (ob.every((v, q) => v === OB_ANSWER[q])) win(); }
+  else if (a === 'sleep') { waitForNight(); rerender(); }
   else if (a === 'mirror') { const key = el.dataset.k!; MIR[key] = MIR[key] === 1 ? 0 : 1; rerender(); lunaCheck(); }
   return true;
 }

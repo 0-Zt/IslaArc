@@ -9,11 +9,11 @@ import { placeRocks, tickRocks, rocks } from './world/rocks';
 import { tickParticles } from './world/particles';
 import { updateWater, tickWater } from './world/water';
 import { buildIslet, spawnRuins, clearRuins, tickRuins, prepareBrazier, fixBrazierModels, brasaSpot, checkReach, rebuildBrazier, lightFlame, center as ruinCenter, slots as ruinSlots } from './game/ruins';
-import { buildHit } from './game/buildings';
+import { buildHit , startUpgrade, levelOf } from './game/buildings';
 import { openFlame, openSheet } from './ui/sheets';
 import { unlockAudio, setSound, sfx, tickAmbience } from './audio/sfx';
 import { nightK } from './render/daynight';
-import { tickDay, refreshDay, phaseName, minutesToNight, isNight } from './render/daynight';
+import { tickDay, refreshDay, phaseName, minutesToNight, isNight, waitForNight, waitingNight } from './render/daynight';
 import { S, setState, freshState, loadSave, save, hasSave, clearSave, DATA } from './game/state';
 import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected, select, cheer } from './game/crew';
 import * as THREE from 'three';
@@ -32,6 +32,8 @@ import { initSheets, initSheetEvents, refreshSheet, closeSheet, openMessage, she
 import { initInput, centreTile, tickMarker, onTap, debugPick } from './ui/input';
 import { tickLabels, clearLabels } from './ui/labels';
 import { tickPointer, pointerTarget } from './ui/pointer';
+import './game/economy';
+import { capOf } from './game/state';
 import { GOALS } from './game/goals';
 
 const SEED = 4242;
@@ -204,6 +206,6 @@ if (location.hash === '#debug') {
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
     step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
-    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
+    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
   };
 }

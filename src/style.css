@@ -305,3 +305,19 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .tdots{display:flex;gap:3px}
 .tdots i{width:8px;height:8px;border-radius:50%;background:#ffffff1f}
 .tdots i.t1{background:#c8844a}.tdots i.t2{background:#c8ccd4}.tdots i.t3{background:#f2c14e}
+
+/* storage limits on the resource chips */
+.chip b small{font-size:10px;opacity:.75;margin-left:1px}
+.chip.near{border-color:#c8a04a}
+.chip.full{border-color:#ff9a3a;background:#3a2a14e6}
+.chip.full b{color:#ffc070}
+
+/* levels and the storehouse */
+.thumb.lvl{display:grid;place-items:center;font-family:var(--display);font-size:22px;color:var(--sun);background:#0004;border-radius:12px}
+.stock{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}
+.stk{display:flex;align-items:center;gap:8px;background:var(--glass2);border-radius:10px;padding:6px 8px;border:1.5px solid transparent}
+.stk.full{border-color:#ff9a3a}
+.stk img{width:22px;height:22px;image-rendering:pixelated}
+.stk>div{flex:1;min-width:0}
+.stk small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.qline .bar+.bar{margin-top:4px}

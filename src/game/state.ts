@@ -18,7 +18,7 @@ export interface Req {
   kind: string; text: string; need: number; base: number; stat?: string;
   cost?: Partial<Record<string, number>>; reward: { stars: number; res?: Partial<Record<string, number>> };
 }
-export interface SavedBuilding { type: string; i: number; j: number; rot: number; queue?: number; jobs?: string[]; prog: number; work?: number }
+export interface SavedBuilding { type: string; i: number; j: number; rot: number; queue?: number; jobs?: string[]; prog: number; prog2?: number; work?: number; lvl?: number; up?: number }
 export interface State {
   res: Record<ResKey, number>;
   got: Record<ResKey, number>;
@@ -88,9 +88,17 @@ export function hasSave() { try { return !!localStorage.getItem(KEY); } catch { 
 export const afford = (c: Cost) => Object.entries(c).every(([k, v]) => S.res[k as ResKey] >= (v as number));
 export function pay(c: Cost) { for (const [k, v] of Object.entries(c)) S.res[k as ResKey] -= v as number; emit('changed'); }
 
-/** Adds resources; `at` is where the "+n" should float. */
+/** Storage limit per material; set by the economy module (almacén levels). */
+let capFn: (k: ResKey) => number = () => Infinity;
+export function setCapFn(f: (k: ResKey) => number) { capFn = f; }
+export const capOf = (k: ResKey) => capFn(k);
+export const isFull = (k: ResKey) => S.res[k] >= capFn(k);
+
+/** Adds resources up to the storage limit; `at` is where the "+n" should float. */
 export function gain(k: ResKey, n: number, at?: THREE.Vector3) {
-  S.res[k] += n; S.got[k] += n;
-  emit('gain', k, n, at);
+  const room = Math.max(0, capFn(k) - S.res[k]), add = Math.min(n, room);
+  S.res[k] += add; S.got[k] += add;
+  if (add > 0) emit('gain', k, add, at);
+  if (add < n) emit('full', k, at);
   emit('changed');
 }

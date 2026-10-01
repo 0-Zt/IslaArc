@@ -35,9 +35,16 @@ function applyClock(f: number) {
   lampK = Math.min(1, nightK + dusk * 0.55);
 }
 
+/* "Wait for the night": the clock runs fast (the sun sweeps across the sky) until night falls. */
+let fast = false;
+export function waitForNight() { if (!gfx.daycycle || isNight()) return false; fast = true; emit('toast', 'Las figuras descansan hasta que cae la noche…'); return true; }
+export const waitingNight = () => fast;
+
 export function tickDay(dt: number) {
   if (!gfx.daycycle) { if (nightK !== 0 || acc >= 0) { nightK = 0; lampK = 0; applyTime('manana'); acc = -1; } return; }
-  S.clock = (S.clock + dt / (DATA.BALANCE.dayMinutes * 60)) % 1;
+  if (fast && S.clock > 0.66 && S.clock < 0.9) fast = false;
+  S.clock = (S.clock + (fast ? dt * 45 : dt) / (DATA.BALANCE.dayMinutes * 60)) % 1;
+  if (fast) acc = 1;   // redraw the light every frame while the sun sweeps
   acc += dt;
   if (acc < 0.2) return;
   acc = 0;

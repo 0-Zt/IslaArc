@@ -3,7 +3,7 @@ import { on, emit } from '../core/events';
 import { camera } from '../render/renderer';
 import { buildings, smokePoint, isDone, buildingDef, type Building } from '../game/buildings';
 import { makesThings, jobInfo, jobSeconds } from '../game/production';
-import { crew, select, selected, type Crew } from '../game/crew';
+import { crew, select, selected, blockedBy, type Crew } from '../game/crew';
 import { sites, expandMode, hitsFor } from '../game/expansion';
 import { marks } from '../game/marks';
 import { S, DATA, afford } from '../game/state';
@@ -94,6 +94,13 @@ export function tickLabels() {
   }
 
   for (const c of crew) {
+    const full = blockedBy(c);
+    if (full) {
+      const at = _v.copy(c.root.position); at.y += 1.15;
+      const alm = buildings.find(b => b.type === 'almacen');
+      show(c, at.clone(), `<img class="pix" src="${(ICON as any)[full]}" alt=""><b>Lleno</b>`, 'wait', `No cabe más ${DATA.RESOURCES[full].name.toLowerCase()}`, () => { if (alm && !sheetOpen()) openSheet('almacen' as any, alm); else emit('toast', alm ? 'Gasta materiales o mejora el almacén' : 'Construye el almacén para guardar más'); });
+      idleSince.delete(c); continue;
+    }
     const idle = !c.job && !c.path.length && selected !== c.id;
     if (!idle) { idleSince.delete(c); continue; }
     if (!idleSince.has(c)) idleSince.set(c, now);

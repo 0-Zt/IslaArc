@@ -72,7 +72,8 @@ export function pointerTarget(): THREE.Vector3 | null {
     case 'llamas': { const k = slots.findIndex((t, i) => t.building && isDone(t.building) && !S.ruins.lit[i]); return k >= 0 ? overBuilding(slots[k].building!) : null; }
     case 'brasa': return center ? at(center, 2.4) : null;
     case 'tablas': return idleAt(done('aserradero'));
-    case 'ladrillos': case 'vidrio': return idleAt(done('horno'));
+    case 'ladrillos': case 'vidrio': case 'carbon': return idleAt(done('horno'));
+    case 'horno2': case 'almacen2': { const b = done(g.id === 'horno2' ? 'horno' : 'almacen'); return b && !b.up ? overBuilding(b) : null; }
     case 'avivar': {
       if (busy('avivar')) return null;
       const b = crew.find(q => q.id === 'brasa'); const h = done('horno');

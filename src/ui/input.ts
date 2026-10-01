@@ -120,13 +120,14 @@ export function onTap(x: number, y: number) {
     if (!isDone(b)) {
       const c = selected && crew.find(q => q.id === selected);
       if (c) { const r = order(c, b.tiles[0], 'build'); if (r !== true) toast(r); else select(null); }
-      else toast(`${buildingDef(b.type).name} en obra: ${Math.round(b.work / b.need * 100)}%. Toca una figura y luego la obra.`);
+      else toast(`${b.up ? `Mejora de ${buildingDef(b.type).name.toLowerCase()}` : buildingDef(b.type).name} en obra: ${Math.round(b.work / b.need * 100)}%. Toca una figura y luego la obra.`);
       return;
     }
     if (b.type === 'horno' && c0 && c0.id === 'brasa') { const r = order(c0, b.tiles[0], 'avivar'); if (r !== true) toast(r); else { select(null); toast('Brasa va a avivar el fuego del horno'); } return; }
     if (b.type === 'casa') { select(null); openSheet('casa', b); }
     if (b.type === 'horno' || b.type === 'aserradero') { select(null); openSheet('prod', b); }
     if (b.type === 'taller') { select(null); openSheet('taller', b); }
+    if (b.type === 'almacen') { select(null); openSheet('almacen' as any, b); }
     if (b.type === 'tablon') { select(null); openDiario('encargos'); }
     if (b.type === 'brasero') { const k = slotOf(b.tiles[0]); select(null); if (S.ruins.lit[k]) toast('Esta llama ya arde.'); else openFlame(k); }
     return;

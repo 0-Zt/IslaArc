@@ -12,7 +12,7 @@ import { hitAncient, digMound, type Ancient } from './grove';
 import { removeStump } from './forest';
 import { completeMark, nearestMark, type Mark, type MarkKind } from './marks';
 import { fillHit, sites, type Site } from './expansion';
-import { S, DATA, gain } from './state';
+import { S, DATA, gain, isFull, type ResKey } from './state';
 import { workSpeed } from './progress';
 import { walkBoost, shovelHits } from './production';
 import { collectAt } from './beach';
@@ -32,6 +32,9 @@ export interface Crew extends Figure {
   cheer?: number;
 }
 const GATHER: JobKind[] = ['tree', 'rock', 'sand', 'soil'];
+const GATHER_RES: Partial<Record<JobKind, ResKey>> = { tree: 'madera', rock: 'piedra', sand: 'arena', soil: 'tierra' };
+/** The material a figure cannot gather because the store is full (it waits, then goes on by itself). */
+export const blockedBy = (c: Crew): ResKey | null => { const r = c.job && !c.path.length ? GATHER_RES[c.job.kind] : undefined; return r && isFull(r) ? r : null; };
 
 const blob = new THREE.CanvasTexture(makeCanvas(64, 64, x => {
   const g = x.createRadialGradient(32, 32, 2, 32, 32, 30);
@@ -127,6 +130,7 @@ function stop(c: Crew) {
 export function statusOf(c: Crew) {
   if (c.path.length) return 'Caminando';
   const j = c.job; if (!j) return 'Esperando órdenes';
+  if (blockedBy(c)) return 'Almacén lleno';
   return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', plant: 'Plantando', path: 'Haciendo sendero', build: 'Construyendo', avivar: 'Avivando el horno', recoger: 'Recogiendo', walk: 'Esperando' } as const)[j.kind];
 }
 
@@ -304,6 +308,12 @@ function updateOne(c: Crew, dt: number, T: number) {
     const t = c.path[0], tx = t.wx + c.off, tz = t.wz + c.offz, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz), sp = DATA.BALANCE.walkSpeed * dt * walkBoost() * (tileOf(c)?.type === 'sendero' ? DATA.BALANCE.pathSpeed : 1);
     if (d <= sp) { p.x = tx; p.z = tz; c.path.shift(); if (!c.path.length) arrive(c); }
     else { p.x += dx / d * sp; p.z += dz / d * sp; c.dir = Math.atan2(dx, dz); if (c.anim !== 'walk') setAnim(c, 'walk'); }
+  }
+  // a full store pauses gathering; the figure picks it up again as soon as there is room
+  if (c.job && !c.path.length && GATHER_RES[c.job.kind]) {
+    const full = !!blockedBy(c);
+    if (full && c.anim === 'work') setAnim(c, 'idle');
+    else if (!full && c.anim === 'idle') setAnim(c, 'work');
   }
   const u = tileOf(c); if (u) p.y = lerp(p.y, topY(u), Math.min(1, dt * 12));
   c.root.rotation.y = angleLerp(c.root.rotation.y, c.dir, Math.min(1, dt * 9));

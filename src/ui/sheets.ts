@@ -1,7 +1,8 @@
 import { on } from '../core/events';
 import { gfx, setGfx, resetGfx } from '../render/renderer';
 import { S, DATA, afford, pay, type Cost, type ResKey } from '../game/state';
-import { buildings, has, smelt, startPlace, buildingDef, isDone, type Building } from '../game/buildings';
+import { buildings, has, smelt, startPlace, buildingDef, isDone, nextLevel, startUpgrade, type Building } from '../game/buildings';
+import { caps, REFINED } from '../game/economy';
 import { refreshTools } from '../game/crew';
 import { KINDS, expandCost, startSite, enterExpandMode, exitExpandMode, type ExpandKind } from '../game/expansion';
 import { enterMarkMode } from '../game/marks';
@@ -22,7 +23,7 @@ import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'prod' | 'taller' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
+type SheetType = 'build' | 'casa' | 'prod' | 'taller' | 'almacen' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
 let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {};
@@ -43,7 +44,19 @@ export function openDiario(t: DiarioTab = 'ruta') { setTab(t); openSheet('diario
 
 const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => `<span class="${S.res[k as ResKey] >= (v as number) ? '' : 'no'}">${img(k as ResKey)}${S.res[k as ResKey]}/${v}</span>`).join('')}</div>`;
 // the settings sheet never re-renders by itself, so sliders keep working while dragged
-const signature = () => type === 'gfx' ? 'gfx' : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.jobs?.length, arg?.jobs?.[0], S.inv, S.expanded.length]);
+const signature = () => type === 'gfx' ? 'gfx' : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.jobs?.length, arg?.jobs?.[0], arg?.lvl, arg?.up, arg && Math.floor(arg.work), S.inv, S.expanded.length]);
+
+/** The level block shown in a building's sheet: what the next level does, its cost, or the upgrade in progress. */
+function upgradeHTML(b: Building) {
+  const d = buildingDef(b.type); if (!d.levels) return '';
+  const L = nextLevel(b);
+  let h = `<h3>Nivel ${b.up ? `${b.lvl} → ${b.up}` : b.lvl}</h3>`;
+  if (b.up) return h + `<div class="row"><div class="thumb lvl">${b.up}</div><div class="info"><b>Mejora en obra</b><small>Una figura la levanta a martillazos. Mientras tanto el edificio no trabaja.</small><div class="dbar sm"><i style="width:${Math.round(b.work / b.need * 100)}%"></i></div></div></div>`;
+  if (!L) return h + '<p style="color:var(--muted)">Ya está en su nivel más alto por ahora.</p>';
+  if (L.locked) return h + `<div class="row dim"><div class="thumb lvl">${b.lvl + 1}</div><div class="info"><b>Nivel ${b.lvl + 1}</b><small>${L.text}. ${L.locked}.</small></div><span class="done">${LOCK}</span></div>`;
+  const ok = afford(L.cost) && isDone(b);
+  return h + `<div class="row"><div class="thumb lvl">${b.lvl + 1}</div><div class="info"><b>Mejorar a nivel ${b.lvl + 1}</b><small>${L.text}</small>${costHTML(L.cost)}</div><button class="btn${ok ? ' main' : ''}" data-upgrade="1" ${ok ? '' : 'disabled'}>Mejorar</button></div>`;
+}
 
 function render() {
   sig = signature();
@@ -56,9 +69,9 @@ function render() {
       const count = buildings.filter(b => b.type === k).length, working = buildings.some(b => b.type === k && !isDone(b));
       const unique = !d.deco, built = unique && count > 0, locked = d.requires && !has(d.requires), lowLevel = !unlocked(k);
       const size = d.size[0] * d.size[1] > 1 ? ` · ocupa ${d.size[0]}×${d.size[1]}` : '';
-      const extra = d.deco && count ? ` · tienes ${count}` : '';
+      const extra = d.deco && count ? ` · tienes ${count}` : built && d.levels ? ' · tócalo en la isla para mejorarlo' : '';
       return `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${d.name}</b><small>${d.desc}${size}${extra}</small>${built ? '' : costHTML(d.cost)}</div>`
-        + (built ? `<span class="done">${working ? 'En obra' : 'Construida'}</span>` : lowLevel ? `<span class="done" style="color:var(--muted)">Nivel de isla ${d.level}</span>` : locked ? `<span class="done" style="color:var(--muted)">Necesita ${buildingDef(d.requires).name.toLowerCase()}</span>`
+        + (built ? `<span class="done">${working ? 'En obra' : d.levels ? `Nivel ${Math.max(...buildings.filter(b => b.type === k).map(b => b.lvl))}` : 'Construida'}</span>` : lowLevel ? `<span class="done" style="color:var(--muted)">Nivel de isla ${d.level}</span>` : locked ? `<span class="done" style="color:var(--muted)">Necesita ${buildingDef(d.requires).name.toLowerCase()}</span>`
           : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-place="${k}" ${afford(d.cost) ? '' : 'disabled'}>Ubicar</button>`) + '</div>';
     };
     const all = Object.entries(DATA.BUILDINGS) as [string, any][];
@@ -78,16 +91,29 @@ function render() {
       h += `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${d.name}</b><small>${d.desc}</small>${ok ? '' : costHTML(d.cost)}</div>`
         + (ok ? '<span class="done">Hecho</span>' : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-tool="${k}" ${afford(d.cost) ? '' : 'disabled'}>Fabricar</button>`) + '</div>';
     }
+    if (arg) h += upgradeHTML(arg);
   } else if (type === 'prod' && arg) {
     const b = arg, d = buildingDef(b.type);
-    h += `<h2>${d.name}</h2><p>Cada cosa se hace una tras otra; puedes dejar hasta ${MAX_QUEUE} en cola.${b.type === 'horno' ? (S.crew.includes('brasa') ? ' Toca a Brasa y luego el horno: avivará el fuego y todo sale el doble de rápido.' : '') : ''}</p>`;
-    if (b.jobs.length) h += `<div class="qline">${b.jobs.map((j, k) => { const o = jobInfo(j).out; return `<span class="q${k ? '' : ' now'}">${o ? `<img src="${(ICON as any)[o]}" alt="">` : ''}</span>`; }).join('')}<div class="bar"><i id="hbar" style="width:${Math.round(b.prog * 100)}%"></i></div></div>`;
-    for (const [id, r] of recipesAt(b.type)) {
+    h += `<h2>${d.name}${b.lvl > 1 ? ` · nivel ${b.lvl}` : ''}</h2><p>${b.type === 'horno' && b.lvl >= 2 ? 'Con dos fuegos hace dos cosas a la vez' : 'Cada cosa se hace una tras otra'}; puedes dejar hasta ${MAX_QUEUE} en cola.${b.type === 'horno' ? (S.crew.includes('brasa') ? ' Toca a Brasa y luego el horno: avivará el fuego y todo sale el doble de rápido.' : '') : ''}</p>`;
+    const fires = b.type === 'horno' && b.lvl >= 2 ? 2 : 1;
+    if (!isDone(b)) h += '<p><b>En obra:</b> mientras se mejora no trabaja; la cola sigue después.</p>';
+    if (b.jobs.length) h += `<div class="qline">${b.jobs.map((j, k) => { const o = jobInfo(j).out; return `<span class="q${k < fires ? ' now' : ''}">${o ? `<img src="${(ICON as any)[o]}" alt="">` : ''}</span>`; }).join('')}<div class="bar"><i id="hbar" style="width:${Math.round(b.prog * 100)}%"></i></div>${fires > 1 && b.jobs.length > 1 ? `<div class="bar"><i style="width:${Math.round(b.prog2 * 100)}%"></i></div>` : ''}</div>`;
+    for (const [id, r] of recipesAt(b.type, b.lvl)) {
       const ok = afford(r.cost) && b.jobs.length < MAX_QUEUE;
       h += `<div class="row"><div class="thumb"><img class="pix" src="${(ICON as any)[r.out]}" alt=""></div><div class="info"><b>${r.name}</b><small>${r.desc} · ${r.seconds} s</small>${costHTML(r.cost)}</div>`
         + `<button class="btn${ok ? ' main' : ''}" data-recipe="${id}" ${ok ? '' : 'disabled'}>Hacer</button></div>`;
     }
     if (b.type === 'horno' && S.res.mineral < 2) h += '<p>El mineral sale al picar las rocas grises con vetas azules.</p>';
+    h += upgradeHTML(b);
+  } else if (type === 'almacen' && arg) {
+    const [raw, ref] = caps();
+    h += `<h2>Almacén</h2><p>Caben <b>${raw}</b> de cada material de la isla y <b>${ref}</b> de cada refinado. Con un material lleno, la figura que lo junta se detiene hasta que haya espacio.</p><div class="stock">`;
+    for (const k of Object.keys(DATA.RESOURCES) as ResKey[]) {
+      const d = (DATA.RESOURCES as any)[k]; if (d.nohud || (S.got[k] <= 0 && S.res[k] <= 0)) continue;
+      const cap = REFINED.includes(k) ? ref : raw, v = S.res[k], pct = Math.min(100, Math.round(v / cap * 100));
+      h += `<div class="stk${v >= cap ? ' full' : ''}"><img class="pix" src="${(ICON as any)[k]}" alt=""><div><div class="dbar sm"><i style="width:${pct}%"></i></div><small>${v}/${cap}</small></div></div>`;
+    }
+    h += '</div>' + upgradeHTML(arg);
   } else if (type === 'taller' && arg) {
     const b = arg;
     h += '<h2>Taller de inventos</h2><p>Cada invento cambia algo para siempre. El taller trabaja en uno a la vez.</p>';
@@ -184,6 +210,7 @@ export function initSheetEvents() {
       pay(d.cost); S.tools[b.dataset.tool] = true; refreshTools();
       toast(`Fabricaste: ${d.name}`); render(); return;
     }
+    if (b.dataset.upgrade && arg) { const r = startUpgrade(arg); if (r) toast(r); else assignIdleBuilder(); render(); return; }
     if (b.dataset.recipe && arg) { if (!smelt(arg, b.dataset.recipe)) toast('No se puede ahora'); render(); return; }
     if (b.dataset.invent && arg) { const r = startInvention(b.dataset.invent, arg.jobs); if (r) toast(r); render(); return; }
     if (b.dataset.act === 'gfx') { openSheet('gfx'); return; }

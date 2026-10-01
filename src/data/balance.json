@@ -28,5 +28,30 @@
   "plantHits": 2,
   "pathHits": 3,
   "pathSpeed": 1.35,
-  "dayMinutes": 9
+  "dayMinutes": 9,
+  "caps": {
+    "base": [
+      40,
+      15
+    ],
+    "almacen": [
+      [
+        100,
+        30
+      ],
+      [
+        250,
+        60
+      ],
+      [
+        600,
+        150
+      ]
+    ],
+    "casa2": [
+      20,
+      5
+    ]
+  },
+  "expandGrowth": 1.15
 }

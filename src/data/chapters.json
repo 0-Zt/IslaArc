@@ -15,7 +15,7 @@
       },
       {
         "id": "madera10",
-        "text": "Junta 10 de madera"
+        "text": "Junta 20 de madera"
       },
       {
         "id": "casa",
@@ -86,6 +86,11 @@
         "text": "Desentierra lo que asoma en el claro"
       },
       {
+        "id": "almacen",
+        "text": "Construye el almacén: sin él caben solo 40 de cada cosa",
+        "hint": "build"
+      },
+      {
         "id": "expandir",
         "text": "Expande la isla: Construir → Expandir la isla",
         "hint": "build"
@@ -98,6 +103,10 @@
       },
       {
         "name": "Lo que dormía",
+        "n": 1
+      },
+      {
+        "name": "Hacer espacio",
         "n": 2
       }
     ]
@@ -156,19 +165,31 @@
       },
       {
         "id": "tablas",
-        "text": "Corta 10 tablas en el aserradero ({t}/10)"
+        "text": "Corta 15 tablas en el aserradero ({t}/15)"
       },
       {
         "id": "ladrillos",
-        "text": "Hornea 6 ladrillos en el horno ({l}/6)"
+        "text": "Hornea 10 ladrillos en el horno ({l}/10)"
       },
       {
         "id": "vidrio",
-        "text": "Funde 4 de vidrio en el horno ({v}/4)"
+        "text": "Funde 6 de vidrio en el horno ({v}/6)"
+      },
+      {
+        "id": "carbon",
+        "text": "Quema 8 de carbón en el horno ({c}/8)"
       },
       {
         "id": "avivar",
         "text": "Toca a Brasa y luego el horno para que avive el fuego"
+      },
+      {
+        "id": "horno2",
+        "text": "Mejora el horno a nivel 2 (tócalo)"
+      },
+      {
+        "id": "almacen2",
+        "text": "Mejora el almacén a nivel 2 (tócalo)"
       },
       {
         "id": "taller",
@@ -199,6 +220,10 @@
       },
       {
         "name": "Fuego vivo",
+        "n": 3
+      },
+      {
+        "name": "Mejoras",
         "n": 3
       },
       {

@@ -5,13 +5,14 @@ import INVENTIONS from '../data/inventions.json';
 /* Production at buildings: the furnace (ingots, bricks, glass), the sawmill (planks) and the
    workshop (inventions). Each building works through its own queue, one item at a time. */
 
-export interface Recipe { name: string; desc: string; cost: Cost; out: string; seconds: number; at: string }
+export interface Recipe { name: string; desc: string; cost: Cost; out: string; seconds: number; at: string; n?: number; lvl?: number; maxLvl?: number }
 export interface Invention { name: string; desc: string; cost: Cost; seconds?: number; tier: number; needs?: string[]; locked?: string }
 export const RECIPES = DATA.RECIPES as Record<string, Recipe>;
 export const INV = INVENTIONS as Record<string, Invention>;
 export const MAX_QUEUE = 6;
 
-export const recipesAt = (type: string) => Object.entries(RECIPES).filter(([, r]) => r.at === type);
+/** Recipes a building offers at its level (some appear or are replaced after an upgrade). */
+export const recipesAt = (type: string, lvl = 1) => Object.entries(RECIPES).filter(([, r]) => r.at === type && lvl >= (r.lvl || 1) && lvl <= (r.maxLvl || 99));
 export const makesThings = (type: string) => type === 'horno' || type === 'aserradero' || type === 'taller';
 
 /** How long one job takes at this building, after inventions and helpers. */

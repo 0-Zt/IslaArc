@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { on } from '../core/events';
 import { mkIcon } from '../core/canvas';
 import { camera } from '../render/renderer';
-import { S, RES_KEYS, DATA, type ResKey } from '../game/state';
+import { S, RES_KEYS, DATA, capOf, type ResKey } from '../game/state';
+import { REFINED } from '../game/economy';
 import { crew, selected, select, statusOf } from '../game/crew';
 import { has, place } from '../game/buildings';
 import { currentGoal, goalText, chapterStep } from '../game/goals';
@@ -23,6 +24,7 @@ export const ICON: Record<ResKey, string> = {
   ladrillo: mkIcon(['.......', 'RRR.RRR', 'RHR.RHR', '.......', 'RR.RRRR', 'RH.RHRR', '.......'], { R: '#b85a3a', H: '#d87a52' }),
   vidrio: mkIcon(['.......', '..GGG..', '.GHGGG.', '.GHGGG.', '.GGGGG.', '..GGG..', '.......'], { G: '#8fd4e0', H: '#e8fbff' }),
   lingote: mkIcon(['.......', '.......', '..MMMMM', '.MHMMMD', 'MMMMMD.', 'MDDDD..'], { M: '#b8c0cc', H: '#ffffff', D: '#6a7280' }),
+  carbon: mkIcon(['.......', '..KK...', '.KHKK.K', '.KKKKKH', 'KKHKKKK', '.KKKDK.'], { K: '#3a3632', H: '#6a625a', D: '#e0602a' }),
 };
 export const img = (k: ResKey) => `<img src="${ICON[k]}" alt="">`;
 /** Pixel icons for things that are not materials (tasks, achievements). */
@@ -67,11 +69,11 @@ export function banner(title: string, sub: string, prize?: string) {
 
 /* ---------- HUD (updated in place so taps on buttons are never lost) ---------- */
 const bumps: Partial<Record<ResKey, number>> = {};
-const REFINED: ResKey[] = ['lingote', 'tablas', 'ladrillo', 'vidrio'] as ResKey[];
+
 let resSig = '';
 export function refreshHUD(dt = 0) {
   for (const k in bumps) bumps[k as ResKey]! -= dt;
-  const keys = RES_KEYS.filter(k => { const d = (DATA.RESOURCES as any)[k]; return (!d.hiddenUntil && !d.hidden) || S.got[k] > 0 || (d.hiddenUntil && has(d.hiddenUntil)); });
+  const keys = RES_KEYS.filter(k => { const d = (DATA.RESOURCES as any)[k]; return !d.nohud && (!d.hiddenUntil && !d.hidden) || S.got[k] > 0 || (d.hiddenUntil && has(d.hiddenUntil)); });
   const sig = keys.join();
   if (sig !== resSig) {
     // two fixed rows: what the island gives (raw) and what the buildings make (refined)
@@ -82,8 +84,11 @@ export function refreshHUD(dt = 0) {
   }
   for (const k of keys) {
     const el = $('res').querySelector(`[data-r="${k}"]`)!; const b = el.querySelector('b')!;
-    const v = S.res[k], txt = v >= 10000 ? Math.floor(v / 1000) + 'k' : v >= 1000 ? (v / 1000).toFixed(1).replace('.0', '') + 'k' : String(v);
-    if (b.textContent !== txt) b.textContent = txt;
+    const v = S.res[k], cap = capOf(k), fmt = (n: number) => n >= 10000 ? Math.floor(n / 1000) + 'k' : n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'k' : String(n);
+    // close to the storage limit: the chip shows the limit and turns amber when full
+    const near = v >= cap * 0.8, txt = near ? `${fmt(v)}<small>/${fmt(cap)}</small>` : fmt(v);
+    if (b.innerHTML !== txt) b.innerHTML = txt;
+    el.classList.toggle('near', near && v < cap); el.classList.toggle('full', v >= cap);
     el.classList.toggle('bump', (bumps[k] || 0) > 0);
   }
   const g = currentGoal();

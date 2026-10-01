@@ -1,6 +1,6 @@
 import { on, emit } from '../core/events';
 import { S, DATA } from './state';
-import { has, buildings, isDone } from './buildings';
+import { has, buildings, isDone, levelOf } from './buildings';
 import { addStars } from './progress';
 
 /* The main route: chapters of guided goals (data/chapters.json). Goals are done in order;
@@ -30,7 +30,7 @@ export function stagesOf(ch: number): Stage[] {
 
 const CHECK: Record<string, () => boolean> = {
   talar: () => S.got.madera >= 2,
-  madera10: () => S.res.madera >= 10 || has('casa'),
+  madera10: () => S.res.madera >= 20 || has('casa'),
   casa: () => has('casa'),
   tablon: () => has('tablon'),
   claro: () => !!S.flags.claroVisto,
@@ -41,16 +41,20 @@ const CHECK: Record<string, () => boolean> = {
   hacha: () => !!S.tools.hacha,
   despejar: () => !!S.flags.claroAbierto,
   desenterrar: () => !!S.flags.musgoFree,
+  almacen: () => has('almacen'),
   expandir: () => S.expanded.length > 0,
   islote: () => !!S.flags.islote,
   braseros: () => builtBraziers() >= 5,
   llamas: () => S.ruins.lit.every(Boolean),
   brasa: () => !!S.ruins.awake,
   aserradero: () => has('aserradero'),
-  tablas: () => (S.stats.tablas || 0) >= 10,
-  ladrillos: () => (S.stats.ladrillo || 0) >= 6,
-  vidrio: () => (S.stats.vidrio || 0) >= 4,
+  tablas: () => (S.stats.tablas || 0) >= 15,
+  ladrillos: () => (S.stats.ladrillo || 0) >= 10,
+  vidrio: () => (S.stats.vidrio || 0) >= 6,
+  carbon: () => (S.stats.carbon || 0) >= 8,
   avivar: () => !!S.flags.avivado,
+  horno2: () => levelOf('horno') >= 2,
+  almacen2: () => levelOf('almacen') >= 2,
   taller: () => has('taller'),
   inventos: () => Object.keys(S.inv).length >= 3,
   botellas: () => S.lore.length >= 2,
@@ -69,8 +73,8 @@ export function chapterStep() {
 /** Goal text with its live counters filled in. */
 export const goalText = (g: { text: string }) => g.text
   .replace('{n}', String(S.ruins.lit.filter(Boolean).length)).replace('{b}', String(builtBraziers()))
-  .replace('{t}', String(Math.min(10, S.stats.tablas || 0))).replace('{l}', String(Math.min(6, S.stats.ladrillo || 0))).replace('{v}', String(Math.min(4, S.stats.vidrio || 0)))
-  .replace('{i}', String(Math.min(3, Object.keys(S.inv).length))).replace('{b2}', String(Math.min(2, S.lore.length)));
+  .replace('{t}', String(Math.min(15, S.stats.tablas || 0))).replace('{l}', String(Math.min(10, S.stats.ladrillo || 0))).replace('{v}', String(Math.min(6, S.stats.vidrio || 0)))
+  .replace('{i}', String(Math.min(3, Object.keys(S.inv).length))).replace('{b2}', String(Math.min(2, S.lore.length))).replace('{c}', String(Math.min(8, S.stats.carbon || 0)));
 export const goalDone = (i: number) => i < S.goal;
 
 export function checkGoals(quiet = false) {

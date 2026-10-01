@@ -9,7 +9,7 @@
       "sym": "spiral",
       "puzzle": "runas",
       "cost": {
-        "piedra": 6
+        "piedra": 12
       },
       "hint": "Las runas repiten una canción. Obsérvala y tócala igual."
     },
@@ -18,8 +18,8 @@
       "sym": "wave",
       "puzzle": "cauce",
       "cost": {
-        "piedra": 5,
-        "arena": 4
+        "piedra": 10,
+        "arena": 8
       },
       "hint": "Gira las piedras del cauce hasta que la lava llegue al brasero."
     },
@@ -28,7 +28,7 @@
       "sym": "stone",
       "puzzle": "losas",
       "cost": {
-        "piedra": 8
+        "piedra": 15
       },
       "hint": "Cada losa que pisas despierta a sus vecinas. Enciéndelas todas."
     },
@@ -37,8 +37,8 @@
       "sym": "leaf",
       "puzzle": "obeliscos",
       "cost": {
-        "piedra": 5,
-        "madera": 5
+        "piedra": 10,
+        "madera": 12
       },
       "hint": "Tres obeliscos con caras talladas que giran. En la base hay un grabado."
     },
@@ -47,8 +47,8 @@
       "sym": "moon",
       "puzzle": "luna",
       "cost": {
-        "piedra": 5,
-        "lingote": 2
+        "piedra": 10,
+        "lingote": 3
       },
       "hint": "Solo la luz de la luna la enciende, y solo cuando las otras cuatro arden."
     }

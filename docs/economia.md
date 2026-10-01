@@ -138,9 +138,26 @@ Además del tiempo, el bot debe cumplir:
 - Con eso se ve dónde se llena el almacén, dónde se espera y qué material nunca se gasta.
 - Después del bot, **3 personas** juegan la primera hora y se anota dónde se trabaron o se aburrieron.
 
-## 7. Orden de trabajo
+## 7. Resultado de la parte 1 (v0.12)
 
-1. **v0.12 · Economía, parte 1:** almacén y topes con la burbuja "Lleno", mejoras de nivel 2 para casa, horno, aserradero y almacén, carbón, parcelas con costo creciente, nuevo balance de costos, y el bot con registro y gráfico.
+Medido con el bot después de los cambios:
+
+| Capítulo | Antes (v0.11.2) | Ahora (v0.12) |
+| --- | --- | --- |
+| 1 · Barro | 4 min | 6 min |
+| 2 · El claro | 1,5 min | 2,5 min |
+| 3 · Las ruinas | 10 min | 10,5 min (con el botón de esperar la noche) |
+| 4 · Fuego | 5,5 min | 10,5 min |
+| **Total** | **21 min** | **29 min** |
+
+- **Madera al final:** 117 (antes más de 1.700). Ningún material queda lleno por mucho rato y las figuras casi nunca esperan espacio.
+- **El cuello de botella del capítulo 4 es el horno**, y eso está bien: hace valer la mejora a dos fuegos y el avivar de Brasa.
+- **Ajuste de la meta del bot:** el bot no se equivoca, no lee y resuelve cada acertijo en 45 s. 29 minutos del bot deberían ser cerca de una hora para una persona, dentro del objetivo de 60–80 minutos. Queda confirmarlo con 3 personas.
+- **Pendiente:** el mineral y la piedra todavía sobran un poco al final del capítulo 4; la cueva (antorchas, pico de obsidiana) y la parte 2 (barco de trueques) les darán destino.
+
+## 8. Orden de trabajo
+
+1. **Hecho · v0.12 · Economía, parte 1:** almacén y topes con la burbuja "Lleno", mejoras de nivel 2 para casa, horno, aserradero y almacén, carbón, parcelas con costo creciente, nuevo balance de costos, y el bot con registro y gráfico.
 2. **v0.13 · Cueva, prototipo:** antorchas y comida como provisiones, modo exploración, primer combate.
 3. **v0.14 · Economía, parte 2:** barco de trueques, figuras asignadas a edificios (cantera, leñador, huerto), mejoras de nivel 3.
 4. **v0.15 · Cueva completa** y Gólem de magma.

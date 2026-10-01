@@ -12,9 +12,10 @@
   },
   "ladrillo": {
     "name": "Ladrillo",
-    "desc": "2 de tierra cocida con 1 de madera",
+    "desc": "Barro con un poco de arena, cocido con 1 de madera",
     "cost": {
       "tierra": 2,
+      "arena": 1,
       "madera": 1
     },
     "out": "ladrillo",
@@ -40,6 +41,41 @@
     },
     "out": "tablas",
     "seconds": 5,
-    "at": "aserradero"
+    "at": "aserradero",
+    "maxLvl": 1
+  },
+  "tablas2": {
+    "name": "Tablas ×3",
+    "desc": "4 de madera bien aserrada dan 3 tablas",
+    "cost": {
+      "madera": 4
+    },
+    "out": "tablas",
+    "n": 3,
+    "seconds": 9,
+    "at": "aserradero",
+    "lvl": 2
+  },
+  "carbon": {
+    "name": "Carbón",
+    "desc": "3 de madera quemada despacio. Sirve para mejorar el horno, para la linterna y para el lingote doble",
+    "cost": {
+      "madera": 3
+    },
+    "out": "carbon",
+    "seconds": 6,
+    "at": "horno"
+  },
+  "lingote2": {
+    "name": "Lingote doble",
+    "desc": "3 de mineral con carbón: salen 2 lingotes",
+    "cost": {
+      "mineral": 3,
+      "carbon": 1
+    },
+    "out": "lingote",
+    "n": 2,
+    "seconds": 12,
+    "at": "horno"
   }
 }

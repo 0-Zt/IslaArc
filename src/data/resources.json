@@ -21,7 +21,8 @@
   },
   "semilla": {
     "name": "Semillas",
-    "hidden": true
+    "hidden": true,
+    "nohud": true
   },
   "tablas": {
     "name": "Tablas",
@@ -34,5 +35,9 @@
   "vidrio": {
     "name": "Vidrio",
     "hiddenUntil": "horno"
+  },
+  "carbon": {
+    "name": "Carbón",
+    "hidden": true
   }
 }

@@ -122,6 +122,27 @@ export function modelTaller(): Model {
   return { group: g, glow, smoke: [0, 1.3, 0] };
 }
 
+/** Storehouse: a long wooden shed on a stone base, a wide door, crates and sacks out front. */
+export function modelAlmacen(): Model {
+  const M = parts();
+  vbox(M.stone, 0, 0.06, 0, 1.9, 0.12, 0.92, '#a49e92');
+  vbox(M.plank, 0, 0.5, -0.05, 1.7, 0.78, 0.7, '#b07a44');                                  // walls
+  for (const x of [-0.84, -0.28, 0.28, 0.84]) vbox(M.bark, x, 0.5, 0.31, 0.08, 0.8, 0.06, '#6a4226');   // posts
+  vbox(M.plank, 0, 0.88, 0.31, 1.76, 0.06, 0.06, '#6a4226');                                 // lintel
+  vbox(M.plank, 0, 0.42, 0.305, 0.5, 0.6, 0.04, '#5e3a1e');                                   // big door
+  vbox(M.plank, 0, 0.42, 0.33, 0.04, 0.6, 0.02, '#8a5a2e'); vbox(M.plank, 0, 0.42, 0.33, 0.5, 0.04, 0.02, '#8a5a2e');
+  // gabled roof in two slabs
+  for (const [z, y] of [[-0.24, 1.0], [0.16, 1.0]] as [number, number][]) vbox(M.thatch, 0, y, z, 1.95, 0.08, 0.5, '#c0703c');
+  vbox(M.thatch, 0, 1.08, -0.04, 1.95, 0.08, 0.3, '#d4844a'); vbox(M.thatch, 0, 1.14, -0.04, 1.95, 0.05, 0.12, '#a85a30');
+  // crates and sacks
+  vbox(M.plank, -0.62, 0.2, 0.52, 0.28, 0.24, 0.24, '#c08a50'); vbox(M.plank, -0.62, 0.2, 0.645, 0.28, 0.04, 0.01, '#8a5a2e');
+  vbox(M.plank, -0.62, 0.43, 0.52, 0.22, 0.2, 0.2, '#d4a060');
+  vbox(M.thatch, 0.6, 0.18, 0.54, 0.24, 0.2, 0.2, '#e8d8b0'); vbox(M.thatch, 0.6, 0.3, 0.54, 0.12, 0.05, 0.12, '#c8b890');
+  vbox(M.thatch, 0.78, 0.15, 0.5, 0.18, 0.16, 0.18, '#dccca0');
+  vbox(M.bark, 0.4, 0.1, 0.56, 0.16, 0.12, 0.16, '#8a8f9a');                                   // a little stone pile
+  return { group: group(M), smoke: [0, 1.3, 0] };
+}
+
 /** Notice board: two posts, a small roof and a board with pinned notes. */
 export function modelTablon(): Model {
   const M = parts(), P: THREE.BufferGeometry[] = [];
@@ -143,7 +164,7 @@ export function modelScaffold(w: number, d: number, h: number) {
   return group({ plank: P });
 }
 
-export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, tablon: modelTablon, aserradero: modelAserradero, taller: modelTaller, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
+export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, tablon: modelTablon, almacen: modelAlmacen, aserradero: modelAserradero, taller: modelTaller, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
 
 export const ICONS: Record<string, string> = {
   casa: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="18" width="24" height="16" fill="#d9a066"/><rect x="17" y="24" width="6" height="10" fill="#7a4f2a"/><path d="M4 20L20 7L36 20Z" fill="#e0b050"/><rect x="27" y="8" width="4" height="8" fill="#8a847a"/></svg>',
@@ -158,6 +179,7 @@ export const ICONS: Record<string, string> = {
   sendero: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="4" width="36" height="32" fill="#5cb847"/><path d="M14 36L18 4H26L28 36Z" fill="#b08a5a"/><rect x="19" y="12" width="3" height="2" fill="#d8d2c6"/><rect x="22" y="24" width="3" height="2" fill="#d8d2c6"/></svg>',
   aserradero: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="10" width="32" height="4" fill="#d4a444"/><rect x="6" y="14" width="3" height="20" fill="#6a4226"/><rect x="31" y="14" width="3" height="20" fill="#6a4226"/><rect x="9" y="22" width="22" height="7" fill="#7a4a2a"/><circle cx="20" cy="22" r="6" fill="#c8ccd4"/><rect x="8" y="31" width="24" height="4" fill="#e0b070"/></svg>',
   taller: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="8" width="34" height="5" fill="#c08a50"/><rect x="5" y="13" width="30" height="20" fill="#b8804c"/><rect x="9" y="22" width="22" height="4" fill="#8a5a2e"/><circle cx="29" cy="17" r="3" fill="#ffd24a"/><rect x="12" y="16" width="2" height="6" fill="#6a4226"/><rect x="11" y="15" width="4" height="2" fill="#b9c2cc"/></svg>',
+  almacen: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="32" width="34" height="4" fill="#a49e92"/><rect x="5" y="16" width="30" height="16" fill="#b07a44"/><path d="M2 17L20 7L38 17Z" fill="#c0703c"/><rect x="15" y="20" width="10" height="12" fill="#5e3a1e"/><rect x="19.5" y="20" width="1" height="12" fill="#8a5a2e"/><rect x="4" y="27" width="7" height="6" fill="#d4a060"/><rect x="29" y="27" width="7" height="6" fill="#e8d8b0"/></svg>',
   tablon: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="12" width="3" height="26" fill="#6a4226"/><rect x="30" y="12" width="3" height="26" fill="#6a4226"/><rect x="5" y="13" width="30" height="16" fill="#b07a44"/><rect x="3" y="8" width="34" height="5" fill="#d4a444"/><rect x="9" y="16" width="8" height="7" fill="#fff6e0"/><rect x="21" y="17" width="9" height="8" fill="#ffe0e8"/><rect x="12" y="15" width="2" height="2" fill="#d9463c"/><rect x="25" y="16" width="2" height="2" fill="#d9463c"/></svg>',
   farol: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="14" y="33" width="12" height="4" fill="#9a948a"/><rect x="18.5" y="16" width="3" height="18" fill="#4a3a2e"/><rect x="13" y="6" width="14" height="3" fill="#3a2e24"/><rect x="15" y="9" width="10" height="8" fill="#ffd27a"/><rect x="13" y="17" width="14" height="2" fill="#3a2e24"/></svg>',
   cerco: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="18" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="30" y="12" width="4" height="22" fill="#8a5a2e"/><rect x="4" y="17" width="32" height="4" fill="#a8743e"/><rect x="4" y="26" width="32" height="4" fill="#a8743e"/></svg>',

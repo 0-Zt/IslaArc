@@ -14,17 +14,24 @@ import { stumps } from './forest';
 export interface Building {
   type: string; i: number; j: number; rot: number; tiles: Tile[];
   group: THREE.Group; glow?: THREE.Mesh; smokeAt: THREE.Vector3;
-  jobs: string[]; prog: number; build: number;   // production queue (recipe ids, or 'inv:<id>' at the workshop)
+  jobs: string[]; prog: number; prog2: number; build: number;   // production queue (recipe ids, or 'inv:<id>' at the workshop); prog2: the furnace's second fire
+  lvl: number; up: number;               // level, and the level being built when an upgrade is under way (0 = none)
+  flag: THREE.Group | null;
   stoked: boolean;                                   // Brasa is fanning the fire (furnace works twice as fast)
   work: number; need: number;            // hammer blows done / needed: a building works only when finished
   scaffold: THREE.Group | null; light: THREE.Mesh | null;
 }
 export const buildings: Building[] = [];
 export const isDone = (b: Building) => b.work >= b.need;
-/** Whether a finished building of this type exists. */
-export const has = (type: string) => buildings.some(b => b.type === type && isDone(b));
-export const saved = (): SavedBuilding[] => buildings.map(b => ({ type: b.type, i: b.i, j: b.j, rot: b.rot, jobs: b.jobs, prog: b.prog, work: b.work } as SavedBuilding));
-const def = (type: string) => (DATA.BUILDINGS as any)[type] as { name: string; size: [number, number]; cost: Cost; requires?: string; work?: number; deco?: boolean };
+/** Whether a building of this type has been finished (it still counts while being upgraded). */
+export const has = (type: string) => buildings.some(b => b.type === type && (isDone(b) || b.up > 0));
+/** Highest finished level of a building type (0 when there is none). */
+export const levelOf = (type: string) => buildings.reduce((m, b) => b.type === type && (isDone(b) || b.up > 0) ? Math.max(m, b.lvl) : m, 0);
+export const saved = (): SavedBuilding[] => buildings.map(b => ({ type: b.type, i: b.i, j: b.j, rot: b.rot, jobs: b.jobs, prog: b.prog, prog2: b.prog2, work: b.work, lvl: b.lvl, up: b.up } as SavedBuilding));
+export interface Level { cost: Cost; work: number; text: string; locked?: string }
+const def = (type: string) => (DATA.BUILDINGS as any)[type] as { name: string; size: [number, number]; cost: Cost; requires?: string; work?: number; deco?: boolean; levels?: Level[] };
+/** The next level of a building, if it has one. */
+export const nextLevel = (b: Building): Level | null => def(b.type).levels?.[b.lvl - 1] || null;
 
 /* a warm pool of light on the ground under each lantern, only at night */
 const lightTex = new THREE.CanvasTexture((() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d')!; const g = x.createRadialGradient(32, 32, 2, 32, 32, 31); g.addColorStop(0, 'rgba(255,190,100,0.9)'); g.addColorStop(0.5, 'rgba(255,150,60,0.35)'); g.addColorStop(1, 'rgba(255,120,40,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return c; })());
@@ -53,9 +60,10 @@ export function createBuilding(type: string, i: number, j: number, rot: number, 
   const m = MODELS[type](); const g = m.group;
   const [cx, cy, cz] = centre(tiles);
   g.position.set(cx, cy, cz); g.rotation.y = rot * Math.PI / 2;
-  const need = def(type).work || 1;
+  const lvl = extra.lvl || 1, up = extra.up || 0;
+  const need = up ? def(type).levels![up - 2].work : def(type).work || 1;
   const work = extra.work ?? (animate ? 0 : need);
-  const b: Building = { type, i, j, rot, tiles, group: g, glow: m.glow, smokeAt: new THREE.Vector3(...m.smoke), jobs: extra.jobs ? [...extra.jobs] : Array(extra.queue || 0).fill('lingote'), prog: extra.prog || 0, stoked: false, build: 1, work, need, scaffold: null, light: null };
+  const b: Building = { type, i, j, rot, tiles, group: g, glow: m.glow, smokeAt: new THREE.Vector3(...m.smoke), jobs: extra.jobs ? [...extra.jobs] : Array(extra.queue || 0).fill('lingote'), prog: extra.prog || 0, prog2: extra.prog2 || 0, stoked: false, build: 1, work, need, scaffold: null, light: null, lvl, up, flag: null };
   g.traverse(o => { o.userData.building = b; });
   tiles.forEach(t => { t.building = b; });
   worldGroup.add(g); buildings.push(b);
@@ -64,20 +72,56 @@ export function createBuilding(type: string, i: number, j: number, rot: number, 
     l.position.set(cx, cy + 0.03, cz); l.renderOrder = 2; worldGroup.add(l); b.light = l;
   }
   if (!isDone(b)) {
-    const [w0, d0] = def(type).size; const [w, d] = rot % 2 ? [d0, w0] : [w0, d0];
-    const sc = modelScaffold(w * 0.98, d * 0.98, Math.max(0.8, Math.min(2, (w + d) * 0.5)));
-    sc.position.set(cx, cy, cz); sc.traverse(o => { o.userData.building = b; });
-    worldGroup.add(sc); b.scaffold = sc;
+    addScaffold(b);
     setRise(b);
     if (animate) for (const t of tiles) puff(t.wx, topY(t) + 0.1, t.wz, '#d8c8a8', 8, 1.6, 1.8, topY(t));
   }
+  setFlag(b);
   rebuildDeco();
   emit('placed', b);
   if (isDone(b)) emit('built', b);
   return b;
 }
-/** Unfinished buildings rise out of the ground as the work goes on. */
-function setRise(b: Building) { const k = b.work / b.need; b.group.scale.set(1, isDone(b) ? 1 : 0.1 + 0.8 * k, 1); }
+function addScaffold(b: Building) {
+  const [w0, d0] = def(b.type).size; const [w, d] = b.rot % 2 ? [d0, w0] : [w0, d0];
+  const [cx, cy, cz] = centre(b.tiles);
+  const sc = modelScaffold(w * 0.98, d * 0.98, Math.max(0.8, Math.min(2, (w + d) * 0.5)) + (b.up ? 0.3 : 0));
+  sc.position.set(cx, cy, cz); sc.traverse(o => { o.userData.building = b; });
+  worldGroup.add(sc); b.scaffold = sc;
+}
+/** Unfinished buildings rise out of the ground as the work goes on (an upgrade keeps its full size). */
+function setRise(b: Building) { const k = b.work / b.need; b.group.scale.set(1, isDone(b) || b.up ? 1 : 0.1 + 0.8 * k, 1); }
+
+/* A small pennant on the roof shows the level: one stripe per level above the first. */
+const FLAG_COL = ['#f2c14e', '#7ec8e8', '#e86a8a', '#8ad96b'];
+function setFlag(b: Building) {
+  if (b.flag) { b.group.remove(b.flag); b.flag = null; }
+  if (b.lvl < 2) return;
+  const box = new THREE.Box3().setFromObject(b.group), top = box.max.y - b.group.position.y;
+  const f = new THREE.Group();
+  const mat = (c: string) => new THREE.MeshLambertMaterial({ color: c });
+  const pole = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.04), mat('#5e3a1e')); pole.position.y = 0.25; f.add(pole);
+  for (let k = 0; k < b.lvl - 1; k++) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.08, 0.02), mat(FLAG_COL[k % FLAG_COL.length])); p.position.set(0.14, 0.44 - k * 0.1, 0); f.add(p); }
+  const [w0] = def(b.type).size;
+  f.position.set(w0 * 0.32, top - 0.05, 0); f.traverse(o => { o.userData.building = b; (o as THREE.Mesh).castShadow = true; });
+  b.group.add(f); b.flag = f;
+}
+
+/** Starts the next level: pays, puts the scaffold back and waits for the hammer. Returns a reason when it cannot. */
+export function startUpgrade(b: Building): string | null {
+  const L = nextLevel(b);
+  if (!L) return 'Ya está en su nivel más alto';
+  if (L.locked) return L.locked;
+  if (!isDone(b)) return 'Termina la obra primero';
+  if (!afford(L.cost)) return 'Te faltan materiales';
+  pay(L.cost);
+  b.up = b.lvl + 1; b.work = 0; b.need = L.work;
+  addScaffold(b);
+  for (const t of b.tiles) puff(t.wx, topY(t) + 0.3, t.wz, '#d8c8a8', 6, 1.4, 1.4, topY(t));
+  emit('toast', `Mejora en obra: ${def(b.type).name.toLowerCase()} nivel ${b.up}. Una figura la levanta a martillazos.`);
+  emit('changed');
+  return null;
+}
 
 /** One hammer blow. Returns true when this blow finishes the building. */
 export function buildHit(b: Building, power = 1) {
@@ -89,8 +133,14 @@ export function buildHit(b: Building, power = 1) {
   if (!isDone(b)) { emit('changed'); return false; }
   if (b.scaffold) { worldGroup.remove(b.scaffold); b.scaffold = null; }
   for (const q of b.tiles) puff(q.wx, topY(q) + 0.4, q.wz, '#fff0c0', 10, 2, 1.6, topY(q));
-  emit('toast', `Obra terminada: ${def(b.type).name.toLowerCase()}`);
   emit('obraDone', !!def(b.type).deco);
+  if (b.up) {
+    b.lvl = b.up; b.up = 0; setFlag(b);
+    emit('toast', `${def(b.type).name} nivel ${b.lvl}: ${def(b.type).levels![b.lvl - 2].text.toLowerCase()}`);
+    emit('upgraded', b); emit('changed');
+    return true;
+  }
+  emit('toast', `Obra terminada: ${def(b.type).name.toLowerCase()}`);
   emit('built', b); emit('changed');
   return true;
 }
@@ -106,6 +156,19 @@ export function smelt(b: Building, recipe = 'lingote') {
   pay(R.cost); b.jobs.push(recipe); emit('changed'); return true;
 }
 
+function finishJob(b: Building, job: string) {
+  const v = smokePoint(b).clone();
+  if (job.startsWith('inv:')) finishInvention(job.slice(4));
+  else {
+    const R = RECIPES[job], out = R.out as ResKey, n = R.n || 1;
+    if (out === 'lingote') S.made += n;
+    S.stats[out] = (S.stats[out] || 0) + n;
+    gain(out, n, v);
+  }
+  puff(v.x, v.y, v.z, '#ffd04a', 10, 2.2, 1.4);
+  emit('smelted', b, job);
+}
+
 export function tickBuildings(dt: number) {
   for (const b of buildings) {
     if (!isDone(b)) continue;
@@ -117,20 +180,12 @@ export function tickBuildings(dt: number) {
     if (makesThings(b.type)) {
       const job = b.jobs[0], on = !!job;
       if (on) {
+        // the furnace at level 2 has a second fire working on the next job at the same time
+        const job2 = b.type === 'horno' && b.lvl >= 2 ? b.jobs[1] : undefined;
         b.prog += dt / jobSeconds(b.type, job, b.stoked);
-        if (b.prog >= 1) {
-          b.prog = 0; b.jobs.shift();
-          const v = smokePoint(b).clone();
-          if (job.startsWith('inv:')) finishInvention(job.slice(4));
-          else {
-            const out = RECIPES[job].out as ResKey;
-            if (job === 'lingote') S.made++;
-            S.stats[out] = (S.stats[out] || 0) + 1;
-            gain(out, 1, v);
-          }
-          puff(v.x, v.y, v.z, '#ffd04a', 10, 2.2, 1.4);
-          emit('smelted', b, job);
-        }
+        if (job2) b.prog2 += dt / jobSeconds(b.type, job2, b.stoked); else b.prog2 = 0;
+        if (b.prog >= 1) { b.prog = b.prog2; b.prog2 = 0; b.jobs.shift(); finishJob(b, job); }
+        else if (job2 && b.prog2 >= 1) { b.prog2 = 0; b.jobs.splice(1, 1); finishJob(b, job2); }
         if (b.type === 'horno' && Math.random() < dt * (b.stoked ? 12 : 6)) { const v = smokePoint(b); smoke(v.x, v.y, v.z, Math.random() < 0.5 ? '#c8c4be' : '#a8a49e'); }
         if (b.type === 'aserradero' && Math.random() < dt * 8) { const v = smokePoint(b); puff(v.x, v.y - 0.3, v.z, '#e0c08a', 2, 1.2, 1, v.y - 0.6); }
       }

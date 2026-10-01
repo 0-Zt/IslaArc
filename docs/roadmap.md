@@ -127,13 +127,27 @@ Siguiendo las láminas de referencia (árboles, bloques, adornos):
 - **Hallazgo:** la madera se acumula (más de mil al final) porque nada la gasta en grande. Hace falta un sumidero de materiales: mejoras de edificios, provisiones para las expediciones o encargos más grandes.
 - **Arreglos:** el despertar de Brasa usa tiempo de juego (antes un temporizador real) y se retoma si la partida se guardó justo en ese momento; el primer cuadro ya no puede dar un paso de tiempo negativo.
 
+## Economía, parte 1 (v0.12)
+
+- **Almacén y topes:** sin almacén caben 40 de cada material de la isla y 15 de cada refinado. El almacén (capítulo 2) sube a 100/30 y su nivel 2 a 250/60; el nivel 3 queda bloqueado hasta tener cobre de la cueva. La casa nivel 2 suma +20/+5.
+- **Almacén lleno:** la figura que junta ese material se detiene con la burbuja "Lleno" y sigue sola cuando hay espacio. Cerca del tope, la ficha muestra el límite (38/40) y se pone ámbar al llenarse.
+- **Mejoras de edificios:** casa, horno, aserradero y almacén suben a nivel 2 desde su panel. Se pagan, vuelve el andamio y una figura las levanta a martillazos; mientras tanto el edificio no trabaja. Un banderín en el techo marca el nivel.
+  - Horno 2: dos fuegos, hace dos cosas a la vez.
+  - Aserradero 2: 3 tablas con 4 de madera.
+  - Casa 2: +20 de espacio y +5 para refinados.
+- **Carbón** (3 de madera en el horno): para mejorar el horno, la linterna y el **lingote doble** (3 de mineral y 1 de carbón dan 2 lingotes).
+- **Parcelas:** cada una cuesta un 15 % más que la anterior (el puente sigue a precio fijo).
+- **Costos nuevos** en todo (casa 20 de madera, horno 15/12/8, aserradero 30/15/3, taller 16 tablas, 14 ladrillos, 5 lingotes y 20 piedra, braseros, herramientas e inventos). Los ladrillos ahora llevan arena.
+- **Capítulos más largos:** el 2 suma "Construye el almacén"; el 4 pasa a 12 metas en 4 etapas (Refinar, Fuego vivo, Mejoras, Inventos) con carbón y las mejoras del horno y del almacén.
+- **Esperar a la noche:** el acertijo de la luna tiene un botón que adelanta el reloj hasta que cae la noche (antes se podían perder hasta 7 minutos esperando).
+- **Bot de ritmo con gráfico:** registra cada material, su tope y el tiempo de las figuras cada 30 segundos. Resultado: 29 minutos para los capítulos 1 a 4 (Barro 6, Claro 2,5, Ruinas 10,5, Fuego 10,5), sin acumulación sin fin (la madera termina en 117 en vez de 1.700) y casi sin tiempo de figuras esperando espacio.
+
 Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates por turnos) y **docs/economia.md** (plan de economía: topes, mejoras, cadenas por era, sumideros y ritmo objetivo).
 
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **v0.12 · Economía, parte 1:** almacén y topes, mejoras de nivel 2, carbón, parcelas con costo creciente, nuevo balance y el bot con gráfico (ver docs/economia.md).
 - **v0.13 · Prototipo de exploración:** entrada a la cueva, vista tipo GBA, un nivel, una criatura y el primer combate por turnos.
 
 ## Decisiones tomadas

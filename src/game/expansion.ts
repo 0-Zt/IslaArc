@@ -19,7 +19,11 @@ export const sites: Site[] = [];
 /** Each expansion, finished or marked, makes the next one cost a little more soil. */
 export function expandCost(kind: ExpandKind): Cost {
   const c: Cost = { ...(KINDS[kind].cost as Cost) };
-  if (c.tierra) c.tierra += DATA.BALANCE.expandCostStep * (S.expanded.length + sites.length); // bridges keep a flat price
+  if (kind === 'puente') return c;                                    // bridges keep a flat price
+  // each plot won from the sea costs about 15 % more than the one before
+  const n = S.expanded.filter(e => e.kind !== 'puente').length + sites.filter(s => s.kind !== 'puente').length;
+  const k = Math.pow(DATA.BALANCE.expandGrowth, n);
+  for (const r of Object.keys(c) as (keyof Cost)[]) c[r] = Math.round((c[r] as number) * k);
   return c;
 }
 

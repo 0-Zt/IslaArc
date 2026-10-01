@@ -32,6 +32,7 @@ src/
 legacy/              prototipos anteriores (2D, taller de assets, corte vertical en un archivo)
 docs/roadmap.md      visión, eras y fases
 docs/diseno-exploracion.md  exploración, inventos y combates por turnos (lo que viene)
+docs/economia.md     plan de economía: topes, mejoras, cadenas por era y ritmo
 ```
 
 Para equilibrar el juego (costos, tiempos, probabilidades) se editan los archivos de `src/data/`, sin tocar código.
