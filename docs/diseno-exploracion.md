@@ -96,9 +96,10 @@ Simples y tácticos, pensados para el celular.
 1. **v0.11 · Fuego, parte 1:** Taller de inventos (primera era), aserradero, ladrillos y vidrio, habilidades de cada figura en la isla, cajas y botellas que llegan a la playa.
 2. **v0.12 · Economía, parte 1** (ver docs/economia.md): almacén y topes, mejoras de edificios, carbón.
 3. **v0.13 · Prototipo de exploración:** entrada a la cueva, modo exploración con movimiento por cuadrícula, un nivel, puntos de recolección, una criatura y el primer combate por turnos.
-4. **v0.15 · Cueva completa:** tres niveles, provisiones y el Gólem de magma.
-5. **v0.16 · Mar adentro:** balsa, mapa del mar por cuadrícula con oleaje que bloquea zonas, la primera isla nueva. Más adelante, el objeto que calma las olas y los remolinos que llevan a zonas secretas.
-6. **Después:** Ciudad de los Alfareros, el Espectro y el Faro.
+4. **v0.14 · Economía, parte 2:** barco de trueques, figuras asignadas a edificios, mejoras de nivel 3.
+5. **v0.15 · Cueva completa:** tres niveles, provisiones y el Gólem de magma.
+6. **v0.16 · Mar adentro:** balsa, mapa del mar por cuadrícula con oleaje que bloquea zonas, la primera isla nueva. Más adelante, el objeto que calma las olas y los remolinos que llevan a zonas secretas.
+7. **Después:** Ciudad de los Alfareros, el Espectro y el Faro.
 
 ## Enfoque técnico
 
