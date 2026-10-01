@@ -58,6 +58,17 @@ Al entrar en una cueva o bajar del barco en otra isla, la cámara cambia a una *
 | Archipiélago (bosque de hongos, arrecife, isla nevada) | 5 · Mar adentro | Materiales propios de cada isla, una figura nueva por isla | Uno por isla |
 | Ciudad de los Alfareros | 6 · El origen | Máquinas rotas, terminales, la historia de las figuras | El Guardián |
 
+## Navegar el mar (estilo Pokémon de GBA)
+
+Idea de Simon: el mar se recorre como las rutas de agua de Pokémon, sobre una cuadrícula y con obstáculos que se superan con objetos de la historia.
+
+- **La balsa:** se mueve casilla a casilla por el mapa del mar con la misma vista alta de las expediciones. Las figuras van arriba de la balsa.
+- **Oleaje que no deja pasar:** franjas de olas grandes bloquean zonas del mar desde el principio. Se ven (y se ve algo detrás), pero la balsa se devuelve si intenta cruzar. Es la misma lógica que los obstáculos de Pokémon: muestran adónde se podrá ir más adelante.
+- **El objeto que calma las olas:** en algún punto de la historia se consigue un objeto de los Alfareros (por ejemplo, una **caracola de calma** o un **ancla rúnica**) que apaga el oleaje. Ahí se abren zonas que antes se veían de lejos: islas escondidas, ruinas sumergidas y atajos.
+- **Remolinos:** algunos remolinos llevan a otra parte del mapa (a una caleta secreta, a otra isla o a una zona que solo se alcanza así). Primero son peligrosos o no se pueden cruzar; con una mejora del barco (por ejemplo, un timón reforzado) se pueden usar a propósito como portales.
+- **Mejoras que abren el mar por capas:** balsa (aguas tranquilas) → velero (más rápido, aguas abiertas) → objeto de calma (oleaje) → timón reforzado (remolinos) → buceo o campana de vidrio (zonas bajo el agua, más adelante).
+- **Qué hay al llegar:** islas con materiales propios, cofres flotantes, botellas con historia, figuras nuevas y encuentros en el agua (criaturas marinas para combates por turnos, como en el pasto alto).
+
 ## Combates por turnos
 
 Simples y tácticos, pensados para el celular.
@@ -85,7 +96,7 @@ Simples y tácticos, pensados para el celular.
 1. **v0.11 · Fuego, parte 1:** Taller de inventos (primera era), aserradero, ladrillos y vidrio, habilidades de cada figura en la isla, cajas y botellas que llegan a la playa.
 2. **v0.12 · Prototipo de exploración:** entrada a la cueva, modo exploración con movimiento por cuadrícula, un nivel, puntos de recolección, una criatura y el primer combate por turnos.
 3. **v0.13 · Cueva completa:** tres niveles, provisiones y el Gólem de magma.
-4. **v0.14 · Mar adentro:** balsa, mapa del archipiélago y la primera isla nueva.
+4. **v0.14 · Mar adentro:** balsa, mapa del mar por cuadrícula con oleaje que bloquea zonas, la primera isla nueva. Más adelante, el objeto que calma las olas y los remolinos que llevan a zonas secretas.
 5. **Después:** Ciudad de los Alfareros, el Espectro y el Faro.
 
 ## Enfoque técnico
