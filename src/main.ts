@@ -8,28 +8,31 @@ import { plantIsland, clearTrees, tickTrees, tickLeaves, treeDrawCalls, trees } 
 import { placeRocks, tickRocks, rocks } from './world/rocks';
 import { tickParticles } from './world/particles';
 import { updateWater, tickWater } from './world/water';
-import { buildIslet, spawnRuins, clearRuins, tickRuins, prepareBrazier, fixBrazierModels, brasaSpot, checkReach, rebuildBrazier, lightFlame, center as ruinCenter } from './game/ruins';
+import { buildIslet, spawnRuins, clearRuins, tickRuins, prepareBrazier, fixBrazierModels, brasaSpot, checkReach, rebuildBrazier, lightFlame, center as ruinCenter, slots as ruinSlots } from './game/ruins';
 import { buildHit } from './game/buildings';
 import { openFlame, openSheet } from './ui/sheets';
 import { unlockAudio, setSound, sfx, tickAmbience } from './audio/sfx';
 import { nightK } from './render/daynight';
 import { tickDay, refreshDay, phaseName, minutesToNight, isNight } from './render/daynight';
 import { S, setState, freshState, loadSave, save, hasSave, clearSave, DATA } from './game/state';
-import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected, select } from './game/crew';
+import { crew, spawnCrew, clearCrew, updateCrew, bfs, occupied, order, selected, select, cheer } from './game/crew';
 import * as THREE from 'three';
 import { buildings, createBuilding, clearBuildings, tickBuildings, cancelPlace, saved, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, place } from './game/buildings';
 import { spawnGrove, tickGrove, ancients, mound } from './game/grove';
 import { onTreeFallen, tickForest, clearForest, setOccupiedTest, restoreForest, markForestZone, buildForestEdge, forestStats, growing } from './game/forest';
 import { restorePaths, restoreMarks, clearMarks, exitMarkMode, marks } from './game/marks';
-import { restoreExpansions, restoreSites, clearSites, exitExpandMode, pulseMarkers, sites } from './game/expansion';
+import { restoreExpansions, restoreSites, clearSites, exitExpandMode, pulseMarkers, sites, startSite } from './game/expansion';
+import { startInvention } from './game/production';
 import { checkGoals } from './game/goals';
 import { initProgress, checkAchievements } from './game/progress';
 import { fillBoard } from './game/board';
 import { restoreBeach, clearBeach, tickBeach } from './game/beach';
 import { $, initHUD, refreshHUD, toast } from './ui/hud';
-import { initSheets, initSheetEvents, refreshSheet, closeSheet, openMessage } from './ui/sheets';
+import { initSheets, initSheetEvents, refreshSheet, closeSheet, openMessage, sheetOpen } from './ui/sheets';
 import { initInput, centreTile, tickMarker, onTap, debugPick } from './ui/input';
 import { tickLabels, clearLabels } from './ui/labels';
+import { tickPointer, pointerTarget } from './ui/pointer';
+import { GOALS } from './game/goals';
 
 const SEED = 4242;
 let T = 0; // game clock in seconds (declared early: newGame uses it)
@@ -124,7 +127,8 @@ addEventListener('pointerdown', () => unlockAudio(), { capture: true });
 on('treeFelled', () => sfx('fall'));
 on('gain', () => sfx('pop'));
 on('levelUp', () => sfx('level'));
-on('chapterDone', () => sfx('level'));
+on('chapterDone', () => { sfx('level'); cheer(2.6); });
+on('stageDone', () => { sfx('solve'); cheer(); });
 on('achievement', () => sfx('coin'));
 on('obraDone', () => sfx('coin', 0.7));
 on('flameLit', () => sfx('solve'));
@@ -160,7 +164,7 @@ function frame(now: number) {
     if (now < due - 2) { requestAnimationFrame(frame); return; }
     due = Math.max(due + 1000 / 60, now);
   }
-  const raw = Math.min(0.25, (now - last) / 1000); last = now;
+  const raw = Math.max(0, Math.min(0.25, (now - last) / 1000)); last = now;   // the first frame's timestamp can be older than the load time
   const dt = Math.min(0.05, raw); T += dt;
   if (running) { tickDay(dt); S.time += dt; saveAcc += dt; if (saveAcc > DATA.BALANCE.saveEverySeconds) { saveAcc = 0; persist(); } }
   updateCrew(dt, T);
@@ -176,6 +180,7 @@ function frame(now: number) {
   tickMarker(dt);
   pulseMarkers(T);
   tickLabels();
+  tickPointer(dt, T, sheetOpen());
   uiAcc += dt; if (uiAcc > 0.25) { refreshHUD(uiAcc); refreshSheet(); uiAcc = 0; }
   tickWater(T);
   tickAmbience(raw, nightK);
@@ -197,8 +202,8 @@ if (location.hash === '#debug') {
     get S() { return S; }, crew, buildings, trees, rocks, ancients, get mound() { return mound; }, grove: () => grove,
     renderer, camera, controls, order, tileAt, landTiles, checkGoals, pixelRatio,
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
-    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
+    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
-    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet,
+    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
   };
 }

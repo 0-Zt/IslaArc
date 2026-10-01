@@ -25,6 +25,19 @@ export const ICON: Record<ResKey, string> = {
   lingote: mkIcon(['.......', '.......', '..MMMMM', '.MHMMMD', 'MMMMMD.', 'MDDDD..'], { M: '#b8c0cc', H: '#ffffff', D: '#6a7280' }),
 };
 export const img = (k: ResKey) => `<img src="${ICON[k]}" alt="">`;
+/** Pixel icons for things that are not materials (tasks, achievements). */
+export const XICON: Record<string, string> = {
+  obra: mkIcon(['.......', '.HHHH..', '.HHHHD.', '...W...', '...W...', '...W...'], { H: '#9aa3ad', D: '#6a737d', W: '#a8763a' }),
+  adorno: mkIcon(['...P...', '..PYP..', '...P...', '.L.G.L.', '..LGL..', '...G...'], { P: '#e86a8a', Y: '#f2c14e', G: '#4ea33c', L: '#8ad96b' }),
+  sendero: mkIcon(['.......', 'G.DD..G', 'G..DD.G', 'G...DDG', 'G..DD.G', 'G.DD..G'], { D: '#d8b880', G: '#6fb04a' }),
+  noche: mkIcon(['...YYY.', '..YY...', '.YY....', '.YY....', '..YY...', '...YYY.'], { Y: '#f2e0a0' }),
+  encargo: mkIcon(['.......', '.PPPPP.', '.PLLLP.', '.PPPPP.', '.PLLPP.', '.PPPPP.'], { P: '#f0e0b8', L: '#8a7050' }),
+  caja: mkIcon(['.......', 'BBBBBBB', 'BLLBLLB', 'BBBBBBB', 'BLLBLLB', 'BBBBBBB'], { B: '#8a5a2e', L: '#c08a50' }),
+  botella: mkIcon(['...C...', '..GGG..', '..GHG..', '.GGHGG.', '.GPPGG.', '.GGGGG.'], { C: '#a8763a', G: '#6ab8a0', H: '#d8f8ee', P: '#f0e0b8' }),
+  invento: mkIcon(['..YYY..', '.YHYYY.', '.YHYYY.', '..YYY..', '..GGG..', '...G...'], { Y: '#f2c14e', H: '#fff3c0', G: '#8a8f9a' }),
+};
+/** Any icon by key: a material or one of the extra ones. */
+export const ico = (k: string) => `<img src="${(ICON as Record<string, string>)[k] || XICON[k] || XICON.encargo}" alt="">`;
 
 /* ---------- toasts and floating gains ---------- */
 export function toast(m: string) {
@@ -42,17 +55,35 @@ export function floatAt(v: THREE.Vector3, txt: string, icon?: string) {
   document.body.appendChild(el); el.addEventListener('animationend', () => el.remove());
 }
 
+/** A big centered title that pops in and fades out: stage or chapter done. */
+let bannerT: number | undefined;
+export function banner(title: string, sub: string, prize?: string) {
+  let el = document.getElementById('banner');
+  if (!el) { el = document.createElement('div'); el.id = 'banner'; el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
+  el.innerHTML = `<b>${title}</b><span>${sub}</span>${prize ? `<em>${prize}</em>` : ''}`;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); el.classList.toggle('long', !!prize && prize.length > 8);
+  clearTimeout(bannerT); bannerT = window.setTimeout(() => el!.classList.remove('show'), prize && prize.length > 8 ? 3800 : 2600);
+}
+
 /* ---------- HUD (updated in place so taps on buttons are never lost) ---------- */
 const bumps: Partial<Record<ResKey, number>> = {};
+const REFINED: ResKey[] = ['lingote', 'tablas', 'ladrillo', 'vidrio'] as ResKey[];
 let resSig = '';
 export function refreshHUD(dt = 0) {
   for (const k in bumps) bumps[k as ResKey]! -= dt;
   const keys = RES_KEYS.filter(k => { const d = (DATA.RESOURCES as any)[k]; return (!d.hiddenUntil && !d.hidden) || S.got[k] > 0 || (d.hiddenUntil && has(d.hiddenUntil)); });
   const sig = keys.join();
-  if (sig !== resSig) { resSig = sig; $('res').innerHTML = keys.map(k => `<span class="chip" data-r="${k}" title="${(DATA.RESOURCES as any)[k].name}">${img(k)}<b>0</b></span>`).join(''); }
+  if (sig !== resSig) {
+    // two fixed rows: what the island gives (raw) and what the buildings make (refined)
+    resSig = sig;
+    const chip = (k: ResKey) => `<span class="chip" data-r="${k}" title="${(DATA.RESOURCES as any)[k].name}">${img(k)}<b>0</b></span>`;
+    const raw = keys.filter(k => !REFINED.includes(k)), ref = keys.filter(k => REFINED.includes(k));
+    $('res').innerHTML = `<div class="rrow">${raw.map(chip).join('')}</div>` + (ref.length ? `<div class="rrow ref">${ref.map(chip).join('')}</div>` : '');
+  }
   for (const k of keys) {
     const el = $('res').querySelector(`[data-r="${k}"]`)!; const b = el.querySelector('b')!;
-    if (b.textContent !== String(S.res[k])) b.textContent = String(S.res[k]);
+    const v = S.res[k], txt = v >= 10000 ? Math.floor(v / 1000) + 'k' : v >= 1000 ? (v / 1000).toFixed(1).replace('.0', '') + 'k' : String(v);
+    if (b.textContent !== txt) b.textContent = txt;
     el.classList.toggle('bump', (bumps[k] || 0) > 0);
   }
   const g = currentGoal();
@@ -103,9 +134,10 @@ export function initHUD() {
   });
   on('gain', (k: ResKey, n: number, at?: THREE.Vector3) => { bumps[k] = 0.5; if (at) floatAt(at, '+' + n, ICON[k]); });
   on('toast', toast);
-  on('goalAdvanced', () => { $('goal').classList.add('flash'); setTimeout(() => $('goal').classList.remove('flash'), 700); if (currentGoal()) toast('Objetivo cumplido'); });
+  on('goalAdvanced', (big?: boolean) => { $('goal').classList.add('flash'); setTimeout(() => $('goal').classList.remove('flash'), 700); if (currentGoal() && !big) toast('Objetivo cumplido'); });
   on('levelUp', (l: number, d: { text: string }) => toast(`¡Nivel de isla ${l}! Nuevo: ${d.text}`));
-  on('chapterDone', (c: { title: string }) => toast(`Capítulo completo: ${c.title}`));
+  on('chapterDone', (c: { title: string; reward?: { text: string } }) => banner('¡Capítulo completo!', c.title, c.reward?.text));
+  on('stageDone', (name: string, stars: number) => banner('¡Etapa completa!', name, `+${stars} ★`));
   on('achievement', (a: { name: string }, t: number) => toast(`Logro: ${a.name} (${['bronce', 'plata', 'oro'][t - 1]})`));
   on('changed', () => fillBoard());
   on('changed', () => refreshHUD());

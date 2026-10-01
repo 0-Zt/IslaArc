@@ -26,7 +26,12 @@ export interface Crew extends Figure {
   t: number; phase: number; blink: number; dir: number; hits: number;
   toolKey: ToolKey; workHit: boolean; lastStep: number; off: number; offz: number;
   light?: THREE.Mesh;
+  /** the gathering job the figure goes back to after a one-off task (a build, a plot, a mark) */
+  last?: Job;
+  /** seconds left of a little celebration jump (stage or chapter done) */
+  cheer?: number;
 }
+const GATHER: JobKind[] = ['tree', 'rock', 'sand', 'soil'];
 
 const blob = new THREE.CanvasTexture(makeCanvas(64, 64, x => {
   const g = x.createRadialGradient(32, 32, 2, 32, 32, 30);
@@ -93,6 +98,8 @@ export function order(c: Crew, tile: Tile, kind: JobKind): true | string {
   const path = bfs(here, reach);
   if (!path) return kind === 'dig' ? 'Los árboles antiguos no dejan pasar' : 'No hay camino hasta ahí';
   c.job = { kind, tile }; c.path = path; c.hits = 0;
+  if (GATHER.includes(kind)) c.last = { kind, tile };
+  else if (kind === 'walk') c.last = undefined;          // sent somewhere on purpose: stay there
   if (!path.length) arrive(c); else setAnim(c, 'walk');
   emit('changed');
   return true;
@@ -101,12 +108,21 @@ function arrive(c: Crew) {
   const j = c.job;
   if (!j || j.kind === 'walk') { c.job = null; setAnim(c, 'idle'); emit('changed'); return; }
   const p = c.root.position;
-  if (j.kind === 'recoger') { collectAt(j.tile, c); c.job = null; setAnim(c, 'idle'); emit('changed'); return; }
+  if (j.kind === 'recoger') { collectAt(j.tile, c); stop(c); return; }
   if ((j.kind === 'build' || j.kind === 'avivar') && j.tile.building) { const bt = j.tile.building.tiles as Tile[]; const n = bt.reduce((a, q) => Math.hypot(q.wx - p.x, q.wz - p.z) < Math.hypot(a.wx - p.x, a.wz - p.z) ? q : a, bt[0]); c.dir = Math.atan2(n.wx - p.x, n.wz - p.z); }
   else if (j.kind !== 'sand' && j.kind !== 'soil' && j.kind !== 'path') c.dir = Math.atan2(j.tile.wx - p.x, j.tile.wz - p.z);
   setTool(c, j.kind); setAnim(c, 'work'); emit('changed');
 }
-function stop(c: Crew) { c.job = null; c.path = []; setAnim(c, 'idle'); emit('changed'); }
+function idle(c: Crew) { c.job = null; c.path = []; setAnim(c, 'idle'); emit('changed'); }
+/** A task ended: go back to what the figure was gathering before, or rest. */
+function stop(c: Crew) {
+  const l = c.last;
+  idle(c);
+  if (!l) return;
+  if (l.kind === 'tree') { nextTree(c, l.tile); return; }
+  const still = l.kind === 'rock' ? !!l.tile.rock : l.kind === 'sand' ? l.tile.type === 'arena' : l.tile.type === 'tierra' || (l.tile.type === 'piedras' && !l.tile.rock);
+  if (!still || order(c, l.tile, l.kind) !== true) { c.last = undefined; idle(c); }
+}
 
 export function statusOf(c: Crew) {
   if (c.path.length) return 'Caminando';
@@ -114,8 +130,8 @@ export function statusOf(c: Crew) {
   return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', plant: 'Plantando', path: 'Haciendo sendero', build: 'Construyendo', avivar: 'Avivando el horno', recoger: 'Recogiendo', walk: 'Esperando' } as const)[j.kind];
 }
 
-function nearestTile(c: Crew, test: (t: Tile) => boolean, max = 6) {
-  const here = tileOf(c); if (!here) return null;
+function nearestTile(c: Crew, test: (t: Tile) => boolean, max = 6, from?: Tile) {
+  const here = from || tileOf(c); if (!here) return null;
   let best: Tile | null = null, bd = 1e9;
   for (const t of landTiles()) { if (!test(t)) continue; const d = Math.abs(t.i - here.i) + Math.abs(t.j - here.j); if (d < bd && d <= max) { bd = d; best = t; } }
   return best;
@@ -148,9 +164,13 @@ export function nextSite(c: Crew) {
   for (const s of free) if (order(c, s.tile, 'fill') === true) return;
   stop(c);
 }
-function nextTree(c: Crew) {
-  const t = nearestTile(c, t => !!t.tree && !t.tree.falling && !crew.some(o => o !== c && o.job?.tile === t));
-  if (!t || order(c, t, 'tree') !== true) stop(c);
+/** Keeps chopping: the nearest standing tree around the figure (or around where it was working). */
+function nextTree(c: Crew, near?: Tile) {
+  const free = (t: Tile) => !!t.tree && !t.tree.falling && !crew.some(o => o !== c && o.job?.tile === t);
+  const t = nearestTile(c, free, 10, near);
+  if (t && order(c, t, 'tree') === true) return;
+  c.last = undefined; idle(c);
+  emit('toast', `${c.def.name} no encuentra más árboles cerca`);
 }
 
 /* ---------- what each swing does ---------- */
@@ -264,6 +284,16 @@ function onWorkHit(c: Crew) {
   }
 }
 
+/** Everyone jumps with arms up and clay confetti flies: a stage or chapter is done. */
+const CONFETTI = ['#f2c14e', '#c98655', '#8ad96b', '#e86a5a', '#7ec8e8', '#fff0d0'];
+export function cheer(seconds = 1.8) {
+  crew.forEach((c, k) => {
+    c.cheer = seconds + k * 0.12;
+    const p = c.root.position;
+    for (const col of CONFETTI) puff(p.x, p.y + 1.1, p.z, col, 3, 2.6, 1.8, p.y);
+  });
+}
+
 /* ---------- per-frame update: movement and hand-made clay animation ---------- */
 export function updateCrew(dt: number, T: number) {
   for (const c of crew) updateOne(c, dt, T);
@@ -306,6 +336,14 @@ function updateOne(c: Crew, dt: number, T: number) {
     if (q < 0.3) c.workHit = false;
   } else if (c.anim === 'wave') {
     const w = Math.sin(c.t * 11); R.rotation.z = -2.55 + w * 0.35; L.rotation.z = 0.15; sy = 1 + 0.03 * Math.sin(c.t * 5.5); hz = -0.12 + w * 0.04; bob = Math.max(0, Math.sin(c.t * 5.5)) * 0.03;
+  }
+  if (c.cheer && c.cheer > 0) {
+    // celebration on top of whatever the figure is doing: hops with both arms up
+    c.cheer -= dt;
+    const h = Math.abs(Math.sin(c.t * 8 + c.phase));
+    bob = h * 0.28; sy = 1 + 0.08 * h; sxz = 1 - 0.04 * h; lean = 0;
+    L.rotation.set(0, 0, 2.5 + 0.25 * h); R.rotation.set(0, 0, -2.5 - 0.25 * h); hx = -0.15;
+    for (const k in c.tools) c.tools[k as ToolKey].visible = false;
   }
   c.body.scale.set(sxz, sy, sxz); c.body.position.y = bob; c.body.rotation.x = lean; c.head.rotation.x = hx; c.head.rotation.z = hz;
   if (c.job?.kind === 'avivar' && c.anim === 'work' && c.job.tile.building) c.job.tile.building.stoked = true;

@@ -74,7 +74,7 @@ export const goalText = (g: { text: string }) => g.text
 export const goalDone = (i: number) => i < S.goal;
 
 export function checkGoals(quiet = false) {
-  let advanced = false;
+  let advanced = false, bigStep = false;   // bigStep: a stage or chapter closed (it has its own banner)
   while (S.goal < GOALS.length && CHECK[GOALS[S.goal].id]?.()) {
     const { ch, st } = GOALS[S.goal];
     S.goal++; advanced = true;
@@ -82,21 +82,21 @@ export function checkGoals(quiet = false) {
     const next = GOALS[S.goal];
     const sid = CHAPTERS[ch].id + ':' + st;
     if (next?.ch === ch && next.st !== st && !S.stDone.includes(sid)) {
-      S.stDone.push(sid);
+      S.stDone.push(sid); bigStep = true;
       if (quiet) S.stars += 1;
-      else { const name = stagesOf(ch)[st].name; emit('stageDone', name); addStars(1, `Etapa completa: ${name}`); }
+      else { emit('stageDone', stagesOf(ch)[st].name, 1); addStars(1, null); }
     }
     // last goal of a chapter: reward
     const nextCh = GOALS[S.goal]?.ch;
     const c = CHAPTERS[ch];
     if (nextCh !== ch && !S.chDone.includes(c.id)) {
-      S.chDone.push(c.id);
+      S.chDone.push(c.id); bigStep = true;
       if (quiet) S.stars += c.reward?.stars || 0;
-      else { emit('chapterDone', c); addStars(c.reward?.stars || 0, `Capítulo ${ch + 1} completo`); }
+      else { emit('chapterDone', c); addStars(c.reward?.stars || 0, null); }
     }
   }
   if (!advanced || quiet) return;
-  emit('goalAdvanced');
+  emit('goalAdvanced', bigStep);
   if (S.goal >= GOALS.length && !S.done) { S.done = true; emit('finished'); }
 }
 on('changed', () => checkGoals());

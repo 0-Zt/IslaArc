@@ -115,12 +115,25 @@ Siguiendo las láminas de referencia (árboles, bloques, adornos):
 - Cada etapa completa da +1 ★ (la última da la recompensa del capítulo).
 - La barra de objetivo muestra el capítulo y las casillas de la etapa; al tocarla se abre la Ruta.
 
+## Pulido (v0.11.2)
+
+- **Las figuras siguen solas:** cada figura recuerda lo que estaba juntando (madera, piedra, arena o tierra). Después de una tarea suelta (construir, rellenar una parcela, plantar, recoger algo de la playa) vuelve sola a eso. Al talar busca el árbol siguiente hasta 10 casillas alrededor y avisa cuando no quedan.
+- **Flecha de objetivo:** una flecha amarilla rebota sobre lo que hay que tocar para la meta actual. Si hay que elegir una figura, primero apunta a la figura y después al árbol, roca, edificio, ruina o botella. Se esconde mientras la isla ya está haciendo el trabajo y cuando hay un panel abierto.
+- **Barra de recursos en dos líneas fijas:** materiales de la isla junto a Menú, y materiales refinados (lingote, tablas, ladrillo, vidrio) junto al diario y el reloj. Más de 999 se abrevia (1,2k).
+- **Celebraciones:** al cerrar una etapa o un capítulo, un cartel grande con el premio, sonido, confeti de arcilla y las figuras saltan con los brazos arriba.
+- **Encargos en tarjetas:** ícono grande, barra o materiales con lo que tienes, premio, y el botón para cobrar solo aparece cuando se puede. Cambiar un encargo es un botón redondo pequeño.
+- **Logros en grilla de medallas:** dos columnas con ícono, barra y tres puntos (bronce, plata, oro).
+- **Prueba de ritmo automática:** un bot jugó los capítulos 1 a 4 como un jugador atento (acertijos de 45 s cada uno). Tardó unos 21 minutos de juego: Barro 4, El claro 1,5, Las ruinas 10 (incluye esperar la noche para la llama 5) y Fuego 5,5. Una persona real debería tardar entre el doble y el triple.
+- **Hallazgo:** la madera se acumula (más de mil al final) porque nada la gasta en grande. Hace falta un sumidero de materiales: mejoras de edificios, provisiones para las expediciones o encargos más grandes.
+- **Arreglos:** el despertar de Brasa usa tiempo de juego (antes un temporizador real) y se retoma si la partida se guardó justo en ese momento; el primer cuadro ya no puede dar un paso de tiempo negativo.
+
 Ver también **docs/diseno-exploracion.md**: la visión de exploración, inventos y combates por turnos.
 
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
+- **Sumidero de materiales:** mejorar edificios (casa, horno, aserradero) con niveles, y provisiones para las expediciones.
 - **v0.12 · Prototipo de exploración:** entrada a la cueva, vista tipo GBA, un nivel, una criatura y el primer combate por turnos.
 
 ## Decisiones tomadas

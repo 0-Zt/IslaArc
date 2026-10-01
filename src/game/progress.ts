@@ -33,11 +33,11 @@ export function levelProgress() {
   const l = islandLevel(), cur = LEVELS[l - 1].stars, next = LEVELS[l]?.stars;
   return { level: l, stars: S.stars, from: cur, to: next ?? null, k: next ? (S.stars - cur) / (next - cur) : 1 };
 }
-export function addStars(n: number, why: string) {
+export function addStars(n: number, why: string | null) {
   if (n <= 0) return;
   const before = islandLevel();
   S.stars += n;
-  emit('toast', `+${n} ★ · ${why}`);
+  if (why) emit('toast', `+${n} ★ · ${why}`);   // null: the caller already shows it (stage and chapter banners)
   const after = islandLevel();
   for (let l = before + 1; l <= after; l++) emit('levelUp', l, LEVELS[l - 1]);
   emit('changed');

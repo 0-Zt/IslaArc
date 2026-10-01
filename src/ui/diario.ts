@@ -2,7 +2,7 @@ import { S } from '../game/state';
 import { CHAPTERS, GOALS, goalText, goalDone, currentChapter, stagesOf } from '../game/goals';
 import { LEVELS, ACHIEVEMENTS, TIER_NAMES, levelProgress, achProgress, boardSlots } from '../game/progress';
 import { boardOpen, progressOf, ready, claim, swap } from '../game/board';
-import { img } from './hud';
+import { img, ico } from './hud';
 import { LORE_TEXT } from '../game/beach';
 import { INV } from '../game/production';
 
@@ -76,29 +76,40 @@ function ruta() {
   return h + '</div>';
 }
 
+/* Requests as cards: a big icon, the goal, a bar or the materials, the prize. "Cobrar" only
+   appears when it can be claimed; changing a request is the small round button. */
+const REQ_ICON: Record<string, string> = { talar: 'madera', piedra: 'piedra', arena: 'arena', lingotes: 'lingote', plantar: 'semilla', adornos: 'adorno', parcelas: 'tierra', senderos: 'sendero', noche: 'noche' };
 function encargos() {
-  if (!boardOpen()) return levelCard() + '<p>Construye el <b>tablón de encargos</b> (Construir, después de la casa). Ahí llegan pedidos de la isla que dan estrellas y regalos.</p>';
-  let h = levelCard() + `<p>Cumple pedidos para ganar estrellas. Tienes ${boardSlots()} a la vez; cada nivel de isla suma más.</p>`;
+  if (!boardOpen()) return levelCard() + `<div class="rq lockcard"><div class="rqi">${ico('encargo')}</div><div class="rqb"><b>Construye el tablón de encargos</b><small>Está en Construir, después de la casa. Ahí llegan pedidos que dan estrellas y regalos.</small></div></div>`;
+  let h = levelCard() + `<div class="dsub">Encargos · ${boardSlots()} a la vez</div>`;
   S.board.list.forEach((r, i) => {
     const ok = ready(r), p = progressOf(r);
-    const cost = r.cost ? `<div class="cost">${Object.entries(r.cost).map(([k, v]) => `<span class="${(S.res as any)[k] >= (v as number) ? '' : 'no'}">${img(k as any)}${(S.res as any)[k]}/${v}</span>`).join('')}</div>` : `<div class="dbar sm"><i style="width:${Math.round(p / r.need * 100)}%"></i></div><small>${p} de ${r.need}</small>`;
-    const rew = `+${r.reward.stars} ${STAR}` + Object.entries(r.reward.res || {}).map(([k, v]) => ` · ${img(k as any)}${v}`).join('');
-    h += `<div class="row dreq${ok ? ' ok' : ''}"><div class="info"><b>${r.text}</b>${cost}<small class="drew">${rew}</small></div>`
-      + `<div class="dbtns"><button class="btn${ok ? ' main' : ''}" data-claim="${i}" ${ok ? '' : 'disabled'}>${r.kind === 'entrega' ? 'Entregar' : 'Cobrar'}</button>`
-      + `<button class="btn sm" data-swap="${i}" aria-label="Cambiar este encargo">Cambiar</button></div></div>`;
+    const icon = r.kind === 'entrega' ? Object.keys(r.cost || {})[0] : REQ_ICON[r.kind] || 'encargo';
+    const body = r.cost
+      ? `<div class="rqcost">${Object.entries(r.cost).map(([k, v]) => `<span class="${(S.res as any)[k] >= (v as number) ? 'have' : ''}">${img(k as any)}${Math.min((S.res as any)[k], v as number)}/${v}</span>`).join('')}</div>`
+      : `<div class="rqbar"><div class="dbar sm"><i style="width:${Math.round(Math.min(1, p / r.need) * 100)}%"></i></div><small>${Math.min(p, r.need)}/${r.need}</small></div>`;
+    const prize = `<span class="rqp">+${r.reward.stars}${STAR}${Object.entries(r.reward.res || {}).map(([k, v]) => ` ${img(k as any)}${v}`).join('')}</span>`;
+    h += `<div class="rq${ok ? ' ok' : ''}"><div class="rqi">${ico(icon)}</div><div class="rqb"><b>${r.text}</b>${body}</div>`
+      + `<div class="rqa">${ok ? `<button class="btn main sm" data-claim="${i}">${r.kind === 'entrega' ? 'Entregar' : 'Cobrar'}</button>` : prize}`
+      + `<button class="rqswap" data-swap="${i}" aria-label="Cambiar este encargo" title="Cambiar"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M13 5.5A5.5 5.5 0 0 0 3 4M3 10.5A5.5 5.5 0 0 0 13 12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M2 1.5v3h3M14 14.5v-3h-3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button></div>`
+      + (ok ? `<div class="rqok">${prize}</div>` : '') + '</div>';
   });
   return h;
 }
 
+/* Achievements as a grid of medals: icon, name, bar, and three dots for bronze, silver, gold. */
+const ACH_ICON: Record<string, string> = { talador: 'madera', cantero: 'piedra', arenero: 'arena', fundidor: 'lingote', jardinero: 'semilla', arquitecto: 'obra', decorador: 'adorno', tierra: 'tierra', caminante: 'sendero', noctambulo: 'noche', vecino: 'encargo', playero: 'caja', lector: 'botella', inventor: 'invento' };
 function logros() {
-  let h = levelCard();
-  for (const a of ACHIEVEMENTS) {
-    const p = achProgress(a), k = p.next ? (p.value - p.prev) / (p.next - p.prev) : 1;
-    h += `<div class="row dach"><div class="dmedal" style="background:${MEDAL[p.tier]}">${p.tier ? '★' : '·'}</div><div class="info"><b>${a.name}</b>`
-      + `<small>${a.desc}: ${p.value}${p.next ? ` / ${p.next}` : ' · completo'}${p.tier ? ` · ${TIER_NAMES[p.tier - 1]}` : ''}</small>`
-      + `<div class="dbar sm"><i style="width:${Math.round(Math.min(1, k) * 100)}%"></i></div></div></div>`;
+  const list = ACHIEVEMENTS.map(a => ({ a, p: achProgress(a) }));
+  const medals = list.reduce((n, q) => n + q.p.tier, 0), max = list.length * 3;
+  let h = levelCard() + `<div class="dsub">Medallas · ${medals} de ${max}</div><div class="achg">`;
+  for (const { a, p } of list) {
+    const k = p.next ? (p.value - p.prev) / (p.next - p.prev) : 1;
+    const dots = [0, 1, 2].map(t => `<i class="${t < p.tier ? 't' + (t + 1) : ''}"></i>`).join('');
+    h += `<div class="ach t${p.tier}${p.next ? '' : ' full'}"><div class="achi">${ico(ACH_ICON[a.id] || 'encargo')}</div><div class="achb"><b>${a.name}</b><small>${a.desc}</small>`
+      + `<div class="dbar sm"><i style="width:${Math.round(Math.min(1, k) * 100)}%"></i></div><div class="achn"><span>${p.value}${p.next ? `/${p.next}` : ''}</span><span class="tdots" aria-label="${p.tier ? TIER_NAMES[p.tier - 1] : 'sin medalla'}">${dots}</span></div></div></div>`;
   }
-  return h;
+  return h + '</div>';
 }
 
 const TEAM = [

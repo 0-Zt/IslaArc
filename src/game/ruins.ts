@@ -210,18 +210,22 @@ export function lightFlame(k: number) {
   puff(t.wx, topY(t) + 0.8, t.wz, '#ffb040', 18, 2.4, 1.4);
   emit('toast', `${BRAZIERS[k].name}: ¡encendida! (${litCount()}/5)`);
   emit('flameLit', k); emit('changed');
-  if (S.ruins.lit.every(Boolean)) setTimeout(startFinale, 1800);
+  if (S.ruins.lit.every(Boolean)) finaleIn = 1.8;   // a breath, then the awakening (game time)
 }
 export const litCount = () => S.ruins.lit.filter(Boolean).length;
 
 /* ---------- the awakening ---------- */
 let finale: { t: number } | null = null;
+let finaleIn = -1;
 function startFinale() { if (S.ruins.awake || finale) return; finale = { t: 0 }; emit('finaleStart', center); }
 export const finaleRunning = () => !!finale;
 
 let fireAcc = 0;
 export function tickRuins(dt: number) {
   if (!center) return;
+  // all five lit but asleep (also after loading a game saved in that moment): wake up after a breath
+  if (finaleIn < 0 && !finale && !S.ruins.awake && S.ruins.lit.every(Boolean)) finaleIn = 1.8;
+  if (finaleIn >= 0) { finaleIn -= dt; if (finaleIn < 0) startFinale(); }
   fireAcc += dt;
   const now = performance.now();
   // braziers: fire and embers when lit, cold teal accents when not
@@ -271,7 +275,7 @@ export const brasaSpot = () => center;
 export function clearRuins() {
   for (const o of props) worldGroup.remove(o);
   props = []; ruinProps.clear(); walls = null; ring = null; statue = null; statueMat = null; statueGlow = []; statueFlame = null;
-  borderRunes = null; archRunes = null; channels = []; finale = null;
+  borderRunes = null; archRunes = null; channels = []; finale = null; finaleIn = -1;
 }
 
 /** Is there a walking path from the island to the islet? Checked when the island grows. */
