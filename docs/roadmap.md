@@ -127,14 +127,14 @@ Siguiendo las láminas de referencia (árboles, bloques, adornos):
 - **Hallazgo:** la madera se acumula (más de mil al final) porque nada la gasta en grande. Hace falta un sumidero de materiales: mejoras de edificios, provisiones para las expediciones o encargos más grandes.
 - **Arreglos:** el despertar de Brasa usa tiempo de juego (antes un temporizador real) y se retoma si la partida se guardó justo en ese momento; el primer cuadro ya no puede dar un paso de tiempo negativo.
 
-Ver también **docs/diseno-exploracion.md**: la visión de exploración, inventos y combates por turnos.
+Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates por turnos) y **docs/economia.md** (plan de economía: topes, mejoras, cadenas por era, sumideros y ritmo objetivo).
 
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **Sumidero de materiales:** mejorar edificios (casa, horno, aserradero) con niveles, y provisiones para las expediciones.
-- **v0.12 · Prototipo de exploración:** entrada a la cueva, vista tipo GBA, un nivel, una criatura y el primer combate por turnos.
+- **v0.12 · Economía, parte 1:** almacén y topes, mejoras de nivel 2, carbón, parcelas con costo creciente, nuevo balance y el bot con gráfico (ver docs/economia.md).
+- **v0.13 · Prototipo de exploración:** entrada a la cueva, vista tipo GBA, un nivel, una criatura y el primer combate por turnos.
 
 ## Decisiones tomadas
 
