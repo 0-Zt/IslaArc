@@ -69,6 +69,28 @@ Idea de Simon: el mar se recorre como las rutas de agua de Pokémon, sobre una c
 - **Mejoras que abren el mar por capas:** balsa (aguas tranquilas) → velero (más rápido, aguas abiertas) → objeto de calma (oleaje) → timón reforzado (remolinos) → buceo o campana de vidrio (zonas bajo el agua, más adelante).
 - **Qué hay al llegar:** islas con materiales propios, cofres flotantes, botellas con historia, figuras nuevas y encuentros en el agua (criaturas marinas para combates por turnos, como en el pasto alto).
 
+## Pescar (idea de Simon, octubre 2026)
+
+Las figuras son de arcilla: no pescan peces, **sacan objetos del mar** que no se consiguen de otra forma.
+
+- **Dónde:** primero desde un **muelle** en la costa; después desde la **balsa**. Burbujas o remolinos chicos en el agua marcan los puntos de pesca.
+- **Cómo:** una figura lanza un gancho y espera. Cuando el corcho se hunde hay que tocar a tiempo (un minijuego corto de una barra, más simple que Stardew Valley).
+- **Qué sale**, según la profundidad:
+  - **Orilla (muelle):** algas (cuerda y abono), conchas (cal para mortero), botellas, fragmentos de vasija con historia.
+  - **Aguas medias (balsa):** engranajes oxidados, llaves, piezas de la balsa y del velero (planos), perlas de arcilla.
+  - **Zona profunda (agua más oscura):** cofres hundidos, reliquias de los Alfareros, cobre antes de tener la cueva.
+- **Mejoras:** gancho de madera → anzuelo de metal → red → imán, cada uno abre una profundidad.
+- **Carnada:** lombrices (salen al cavar tierra) o semillas, así las semillas que sobran tienen un destino.
+- **Colección del mar:** una página del Diario con siluetas de todo lo que se puede pescar, que se van revelando. Completar filas da estrellas.
+- **Zonas profundas:** se ven en el mar como manchas de agua más oscura. Ahí está lo raro, y algunas solo se alcanzan después de calmar el oleaje (ver "Navegar el mar").
+
+## Marco de avance: que se note el progreso
+
+- **La isla cambia por era:** cada capítulo deja algo grande a la vista (muelle, faro, molino), así una captura de pantalla dice en qué etapa vas.
+- **Cartel de capítulo** al entrar en uno nuevo, con título y lo que se desbloquea.
+- **Colecciones** que se llenan con siluetas: mar, cueva, mensajes y reliquias.
+- **Mapa del mundo** con la isla al centro y las zonas que se van descubriendo.
+
 ## Combates por turnos
 
 Simples y tácticos, pensados para el celular.
@@ -95,11 +117,12 @@ Simples y tácticos, pensados para el celular.
 
 1. **v0.11 · Fuego, parte 1:** Taller de inventos (primera era), aserradero, ladrillos y vidrio, habilidades de cada figura en la isla, cajas y botellas que llegan a la playa.
 2. **v0.12 · Economía, parte 1** (ver docs/economia.md): almacén y topes, mejoras de edificios, carbón.
-3. **v0.13 · Prototipo de exploración:** entrada a la cueva, modo exploración con movimiento por cuadrícula, un nivel, puntos de recolección, una criatura y el primer combate por turnos.
-4. **v0.14 · Economía, parte 2:** barco de trueques, figuras asignadas a edificios, mejoras de nivel 3.
-5. **v0.15 · Cueva completa:** tres niveles, provisiones y el Gólem de magma.
-6. **v0.16 · Mar adentro:** balsa, mapa del mar por cuadrícula con oleaje que bloquea zonas, la primera isla nueva. Más adelante, el objeto que calma las olas y los remolinos que llevan a zonas secretas.
-7. **Después:** Ciudad de los Alfareros, el Espectro y el Faro.
+3. **v0.13 · Pesca:** muelle, gancho, minijuego, objetos que solo salen del mar, carnada y la Colección del mar en el Diario.
+4. **v0.14 · La balsa:** navegar alrededor de la isla, zonas profundas más oscuras con objetos raros, oleaje que bloquea partes del mar.
+5. **v0.15 · Prototipo de cueva:** modo exploración tipo GBA, un nivel, una criatura y el primer combate por turnos.
+6. **v0.16 · Economía, parte 2:** barco de trueques, figuras asignadas a edificios, mejoras de nivel 3.
+7. **v0.17 · Cueva completa** con el Gólem de magma, y **v0.18 · Mar adentro** con la primera isla nueva, el objeto que calma las olas y los remolinos.
+8. **Después:** Ciudad de los Alfareros, el Espectro y el Faro.
 
 ## Enfoque técnico
 

@@ -148,7 +148,7 @@ Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates p
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **v0.13 · Prototipo de exploración:** entrada a la cueva, vista tipo GBA, un nivel, una criatura y el primer combate por turnos.
+- **v0.13 · Pesca** y **v0.14 · La balsa** (ver docs/diseno-exploracion.md), después la cueva con el primer combate por turnos.
 
 ## Decisiones tomadas
 
