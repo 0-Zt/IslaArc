@@ -163,5 +163,16 @@
       25,
       80
     ]
+  },
+  {
+    "id": "navegante",
+    "name": "Navegante",
+    "desc": "Cosas sacadas del agua oscura",
+    "stat": "hondos",
+    "tiers": [
+      3,
+      12,
+      30
+    ]
   }
 ]

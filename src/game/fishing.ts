@@ -13,6 +13,7 @@ import { puff } from '../world/particles';
 import { sfx } from '../audio/sfx';
 import { LORE_TEXT } from './beach';
 import { XICON } from '../ui/hud';
+import { deepAt, surgeAt, outOfSea } from '../world/sea';
 
 /* Fishing from the pier. Clay figures do not catch fish: the sea gives back things.
    Like Animal Crossing, shadows move in the water and their size hints at what they are;
@@ -39,8 +40,18 @@ const facing = (b: Building) => new THREE.Vector3(Math.sin(b.rot * Math.PI / 2),
 /** Where the line leaves from (end of the pier), and where the fisher stands. */
 export function pierTip(b: Building, along = 1.3) { const f = facing(b); return b.group.position.clone().add(f.multiplyScalar(along)).setY(b.group.position.y + 0.06); }
 
+/* Where someone fishes from: the end of the pier, or the raft out at sea. `stand` is where the
+   fisher stands and `dir` where they face; the line leaves a little ahead of `stand`. */
+export interface Spot { stand: THREE.Vector3; dir: THREE.Vector3; raft: boolean }
+const pierSpot = (b: Building): Spot => ({ stand: pierTip(b, 1.05), dir: facing(b), raft: false });
+const ahead = (sp: Spot, d: number) => sp.stand.clone().addScaledVector(sp.dir, d);
+let raftSpot: () => Spot | null = () => null;
+/** The raft module tells where the raft is while it is out at sea. */
+export function setRaftSpot(f: () => Spot | null) { raftSpot = f; }
+const anchor = (): Spot | null => raftSpot() || (pier() ? pierSpot(pier()!) : null);
+
 /* ---------- shadows in the water ---------- */
-interface Shadow { x: number; z: number; size: Size; mesh: THREE.Mesh; tx: number; tz: number; retarget: number; life: number; age: number; mode: 'wander' | 'approach' | 'flee'; special: boolean; spark: number }
+interface Shadow { x: number; z: number; size: Size; deep: boolean; mesh: THREE.Mesh; tx: number; tz: number; retarget: number; life: number; age: number; mode: 'wander' | 'approach' | 'flee'; special: boolean; spark: number }
 export const shadows: Shadow[] = [];
 const shTex = new THREE.CanvasTexture(makeCanvas(64, 96, x => {
   const g = x.createRadialGradient(32, 52, 4, 32, 52, 34);
@@ -52,41 +63,45 @@ const shGeo = new THREE.PlaneGeometry(1, 1.5); shGeo.rotateX(-Math.PI / 2);
 const SCALE: Record<Size, number> = { s: 0.42, m: 0.66, l: 0.95 };
 let spawnIn = 4;
 
-const isWater = (x: number, z: number) => !tileUnder(x, z) && Math.abs(x) < 25 && Math.abs(z) < 25;
+const isWater = (x: number, z: number) => !tileUnder(x, z) && !outOfSea(x, z) && !surgeAt(x, z);
 const openWater = (x: number, z: number, r: number) => isWater(x, z) && isWater(x + r, z) && isWater(x - r, z) && isWater(x, z + r) && isWater(x, z - r);
 
 function addShadow(x: number, z: number, size: Size, special = false) {
-  const mat = new THREE.MeshBasicMaterial({ map: shTex, color: special ? '#3a2a08' : '#0a1a30', transparent: true, opacity: 0, depthWrite: false });
-  const m = new THREE.Mesh(shGeo, mat); m.scale.setScalar(SCALE[size]); m.renderOrder = 3; m.position.set(x, WATER_Y + 0.012, z);
+  const deep = !special && !!deepAt(x, z);
+  const mat = new THREE.MeshBasicMaterial({ map: shTex, color: special ? '#3a2a08' : deep ? '#01060f' : '#0a1a30', transparent: true, opacity: 0, depthWrite: false });
+  const m = new THREE.Mesh(shGeo, mat); m.scale.setScalar(SCALE[size] * (deep ? 1.15 : 1)); m.renderOrder = 3; m.position.set(x, WATER_Y + 0.012, z);
   scene.add(m);
-  const s: Shadow = { x, z, size, mesh: m, tx: x, tz: z, retarget: 0, life: special ? 1e9 : 55 + Math.random() * 35, age: 0, mode: 'wander', special, spark: 0 };
+  const s: Shadow = { x, z, size, deep, mesh: m, tx: x, tz: z, retarget: 0, life: special ? 1e9 : 55 + Math.random() * 35, age: 0, mode: 'wander', special, spark: 0 };
   shadows.push(s); return s;
 }
 function removeShadow(s: Shadow) { scene.remove(s.mesh); (s.mesh.material as THREE.Material).dispose(); shadows.splice(shadows.indexOf(s), 1); }
-function rollSize(bait = false): Size { const r = Math.random(); return bait ? (r < 0.45 ? 's' : r < 0.85 ? 'm' : 'l') : (r < 0.62 ? 's' : r < 0.91 ? 'm' : 'l'); }
-/** A spot of open water in front of the pier, `near` an optional point. */
-function spotNear(b: Building, near?: THREE.Vector3) {
-  const tip = pierTip(b), f = facing(b);
+function rollSize(bait = false, deep = false): Size { const r = Math.random(); return deep ? (r < 0.55 ? 'm' : 'l') : bait ? (r < 0.45 ? 's' : r < 0.85 ? 'm' : 'l') : (r < 0.62 ? 's' : r < 0.91 ? 'm' : 'l'); }
+/** A spot of open water in front of where the fisher is (all around, on the raft), `near` an optional point. */
+function spotNear(sp: Spot, near?: THREE.Vector3) {
+  const tip = ahead(sp, 0.25), f = sp.dir;
   for (let k = 0; k < 24; k++) {
     let x: number, z: number;
     if (near) { const a = Math.random() * Math.PI * 2, d = 0.6 + Math.random() * 1.2; x = near.x + Math.cos(a) * d; z = near.z + Math.sin(a) * d; }
-    else { const a = Math.atan2(f.x, f.z) + (Math.random() - 0.5) * 2.6, d = 1.6 + Math.random() * 3.2; x = tip.x + Math.sin(a) * d; z = tip.z + Math.cos(a) * d; }
+    else { const a = sp.raft ? Math.random() * Math.PI * 2 : Math.atan2(f.x, f.z) + (Math.random() - 0.5) * 2.6, d = (sp.raft ? 1.3 : 1.6) + Math.random() * 3.2; x = tip.x + Math.sin(a) * d; z = tip.z + Math.cos(a) * d; }
     if (openWater(x, z, 0.4)) return [x, z] as const;
   }
   return null;
 }
 function tickShadows(dt: number, T: number) {
-  const b = pier();
-  if (!b) { while (shadows.length) removeShadow(shadows[0]); return; }
-  // the chest that Marea left: it waits, shining, until someone pulls it out
-  if (S.fish.llave && !S.fish.cofre && !shadows.some(s => s.special)) { const p = spotNear(b); if (p) addShadow(p[0], p[1], 'l', true); }
+  const sp = anchor(), b = pier();
+  if (!sp) { while (shadows.length) removeShadow(shadows[0]); return; }
+  // the chest that Marea left: it waits by the pier, shining, until someone pulls it out
+  if (b && S.fish.llave && !S.fish.cofre && !shadows.some(s => s.special)) { const p = spotNear(pierSpot(b)); if (p) addShadow(p[0], p[1], 'l', true); }
   spawnIn -= dt;
   if (spawnIn <= 0) {
-    spawnIn = 7 + Math.random() * 7;
-    if (shadows.filter(s => !s.special).length < 3) { const p = spotNear(b); if (p) addShadow(p[0], p[1], rollSize()); }
+    spawnIn = (sp.raft ? 5 : 7) + Math.random() * 7;
+    const near = shadows.filter(s => !s.special && s.mode !== 'flee' && Math.hypot(s.x - sp.stand.x, s.z - sp.stand.z) < 7).length;
+    if (near < 3) { const p = spotNear(sp); if (p) addShadow(p[0], p[1], rollSize(false, !!deepAt(p[0], p[1]))); }
   }
   for (const s of [...shadows]) {
     s.age += dt;
+    // shadows left far behind by the raft fade away
+    if (!s.special && s.mode === 'wander' && ses?.target !== s && Math.hypot(s.x - sp.stand.x, s.z - sp.stand.z) > 9 && s.life > s.age + 3) s.life = s.age + 3;
     const mat = s.mesh.material as THREE.MeshBasicMaterial;
     const fadeIn = Math.min(1, s.age / 2), fadeOut = s.mode === 'flee' ? Math.max(0, 1 - (s.age - s.life) / 1.2) : Math.min(1, Math.max(0, (s.life - s.age) / 3));
     mat.opacity = (s.special ? 0.6 : 0.42) * fadeIn * fadeOut;
@@ -139,7 +154,7 @@ function drawLine(c: Crew) {
 /* ---------- the session at the pier ---------- */
 type St = 'walking' | 'ready' | 'casting' | 'wait' | 'approach' | 'nibble' | 'bite' | 'pull' | 'card';
 interface Session {
-  c: Crew; b: Building; st: St; t: number;
+  c: Crew; b: Building | null; sp: () => Spot; onEnd: (() => void) | null; st: St; t: number;
   from: THREE.Vector3; to: THREE.Vector3; target: Shadow | null;
   nibbles: number; next: number; dip: number; look: number;
   item: string | null; story: string[]; cam: { target: THREE.Vector3; zoom: number; off: THREE.Vector3 } | null;
@@ -158,7 +173,7 @@ export function startFishing(b: Building): string | null {
   const who = sel || [...crew].sort((p, q) => (p.job ? 1 : 0) - (q.job ? 1 : 0) || p.root.position.distanceTo(tip) - q.root.position.distanceTo(tip))[0];
   if (!who) return 'No hay nadie para pescar';
   // the session exists before the order: a figure already next to the pier arrives at once
-  ses = { c: who, b, st: 'walking', t: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), target: null, nibbles: 0, next: 0, dip: 0, look: 0, item: null, story: [], cam: { target: controls.target.clone(), zoom: camera.zoom, off: cameraOffset() } };
+  ses = { c: who, b, sp: () => pierSpot(b), onEnd: null, st: 'walking', t: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), target: null, nibbles: 0, next: 0, dip: 0, look: 0, item: null, story: [], cam: { target: controls.target.clone(), zoom: camera.zoom, off: cameraOffset() } };
   const r = order(who, b.tiles[0], 'pescar');
   if (r !== true) { ses = null; return r; }
   select(null);
@@ -166,23 +181,31 @@ export function startFishing(b: Building): string | null {
   emit('fishMode', true); bar();
   return null;
 }
+/** Fishing from the raft: the figure is already on board; `onEnd` hands control back to sailing. */
+export function startSpotFishing(c: Crew, sp: () => Spot, onEnd: () => void) {
+  if (ses) return;
+  ses = { c, b: null, sp, onEnd, st: 'ready', t: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), target: null, nibbles: 0, next: 0, dip: 0, look: 0, item: null, story: [], cam: null };
+  setTool(c); emit('fishMode', true); bar();
+}
+function setTool(c: Crew) { c.anim = 'fish'; c.holding = 'rod'; }
 /** Looks out to sea from behind the fisher, at the usual isometric height. */
 function focus() {
   if (!ses) return;
-  const f = facing(ses.b), side = new THREE.Vector3(-f.z, 0, f.x), off = cameraOffset();
+  const sp = ses.sp(), f = sp.dir, side = new THREE.Vector3(-f.z, 0, f.x), off = cameraOffset();
   const h = off.y, flat = Math.hypot(off.x, off.z);
   const dir = f.clone().multiplyScalar(-Math.SQRT1_2).addScaledVector(side, Math.SQRT1_2).multiplyScalar(flat).setY(h);
-  flyTo(pierTip(ses.b, 2.4).setY(0.3), Math.max(camera.zoom, innerWidth < innerHeight ? 1.25 : 1.6), dir);
+  flyTo(ahead(sp, 1.35).setY(0.3), Math.max(camera.zoom, innerWidth < innerHeight ? 1.25 : 1.6), dir);
 }
 
 export function stopFishing() {
   if (!ses) return;
   const s = ses; ses = null;
-  bobber.visible = line.visible = bang.visible = false; hidePull(); hideCard();
+  bobber.visible = line.visible = bang.visible = false; hidePull(); hideCard(); bar();
   if (s.target && s.target.mode === 'approach') s.target.mode = 'wander';
   const c = s.c; c.swing = 0;
+  if (s.onEnd) { s.onEnd(); emit('fishMode', false); emit('changed'); return; }   // back to sailing
   // step back onto the island, next to the pier
-  const t0 = s.b.tiles[0];
+  const t0 = s.b!.tiles[0];
   const back = DIRS.map(([a, b]) => tileAt(t0.i + a, t0.j + b)).find(t => t && walkable(t));
   if (back) c.root.position.set(back.wx + c.off, topY(back), back.wz + c.offz);
   if (c.job?.kind === 'pescar') finishTask(c);
@@ -192,8 +215,8 @@ export function stopFishing() {
 
 on('fishArrive', (c: Crew) => {
   if (!ses || ses.c !== c) return;
-  const f = facing(ses.b);
-  c.root.position.copy(pierTip(ses.b, 1.05)); c.dir = Math.atan2(f.x, f.z);
+  const sp = ses.sp();
+  c.root.position.copy(sp.stand); c.dir = Math.atan2(sp.dir.x, sp.dir.z); c.holding = 'rod';
   ses.st = 'ready'; bar();
 });
 
@@ -201,11 +224,11 @@ on('fishArrive', (c: Crew) => {
 export function useBait() {
   if (!ses || ses.st === 'walking') return;
   if (S.res.semilla < 1) { emit('toast', 'No quedan semillas para usar de carnada'); return; }
-  const near = bobber.visible ? bobber.position.clone() : pierTip(ses.b, 2.6);
-  const p = spotNear(ses.b, near); if (!p) { emit('toast', 'Ahí no hay agua abierta'); return; }
+  const sp = ses.sp(), near = bobber.visible ? bobber.position.clone() : ahead(sp, 1.6);
+  const p = spotNear(sp, near); if (!p) { emit('toast', 'Ahí no hay agua abierta'); return; }
   pay({ semilla: 1 } as any);
   puff(near.x, WATER_Y + 0.05, near.z, '#c8a060', 8, 1.2, 1);
-  addShadow(p[0], p[1], rollSize(true));
+  addShadow(p[0], p[1], rollSize(true, !!deepAt(p[0], p[1])));
   emit('toast', 'Tiras unas semillas al agua… algo se acerca'); bar();
 }
 
@@ -219,8 +242,9 @@ export function fishTap(ray: THREE.Raycaster): boolean {
     case 'casting': case 'pull': return true;
     case 'ready': {
       const p = new THREE.Vector3(); if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -WATER_Y), p)) return true;
-      const tip = pierTip(s.b), f = facing(s.b), d = p.clone().sub(tip).setY(0);
-      if (!isWater(p.x, p.z) || d.length() < 0.7 || d.length() > 5.5 || d.normalize().dot(f) < 0.15) { emit('toast', 'Lanza al agua, frente al muelle'); return true; }
+      const sp = s.sp(), tip = ahead(sp, 0.25), d = p.clone().sub(tip).setY(0);
+      if (!isWater(p.x, p.z) || d.length() < 0.7 || d.length() > 5.5 || (!sp.raft && d.normalize().dot(sp.dir) < 0.15)) { emit('toast', sp.raft ? 'Lanza al agua, un poco más lejos' : 'Lanza al agua, frente al muelle'); return true; }
+      if (sp.raft) { const v = p.clone().sub(sp.stand); s.c.dir = Math.atan2(v.x, v.z); }
       cast(p); return true;
     }
     case 'wait': case 'approach': reel(); return true;
@@ -238,6 +262,11 @@ function reel() { const s = ses!; if (s.target && s.target.mode === 'approach') 
 /** What comes out of a shadow of this size, now. */
 function roll(sh: Shadow): string {
   if (sh.special) return 'cofre';
+  if (sh.deep) {
+    // Marea's compass is the first medium thing out of the dark water; her ship's wheel the first big one after it
+    if (sh.size === 'm' && !S.fish.brujula) return 'brujula';
+    if (sh.size === 'l' && S.fish.brujula && !S.fish.timon) return 'timon';
+  }
   // story beats never depend on luck: the key is the first medium catch once the vase is whole,
   // and a vase piece comes at the latest every 5th small catch
   if (sh.size === 'm' && !S.fish.llave && (S.fish.vasija || 0) >= 4 && S.tools.anzuelo) return 'llave';
@@ -247,7 +276,7 @@ function roll(sh: Shadow): string {
   }
   const night = isNight();
   const ok = Object.entries(ITEMS).filter(([id, it]) => {
-    if (it.size !== sh.size || it.tier === 'profunda' || it.w <= 0) return false;
+    if (it.size !== sh.size || (it.tier === 'profunda') !== sh.deep || it.w <= 0) return false;
     if (it.time === 'noche' && !night) return false;
     if (it.time === 'dia' && night) return false;
     if (it.once && S.fish[id]) return false;
@@ -257,7 +286,7 @@ function roll(sh: Shadow): string {
     if (it.lore && S.lore.length >= LORE_TEXT.length) return false;
     return true;
   });
-  if (!ok.length) return sh.size === 's' ? 'alga' : sh.size === 'm' ? 'engranaje' : 'ancla';
+  if (!ok.length) return sh.deep ? (sh.size === 'm' ? 'cobre' : 'hundido') : sh.size === 's' ? 'alga' : sh.size === 'm' ? 'engranaje' : 'ancla';
   let r = Math.random() * ok.reduce((a, [, it]) => a + it.w, 0);
   for (const [id, it] of ok) { r -= it.w; if (r <= 0) { if (id === 'vasija') S.stats.sinPieza = 0; return id; } }
   return ok[0][0];
@@ -284,7 +313,7 @@ function land() {
 }
 function reward(id: string) {
   const it = ITEMS[id], first = !S.fish[id];
-  S.fish[id] = (S.fish[id] || 0) + 1; bump('pescados');
+  S.fish[id] = (S.fish[id] || 0) + 1; bump('pescados'); if (it.tier === 'profunda') bump('hondos');
   const at = ses!.c.root.position.clone().setY(ses!.c.root.position.y + 1.1);
   const lines: string[] = [];
   for (const [k, v] of Object.entries(it.gives || {})) { gain(k as ResKey, v as number, at); lines.push(`+${v} ${k === 'algas' ? 'algas' : k}`); }
@@ -295,10 +324,10 @@ function reward(id: string) {
   if (it.story) ses!.story.push(it.story);
   if (id === 'cofre') S.flags.planoBalsa = true;
   // finishing a row of the collection
-  for (const [tier, flag, stars] of [['orilla', 'colOrilla', 3], ['media', 'colMedia', 5]] as const) {
+  for (const [tier, flag, stars] of [['orilla', 'colOrilla', 3], ['media', 'colMedia', 5], ['profunda', 'colHondo', 8]] as const) {
     if (S.flags[flag]) continue;
     const ids = Object.entries(ITEMS).filter(([, q]) => q.tier === tier).map(([k]) => k);
-    if (ids.every(k => S.fish[k])) { S.flags[flag] = true; addStars(stars, null); lines.push(`Fila de ${tier === 'orilla' ? 'la orilla' : 'aguas medias'} completa: +${stars} ★`); }
+    if (ids.every(k => S.fish[k])) { S.flags[flag] = true; addStars(stars, null); lines.push(`Fila de ${tier === 'orilla' ? 'la orilla' : tier === 'media' ? 'aguas medias' : 'agua oscura'} completa: +${stars} ★`); }
   }
   emit('fishCaught', id); emit('changed');
   return { first, lines, extra };
@@ -326,7 +355,7 @@ function tickPull(dt: number) {
   const inside = pull.fish >= pull.zone && pull.fish <= pull.zone + ZONE;
   pull.prog += (inside ? 0.3 : -0.22) * dt;
   ses.c.swing = inside ? -0.6 + Math.sin(performance.now() / 90) * 0.15 : -0.2;
-  if (ses.target) { const tip = pierTip(ses.b); ses.target.x += (tip.x - ses.target.x) * dt * (inside ? 0.15 : -0.05); ses.target.z += (tip.z - ses.target.z) * dt * (inside ? 0.15 : -0.05); bobber.position.set(ses.target.x, WATER_Y - 0.06, ses.target.z); }
+  if (ses.target) { const tip = ahead(ses.sp(), 0.25); ses.target.x += (tip.x - ses.target.x) * dt * (inside ? 0.15 : -0.05); ses.target.z += (tip.z - ses.target.z) * dt * (inside ? 0.15 : -0.05); bobber.position.set(ses.target.x, WATER_Y - 0.06, ses.target.z); }
   const e = document.getElementById('fishPull');
   if (e) {
     (e.querySelector('.pz') as HTMLElement).style.left = `${pull.zone * 100}%`;
@@ -346,9 +375,10 @@ export function tickFishing(dt: number, T: number) {
   tickShadows(dt, T);
   if (!ses) return;
   const s = ses, c = s.c;
-  if (s.st !== 'walking' && c.job?.kind !== 'pescar') { stopFishing(); return; }
-  if (s.st === 'walking') { if (c.job?.kind !== 'pescar') { ses = null; emit('fishMode', false); } return; }
-  c.root.position.copy(pierTip(s.b, 1.05));
+  const sp = s.sp(), busy = c.job?.kind === 'pescar' || (sp.raft && c.job?.kind === 'navegar');
+  if (s.st !== 'walking' && !busy) { stopFishing(); return; }
+  if (s.st === 'walking') { if (!busy) { ses = null; emit('fishMode', false); } return; }
+  c.root.position.copy(sp.stand);
   if (c.swing) c.swing *= Math.pow(0.02, dt);   // the arm settles back
   if (Math.abs(c.swing || 0) < 0.01) c.swing = 0;
   const auto = (globalThis as any).__fishAuto;
@@ -451,10 +481,10 @@ function closeCard() {
 /* ---------- for the pointer arrow and the bot ---------- */
 export function bestShadow(size?: Size) {
   if (!shadows.length) return null;
-  const b = pier(); if (!b) return null;
-  const tip = pierTip(b);
-  const sp = shadows.find(s => s.special); if (sp) return sp;
-  return [...shadows].filter(s => s.mode === 'wander' && (!size || s.size === size)).sort((a, c) => Math.hypot(a.x - tip.x, a.z - tip.z) - Math.hypot(c.x - tip.x, c.z - tip.z))[0] || null;
+  const a = anchor(); if (!a) return null;
+  const tip = ahead(a, 0.25);
+  const sp = shadows.find(s => s.special && !a.raft); if (sp) return sp;
+  return [...shadows].filter(s => s.mode === 'wander' && (!size || s.size === size) && Math.hypot(s.x - tip.x, s.z - tip.z) < 6).sort((a, c) => Math.hypot(a.x - tip.x, a.z - tip.z) - Math.hypot(c.x - tip.x, c.z - tip.z))[0] || null;
 }
 /** Debug: cast at a point (bot and tests). */
 export function castAt(x: number, z: number) { if (ses && ses.st === 'ready') cast(new THREE.Vector3(x, WATER_Y, z)); }

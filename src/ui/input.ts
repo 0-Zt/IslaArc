@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { fishingActive, fishTap, startFishing } from '../game/fishing';
+import { sailingActive, sailTap } from '../game/raft';
 import { on, emit } from '../core/events';
 import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
 import { tileProxies, topY, tileAt as tileAtIJ, type Tile } from '../world/island';
 import { pickTree } from '../world/trees';
 import { rocks } from '../world/rocks';
-import { crew, selected, select, order, tileOf, nextSite, assignIdleBuilder, type JobKind } from '../game/crew';
-import { buildings, place, movePlace, rotatePlace, cancelPlace, confirmPlace, isDone, buildingDef } from '../game/buildings';
+import { crew, selected, select, order, tileOf, nextSite, assignIdleBuilder, bfs, type JobKind } from '../game/crew';
+import { buildings, place, movePlace, rotatePlace, cancelPlace, confirmPlace, isDone, buildingDef, footprint } from '../game/buildings';
 import { ancients, mound } from '../game/grove';
 import { stumps, sproutMeshes, growing, growthProgress } from '../game/forest';
 import { marks, markMode, toggleMark, exitMarkMode, nearestMark, type MarkKind } from '../game/marks';
@@ -79,6 +80,7 @@ export function onTap(x: number, y: number) {
   aim(x, y);
   // at the pier every tap is about the line: cast, wait, strike
   if (fishingActive()) { if (sheetOpen()) { closeSheet(); return; } fishTap(ray); return; }
+  if (sailingActive()) { if (sheetOpen()) { closeSheet(); return; } sailTap(ray); return; }
   if (place) { const g = ray.intersectObjects(tileProxies, false)[0]; if (g) movePlace(g.object.userData.tile); return; }
   if (expandMode) {
     // tapping a plot that is only marked takes it back (materials are returned)
@@ -126,7 +128,7 @@ export function onTap(x: number, y: number) {
       else toast(`${b.up ? `Mejora de ${buildingDef(b.type).name.toLowerCase()}` : buildingDef(b.type).name} en obra: ${Math.round(b.work / b.need * 100)}%. Toca una figura y luego la obra.`);
       return;
     }
-    if (b.type === 'muelle') { const r = startFishing(b); if (r) toast(r); return; }
+    if (b.type === 'muelle') { select(null); if (S.flags.planoBalsa) openSheet('muelle' as any, b); else { const r = startFishing(b); if (r) toast(r); } return; }
     if (b.type === 'horno' && c0 && c0.id === 'brasa') { const r = order(c0, b.tiles[0], 'avivar'); if (r !== true) toast(r); else { select(null); toast('Brasa va a avivar el fuego del horno'); } return; }
     if (b.type === 'casa') { select(null); openSheet('casa', b); }
     if (b.type === 'horno' || b.type === 'aserradero') { select(null); openSheet('prod', b); }
@@ -182,6 +184,13 @@ export function initInput() {
   $('pCancel').addEventListener('click', () => cancelPlace());
   $('pRot').addEventListener('click', () => rotatePlace());
   $('pOk').addEventListener('click', () => {
+    // a site nobody can walk up to would stay a scaffold forever
+    if (place) {
+      const fp = footprint(place.type, place.i, place.j, place.rot).filter(Boolean) as Tile[];
+      const near = (t: Tile) => fp.some(q => Math.abs(q.i - t.i) + Math.abs(q.j - t.j) === 1 && Math.abs(q.h - t.h) <= 1 && !fp.includes(t));
+      const reach = crew.some(c => { const h = tileOf(c); return h && bfs(h, t => near(t) && !fp.includes(t)); });
+      if (!reach) { toast('Ninguna figura llega hasta ahí: despeja el paso o elige otro lugar'); return; }
+    }
     const r = confirmPlace();
     if (typeof r === 'string') { toast(r); return; }
     emit('changed');

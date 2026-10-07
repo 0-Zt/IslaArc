@@ -297,15 +297,69 @@
   {
     "id": "mar",
     "title": "Mar adentro",
-    "locked": true,
-    "desc": "Con el plano de Marea se arma la balsa: zonas profundas, oleaje y otras islas. (Próxima versión.)",
-    "goals": []
+    "desc": "Con el plano de Marea se arma la balsa. Mar adentro el agua se oscurece, y más allá las olas no dejan pasar.",
+    "goals": [
+      {
+        "id": "balsa",
+        "text": "Arma la balsa en el muelle (tócalo)"
+      },
+      {
+        "id": "zarpar",
+        "text": "Zarpa: toca el muelle y luego \"Zarpar en la balsa\""
+      },
+      {
+        "id": "hondo",
+        "text": "Navega hasta una zona de agua oscura"
+      },
+      {
+        "id": "hondo1",
+        "text": "Pesca algo en el agua oscura (desde la balsa)"
+      },
+      {
+        "id": "cobre",
+        "text": "Saca 4 de cobre del fondo ({cu}/4)"
+      },
+      {
+        "id": "almacen3",
+        "text": "Mejora el almacén a nivel 3 con el cobre"
+      },
+      {
+        "id": "brujula",
+        "text": "Algo de Marea espera en el agua oscura: una sombra mediana"
+      },
+      {
+        "id": "olas",
+        "text": "Sigue la aguja de la brújula hasta las olas grandes"
+      },
+      {
+        "id": "timon",
+        "text": "Saca lo más grande que guarda el agua oscura"
+      }
+    ],
+    "reward": {
+      "stars": 12,
+      "text": "La pista de la caracola grande y +12 ★"
+    },
+    "stages": [
+      {
+        "name": "La balsa",
+        "n": 3
+      },
+      {
+        "name": "Agua oscura",
+        "n": 3
+      },
+      {
+        "name": "La voz de las olas",
+        "n": 3
+      }
+    ]
   },
   {
     "id": "origen",
     "title": "El origen",
     "locked": true,
-    "desc": "Restos de un mundo antiguo que sabía cosas que las figuras olvidaron.",
+    "desc": "La caracola grande, la isla del faro y los que esperan al otro lado. (Próximamente.)",
     "goals": []
   }
 ]

@@ -85,6 +85,8 @@ export function flyTo(target: THREE.Vector3, zoom: number, off?: THREE.Vector3) 
   const off0 = camera.position.clone().sub(controls.target);
   fly = { from: controls.target.clone(), to: target.clone(), off: off0, off1: off ? off.clone() : off0.clone(), z0: camera.zoom, z1: zoom, t: 0 };
 }
+/** Stops a camera glide (the player took over, or something else drives the camera now). */
+export function cancelFly() { fly = null; }
 export const cameraOffset = () => camera.position.clone().sub(controls.target);
 export function tickFly(dt: number) {
   if (!fly) return;

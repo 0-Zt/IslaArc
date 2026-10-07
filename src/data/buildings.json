@@ -93,8 +93,7 @@
           "cobre": 4
         },
         "work": 20,
-        "text": "Caben 600 y 150",
-        "locked": "Necesita cobre de la cueva del volcán (próximamente)"
+        "text": "Caben 600 de cada material de la isla y 150 de cada refinado"
       }
     ]
   },
@@ -154,7 +153,21 @@
     },
     "work": 10,
     "requires": "aserradero",
-    "coast": true
+    "coast": true,
+    "levels": [
+      {
+        "title": "Armar la balsa",
+        "cost": {
+          "tablas": 30,
+          "algas": 20,
+          "madera": 40
+        },
+        "work": 16,
+        "text": "La balsa de Marea, amarrada a la punta del muelle. Con ella se navega mar adentro",
+        "needsFlag": "planoBalsa",
+        "lockedFlag": "Necesita el plano de la balsa, que guarda el cuaderno de Marea"
+      }
+    ]
   },
   "farol": {
     "name": "Farol",

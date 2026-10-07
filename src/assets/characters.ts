@@ -40,7 +40,7 @@ export function part(list: THREE.BufferGeometry[], mat: THREE.Material = MAT.cla
   const m = new THREE.Mesh(mergeGeometries(list), mat); m.castShadow = true; m.receiveShadow = true; return m;
 }
 
-export type ToolKey = 'axe' | 'axeM' | 'pick' | 'pickM' | 'shovel' | 'hammer' | 'rod';
+export type ToolKey = 'axe' | 'axeM' | 'pick' | 'pickM' | 'shovel' | 'hammer' | 'rod' | 'paddle';
 const TOOL_PARTS: Record<ToolKey, (L: THREE.BufferGeometry[]) => void> = {
   axe: L => { cbox(L, 0, -0.1, 0.04, 0.04, 0.36, 0.04, '#8a5a2e'); cbox(L, 0, -0.25, 0.1, 0.05, 0.1, 0.12, '#8a847a'); cbox(L, 0, -0.24, 0.05, 0.055, 0.05, 0.04, '#6b4a2a'); },
   axeM: L => { cbox(L, 0, -0.1, 0.04, 0.04, 0.36, 0.04, '#8a5a2e'); cbox(L, 0, -0.25, 0.1, 0.045, 0.12, 0.14, '#b9c2cc'); cbox(L, 0, -0.25, 0.18, 0.05, 0.17, 0.035, '#eef2f6'); cbox(L, 0, -0.25, 0.04, 0.05, 0.05, 0.05, '#6b4a2a'); },
@@ -48,6 +48,7 @@ const TOOL_PARTS: Record<ToolKey, (L: THREE.BufferGeometry[]) => void> = {
   pick: L => { cbox(L, 0, -0.1, 0.04, 0.04, 0.36, 0.04, '#8a5a2e'); cbox(L, 0, -0.26, 0.06, 0.05, 0.05, 0.28, '#8a847a'); },
   pickM: L => { cbox(L, 0, -0.1, 0.04, 0.04, 0.36, 0.04, '#8a5a2e'); cbox(L, 0, -0.26, 0.06, 0.05, 0.05, 0.32, '#b9c2cc'); cbox(L, 0, -0.27, 0.21, 0.035, 0.035, 0.06, '#eef2f6'); cbox(L, 0, -0.27, -0.09, 0.035, 0.035, 0.06, '#eef2f6'); },
   rod: L => { cbox(L, 0, -0.42, 0.04, 0.03, 0.9, 0.03, '#8a5a2e'); cbox(L, 0, -0.86, 0.04, 0.018, 0.12, 0.018, '#c8a070'); cbox(L, 0.03, -0.08, 0.06, 0.06, 0.07, 0.07, '#8a847a'); },
+  paddle: L => { cbox(L, 0, -0.3, 0.04, 0.035, 0.75, 0.035, '#8a5a2e'); cbox(L, 0, -0.72, 0.04, 0.1, 0.22, 0.03, '#b08450'); },
   shovel: L => { cbox(L, 0, -0.12, 0.04, 0.035, 0.42, 0.035, '#8a5a2e'); cbox(L, 0, -0.35, 0.07, 0.13, 0.14, 0.03, '#a0a8b2'); cbox(L, 0, 0.1, 0.04, 0.1, 0.03, 0.04, '#6b4a2a'); },
 };
 

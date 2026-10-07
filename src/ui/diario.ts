@@ -137,18 +137,18 @@ function equipo() {
 }
 
 export /* The Sea collection: every thing the sea can give back, as a silhouette until it is caught. */
-const TIER_NAME = { orilla: 'Orilla · gancho de madera', media: 'Aguas medias · anzuelo de metal', profunda: 'Aguas profundas · hace falta la balsa' };
+const TIER_NAME = { orilla: 'Orilla · gancho de madera', media: 'Aguas medias · anzuelo de metal', profunda: 'Agua oscura · desde la balsa' };
 function mar() {
-  const all = Object.entries(ITEMS), got = all.filter(([k]) => S.fish[k]).length, total = all.filter(([, it]) => it.tier !== 'profunda').length;
+  const sea = !!S.flags.zarpo, all = Object.entries(ITEMS), got = all.filter(([k]) => S.fish[k]).length, total = all.filter(([, it]) => sea || it.tier !== 'profunda').length;
   let h = `<div class="dsub">Colección del mar · ${Math.min(got, total)} de ${total}</div>`;
   if (!S.fish || !Object.keys(S.fish).length) h += '<p style="color:var(--muted)">Construye el muelle (Construir, después del aserradero) y tócalo para pescar. Las figuras no sacan peces: el mar devuelve cosas.</p>';
   for (const tier of ['orilla', 'media', 'profunda'] as const) {
     const list = all.filter(([, it]) => it.tier === tier);
     const n = list.filter(([k]) => S.fish[k]).length;
-    h += `<div class="mtier"><b>${TIER_NAME[tier]}</b>${tier !== 'profunda' ? `<small>${n}/${list.length}${(tier === 'orilla' ? S.flags.colOrilla : S.flags.colMedia) ? ' · completa' : ` · completarla da +${tier === 'orilla' ? 3 : 5} ★`}</small>` : ''}</div><div class="mgrid">`;
+    h += `<div class="mtier"><b>${TIER_NAME[tier]}</b>${tier !== 'profunda' || sea ? `<small>${n}/${list.length}${(tier === 'orilla' ? S.flags.colOrilla : tier === 'media' ? S.flags.colMedia : S.flags.colHondo) ? ' · completa' : ` · completarla da +${tier === 'orilla' ? 3 : tier === 'media' ? 5 : 8} ★`}</small>` : ''}</div><div class="mgrid">`;
     for (const [k, it] of list) {
       const c = S.fish[k] || 0;
-      const hint = tier === 'profunda' ? 'Mar adentro' : `${sizeLabel(it.size)}${it.time === 'noche' ? ' · de noche' : ''}${it.after ? ' · más adelante' : ''}`;
+      const hint = tier === 'profunda' && !sea ? 'Mar adentro' : `${sizeLabel(it.size)}${it.time === 'noche' ? ' · de noche' : ''}${it.after ? ' · más adelante' : ''}`;
       h += `<div class="mcell${c ? ' got' : ''}" title="${c ? it.name : hint}"><img class="pix${c ? '' : ' sil'}" src="${XICON[k] || XICON.hondo}" alt=""><b>${c ? it.name : '???'}</b><small>${c ? (it.pieces ? `${Math.min(c, it.pieces)}/${it.pieces}` : `×${c}`) : hint}</small></div>`;
     }
     h += '</div>';

@@ -140,26 +140,66 @@
       "story": "cofre",
       "desc": "Cerrado con una ola de bronce. La llave entra justo."
     },
-    "hondo1": {
-      "name": "???",
+    "cobre": {
+      "name": "Veta de cobre",
+      "size": "m",
+      "tier": "profunda",
+      "w": 30,
+      "desc": "Piedra verde con vetas rojizas. Fundida, es cobre: el metal de los Alfareros.",
+      "gives": {
+        "cobre": 2
+      }
+    },
+    "brujula": {
+      "name": "Brújula de Marea",
       "size": "m",
       "tier": "profunda",
       "w": 0,
-      "desc": ""
+      "once": true,
+      "story": "brujula",
+      "desc": "De arcilla cocida. La aguja no apunta al norte."
     },
-    "hondo2": {
-      "name": "???",
+    "hundido": {
+      "name": "Cofre hundido",
+      "size": "l",
+      "tier": "profunda",
+      "w": 18,
+      "desc": "Lleno de arena y de cosas que alguien guardó con cuidado.",
+      "gives": {
+        "lingote": 3,
+        "vidrio": 2,
+        "tablas": 5
+      },
+      "stars": 1
+    },
+    "timon": {
+      "name": "Timón de los Alfareros",
       "size": "l",
       "tier": "profunda",
       "w": 0,
-      "desc": ""
+      "after": "brujula",
+      "once": true,
+      "story": "timon",
+      "desc": "Madera dura y bronce. Demasiado grande para una balsa."
     },
-    "hondo3": {
-      "name": "???",
+    "cristal": {
+      "name": "Cristal de mar",
       "size": "l",
       "tier": "profunda",
-      "w": 0,
-      "desc": ""
+      "w": 8,
+      "time": "noche",
+      "desc": "Brilla por dentro, como una brasa azul.",
+      "stars": 2
+    },
+    "medusa": {
+      "name": "Medusa de vidrio",
+      "size": "m",
+      "tier": "profunda",
+      "w": 14,
+      "desc": "Transparente y fría. Alguien la sopló en un horno, hace mucho.",
+      "gives": {
+        "vidrio": 3
+      }
     }
   },
   "pieces": [
@@ -184,6 +224,22 @@
     "cofre": {
       "title": "El cuaderno de Marea",
       "text": "El cofre se abre con la llave. Adentro, seco, hay un cuaderno de hojas de arcilla:\n\n«Día 12. Los Alfareros ya no bajan al mar. Dicen que el agua oscura guarda lo que se les perdió.\n\nDía 40. Terminé la balsa: tablas, cuerda de algas y paciencia. Mar adentro el fondo se vuelve negro y las olas cambian de voz.\n\nDía 41. Si alguien encuentra esto: no estás solo. Nunca lo estuvimos.»\n\nEntre las hojas hay un plano: la balsa de Marea."
+    },
+    "zarpar": {
+      "title": "La balsa de Marea",
+      "text": "Las tablas crujen y la cuerda de algas aguanta. La balsa se suelta del muelle y, por primera vez, la isla se ve desde afuera.\n\nMar adentro el agua tiene manchas oscuras, como sombras de nubes que no se mueven.\n\nToca el mar para navegar. Donde el agua es oscura, el fondo guarda cosas que la orilla no conoce."
+    },
+    "brujula": {
+      "title": "La brújula de Marea",
+      "text": "Una brújula de arcilla cocida. La aguja no apunta al norte: apunta, temblando, hacia el noroeste, donde el mar se levanta en olas grandes.\n\nEn la tapa, grabado con la uña: «Para volver a casa»."
+    },
+    "olas": {
+      "title": "Las olas grandes",
+      "text": "Más allá, el mar se levanta como un muro de espuma. La balsa no aguanta: las olas la devuelven una y otra vez.\n\nEntre la espuma, a lo lejos, se ve una silueta: otra isla, con una luz pequeña en lo alto.\n\nRecuerdas la caracola: «Dicen que una más grande calmaba las olas»."
+    },
+    "timon": {
+      "title": "El timón",
+      "text": "Una rueda de timón de madera dura y bronce, enorme para una balsa. Era de un barco de los Alfareros.\n\nAtada al eje, envuelta en algas, hay una última hoja de Marea:\n\n«Encontré la caracola grande y crucé. Al otro lado hay luz, y hay otros como nosotros, esperando. Si lees esto, busca la caracola. Te espero en la isla del faro.»"
     }
   }
 }

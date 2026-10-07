@@ -160,6 +160,18 @@ export function modelMuelle(): Model {
   return { group: g, glow, smoke: [0, 1, 1.3] };
 }
 
+/** Marea's raft: logs lashed with algae rope, a short mast with a patched sail. Forward is +Z. */
+export function modelBalsa(): THREE.Group {
+  const M = parts();
+  for (let k = 0; k < 5; k++) { const x = -0.36 + k * 0.18; vbox(M.bark, x, 0.06, 0, 0.16, 0.13, 1.25 - (k % 2) * 0.08, k % 2 ? '#9a6a3a' : '#b08450'); }
+  for (const z of [-0.4, 0.4]) vbox(M.thatch, 0, 0.14, z, 0.94, 0.04, 0.08, '#5a8a3a');          // algae lashings
+  vbox(M.plank, 0, 0.15, 0, 0.7, 0.03, 0.5, '#c49660');                                           // deck boards
+  vbox(M.bark, 0, 0.62, -0.25, 0.06, 0.95, 0.06, '#6a4226');                                     // mast
+  vbox(M.thatch, 0.18, 0.72, -0.25, 0.32, 0.5, 0.02, '#f0e6d0'); vbox(M.thatch, 0.18, 0.62, -0.24, 0.12, 0.1, 0.02, '#c8a070');   // sail with a patch
+  vbox(M.plank, -0.28, 0.24, 0.42, 0.14, 0.14, 0.14, '#8a5a2e');                                  // a little crate
+  return group(M);
+}
+
 /** Notice board: two posts, a small roof and a board with pinned notes. */
 export function modelTablon(): Model {
   const M = parts(), P: THREE.BufferGeometry[] = [];

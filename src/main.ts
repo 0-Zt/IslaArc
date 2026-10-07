@@ -1,7 +1,7 @@
 import './style.css';
 import { on } from './core/events';
 import {
-  renderer, scene, camera, controls, resize, render, flyTo, lockPixelRatio, benchRender, setGfx, sun, placeSun, applyTime, adaptResolution, tickShadows, pixelRatio, focusOn, gfx, tickFly,
+  renderer, scene, camera, controls, resize, render, flyTo, cancelFly, lockPixelRatio, benchRender, setGfx, sun, placeSun, applyTime, adaptResolution, tickShadows, pixelRatio, focusOn, gfx, tickFly,
 } from './render/renderer';
 import { N, setMap, generate, buildTerrain, rebuildDeco, worldGroup, tileAt, tileUnder, landTiles, walkable, grove, terrainDrawCalls, type Tile } from './world/island';
 import { plantIsland, clearTrees, tickTrees, tickLeaves, treeDrawCalls, trees } from './world/trees';
@@ -29,6 +29,8 @@ import { fillBoard } from './game/board';
 import { restoreBeach, clearBeach, tickBeach } from './game/beach';
 import { $, initHUD, refreshHUD, toast } from './ui/hud';
 import { initSheets, initSheetEvents, refreshSheet, closeSheet, openMessage, sheetOpen, openStory } from './ui/sheets';
+import { tickRaft, clearRaft, sailingActive, startSailing, fishHere, goBack, sailState, sailTap } from './game/raft';
+import { tickSea, DEEP } from './world/sea';
 import { tickFishing, clearFishing, startFishing, stopFishing, castAt, fishState, useBait, shadows as fishShadows, bestShadow } from './game/fishing';
 import { initInput, centreTile, tickMarker, onTap, debugPick } from './ui/input';
 import { tickLabels, clearLabels } from './ui/labels';
@@ -44,7 +46,7 @@ renderer.info.autoReset = false;
 setOccupiedTest(occupied);
 
 function newGame(state: typeof S | null) {
-  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearFishing(); clearSites(); clearMarks(); clearRuins(); clearBeach();
+  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearFishing(); clearRaft(); clearSites(); clearMarks(); clearRuins(); clearBeach();
   clearCrew(); clearBuildings(); clearForest(); clearLabels();
   while (worldGroup.children.length) worldGroup.remove(worldGroup.children[0]);
   clearTrees();
@@ -103,7 +105,8 @@ on('beachChanged', () => persist());
 on('invented', () => persist());
 on('bottleRead', (i: number) => openMessage(i));
 on('story', (k: string) => openStory(k));
-on('fishMode', (f: boolean) => { $('bottom').hidden = f; });
+on('fishMode', (f: boolean) => { $('bottom').hidden = f || sailingActive(); });
+on('sailMode', (f: boolean) => { $('bottom').hidden = f; });
 on('fishCaught', () => persist());
 on('levelUp', () => persist());
 on('finaleStart', (c: Tile) => { closeSheet(); select(null); flyTo(new THREE.Vector3(c.wx, 1, c.wz), Math.max(camera.zoom, 1.1)); toast('La tierra tiembla en las ruinas…'); });
@@ -158,7 +161,7 @@ let fpsAcc = 0, fpsFrames = 0;
 
 /* keep the camera over the island */
 function clampCamera() {
-  const t = controls.target, lim = N / 2 - 1;
+  const t = controls.target, lim = sailingActive() ? 36 : N / 2 - 1;
   const cx = Math.max(-lim, Math.min(lim, t.x)), cz = Math.max(-lim, Math.min(lim, t.z));
   if (cx !== t.x || cz !== t.z) { camera.position.x += cx - t.x; camera.position.z += cz - t.z; t.x = cx; t.z = cz; }
 }
@@ -187,6 +190,8 @@ function frame(now: number) {
   pulseMarkers(T);
   tickLabels();
   tickFishing(dt, T);
+  tickRaft(dt, T);
+  tickSea(dt, T);
   tickPointer(dt, T, sheetOpen());
   uiAcc += dt; if (uiAcc > 0.25) { refreshHUD(uiAcc); refreshSheet(); uiAcc = 0; }
   tickWater(T);
@@ -209,8 +214,8 @@ if (location.hash === '#debug') {
     get S() { return S; }, crew, buildings, trees, rocks, ancients, get mound() { return mound; }, grove: () => grove,
     renderer, camera, controls, order, tileAt, landTiles, checkGoals, pixelRatio,
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
-    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
+    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickRaft(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
-    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, startFishing, stopFishing, castAt, fishState, useBait, fishShadows, bestShadow, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
+    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, cancelFly, startSailing, fishHere, goBack, sailState, DEEP, sailTo: (x: number, z: number) => { const r = new THREE.Raycaster(); r.ray.origin.set(x, 5, z); r.ray.direction.set(0, -1, 0); return sailTap(r); }, startFishing, stopFishing, castAt, fishState, useBait, fishShadows, bestShadow, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
   };
 }

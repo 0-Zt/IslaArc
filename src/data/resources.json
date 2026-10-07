@@ -44,5 +44,10 @@
     "name": "Algas",
     "hidden": true,
     "nohud": true
+  },
+  "cobre": {
+    "name": "Cobre",
+    "hidden": true,
+    "nohud": true
   }
 }

@@ -8,11 +8,14 @@ window.bot = (() => {
   const tOf = c => I.tileAt(Math.floor(c.root.position.x + H), Math.floor(c.root.position.z + H));
   const dist = (a, b) => Math.abs(a.i - b.i) + Math.abs(a.j - b.j);
   const KIND = { madera: 'tree', piedra: 'rock', mineral: 'rock', arena: 'sand', tierra: 'soil' };
-  const ONEOFF = ['build', 'fill', 'avivar', 'dig', 'ancient', 'recoger', 'pescar', 'walk'];
+  const ONEOFF = ['build', 'fill', 'avivar', 'dig', 'ancient', 'recoger', 'pescar', 'navegar', 'walk'];
   const RECIPE_AT = { lingote: 'horno', ladrillo: 'horno', vidrio: 'horno', tablas: 'aserradero', carbon: 'horno' };
   const RECIPE_COST = { lingote: { mineral: 2, madera: 1 }, ladrillo: { tierra: 2, arena: 1, madera: 1 }, vidrio: { arena: 3, madera: 1 }, tablas: { madera: 2 }, carbon: { madera: 3 } };
   const BCOST = { casa: { madera: 20 }, horno: { piedra: 15, arena: 12, madera: 8 }, tablon: { madera: 12 }, almacen: { madera: 30, piedra: 20 }, muelle: { tablas: 12, madera: 20, piedra: 10 }, aserradero: { madera: 30, piedra: 15, lingote: 3 }, taller: { tablas: 16, ladrillo: 14, lingote: 5, piedra: 20 } };
   const UPC = { horno: { ladrillo: 20, piedra: 25, carbon: 8 }, almacen: { tablas: 25, ladrillo: 15, madera: 40 } };
+  const UP3 = { tablas: 40, ladrillo: 30, vidrio: 10 };
+  const RAFT = { tablas: 30, algas: 20, madera: 40 };
+  let seaTarget = null;
   const INVC = { carretilla: { tablas: 8, lingote: 2 }, palaM: { tablas: 4, lingote: 3 }, martillo: { tablas: 5, lingote: 3 }, catalejo: { vidrio: 4, lingote: 3, tablas: 4 }, linterna: { vidrio: 3, lingote: 2, tablas: 2, carbon: 2 } };
   const BRAZ = [{ piedra: 12 }, { piedra: 10, arena: 8 }, { piedra: 15 }, { piedra: 10, madera: 12 }, { piedra: 10, lingote: 3 }];
   let puzzleUntil = null, puzzleK = -1, claroAt = null, bridgeDone = false;
@@ -192,6 +195,30 @@ window.bot = (() => {
         const card = document.getElementById('fishCard'); if (card && !card.hidden) card.click();
         const sh = document.querySelector('#sheet:not([hidden]) [data-act=close]'); if (sh) sh.click();
         if (st.st === 'ready') { const want = (g === 'vasija' || g === 'algas' || g === 'pescar1' || g === 'pescar6') ? 's' : (g === 'llave' ? 'm' : undefined); const b = I.bestShadow(want) || (g === 'coleccion' || g === 'cofre' ? I.bestShadow() : null); if (b) { const m = has('muelle'), mp = m.group.position, dx = mp.x - b.x, dz = mp.z - b.z, d = Math.hypot(dx, dz) || 1; I.castAt(b.x + dx / d * 0.6, b.z + dz / d * 0.6); } else if (S().res.semilla > 3 && g !== 'vasija' && g !== 'algas') I.useBait(); }
+        break;
+      }
+      case 'balsa': {
+        need = { tablas: 30, madera: 40 };
+        const m = has('muelle');
+        if (S().res.algas < 20) { need = { tablas: 30, madera: 40 }; globalThis.__fishAuto = true; const st = I.fishState(); if (!st) I.startFishing(m); else { const card = document.getElementById('fishCard'); if (card && !card.hidden) card.click(); const sh = document.querySelector('#sheet:not([hidden]) [data-act=close]'); if (sh) sh.click(); if (st.st === 'ready') { const b = I.bestShadow('s'); if (b) { const mp = m.group.position, dx = mp.x - b.x, dz = mp.z - b.z, d = Math.hypot(dx, dz) || 1; I.castAt(b.x + dx / d * 0.6, b.z + dz / d * 0.6); } } } break; }
+        if (I.fishState()) I.stopFishing();
+        if (m && !m.up && m.lvl < 2 && afford(RAFT)) { const r = I.startUpgrade(m); log.push(min() + ' balsa ' + (r || 'ok')); }
+        break;
+      }
+      case 'zarpar': case 'hondo': case 'hondo1': case 'cobre': case 'almacen3': case 'brujula': case 'olas': case 'timon': {
+        need = g === 'almacen3' ? Object.assign({}, UP3) : { madera: 20 };
+        const sh = document.querySelector('#sheet:not([hidden]) [data-act=close]'); if (sh) sh.click();
+        const card = document.getElementById('fishCard'); if (card && !card.hidden) card.click();
+        if (g === 'almacen3') { const a = has('almacen'); if (a && a.lvl === 2 && !a.up && afford({ tablas: 40, ladrillo: 30, vidrio: 10, cobre: 4 })) { const r = I.startUpgrade(a); log.push(min() + ' almacen3 ' + (r || 'ok')); } if (S().got.cobre >= 4) break; }
+        globalThis.__fishAuto = true;
+        const st = I.sailState();
+        if (!st) { if (I.fishState()) I.stopFishing(); I.startSailing(has('muelle')); break; }
+        if (st.mode !== 'sailing' && st.mode !== 'fishing') break;
+        if (g === 'olas') { if (I.fishState()) { I.stopFishing(); break; } if (!st.moving) I.sailTo(Math.cos(-2.36) * 30, Math.sin(-2.36) * 30); break; }
+        if (!st.deep) { if (I.fishState()) { I.stopFishing(); break; } if (!st.moving) { const d = [...I.DEEP].sort((a, b) => Math.hypot(a.x - st.x, a.z - st.z) - Math.hypot(b.x - st.x, b.z - st.z))[0]; I.sailTo(d.x, d.z); } break; }
+        if (st.mode === 'sailing' && !st.moving) { I.fishHere(); break; }
+        const fs = I.fishState();
+        if (fs && fs.st === 'ready') { const b = I.bestShadow(); if (b) { const dx = st.x - b.x, dz = st.z - b.z, d = Math.hypot(dx, dz) || 1; I.castAt(b.x + dx / d * 0.6, b.z + dz / d * 0.6); } }
         break;
       }
       case 'inventos': case 'botellas': case 'linterna': {

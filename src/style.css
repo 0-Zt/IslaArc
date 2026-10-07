@@ -323,13 +323,13 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .qline .bar+.bar{margin-top:4px}
 
 /* fishing: bottom bar, the tug, the catch card, the Sea collection and story pages */
-#fishBar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;gap:8px;align-items:center;background:var(--glass);border:1.5px solid var(--line);border-radius:16px;padding:10px 10px 10px 14px}
-#fishBar span{flex:1;font-size:14px;line-height:1.3}
+#sailBar,#fishBar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;gap:8px;align-items:center;background:var(--glass);border:1.5px solid var(--line);border-radius:16px;padding:10px 10px 10px 14px}
+#sailBar span,#fishBar span{flex:1;font-size:14px;line-height:1.3}
 #fishBar.now{border-color:var(--sun);box-shadow:0 0 0 3px #f2c14e55}
 #fishBar.now span{font-family:var(--display);font-size:20px;color:var(--sun)}
-#fishBar .fbtns{display:flex;gap:6px}
-#fishBar button{background:var(--glass2);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;color:var(--text)}
-#fishBar button:disabled{opacity:.45}
+#sailBar .fbtns,#fishBar .fbtns{display:flex;gap:6px}
+#sailBar button,#fishBar button{background:var(--glass2);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;color:var(--text)}
+#sailBar button:disabled,#fishBar button:disabled{opacity:.45}
 #fishPull{position:fixed;inset:0;z-index:7;display:flex;align-items:flex-end;justify-content:center;padding:0 12px calc(90px + env(safe-area-inset-bottom,0px));touch-action:none;user-select:none;-webkit-user-select:none}
 #fishPull[hidden]{display:none}
 .fpbox{width:100%;max-width:420px;background:var(--glass);border:2px solid var(--sun);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
@@ -369,3 +369,6 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .dtabs button{padding-left:4px;padding-right:4px}
 
 .lore p,#sheet .lore p{color:#3a2a18!important}
+
+#sailBar[hidden],#fishBar[hidden]{display:none}
+#sailBar.deep{border-color:#5a7ab8;background:#0a1830ee}

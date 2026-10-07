@@ -160,13 +160,25 @@ Mecánicas tomadas de Animal Crossing y Stardew Valley, en el formato de la isla
 - **Ritmo (bot):** el capítulo 5 toma unos 8–9 minutos al bot; una persona, unos 20. Los pasos de la historia no dependen de la suerte: un trozo de vasija sale a más tardar cada 5 capturas pequeñas, y la llave es la primera mediana después de la vasija.
 - **Hallazgo para la v0.14:** durante el capítulo 5 la madera, la piedra y la arena llegan al tope porque casi no se gastan. La balsa y sus mejoras deberían ser ese gasto.
 
+## Mar adentro: la balsa (v0.14)
+
+- **La balsa de Marea** es el nivel 2 del muelle: se arma con el plano del cuaderno (30 tablas, 20 algas, 40 madera) y queda amarrada en la punta. Con el plano, tocar el muelle abre su panel: pescar, zarpar, ver la colección y armar la balsa.
+- **Navegar:** una figura sube a la balsa con un remo. Se toca el mar y la balsa busca sola el camino por el agua, rodeando la isla, el puente y el islote. La cámara la sigue. "Volver" la trae al muelle.
+- **Agua oscura:** tres manchas profundas mar adentro (La fosa del oeste, El bajo de los cofres, La grieta del este), con burbujas que suben. Al entrar, la barra lo avisa.
+- **Pescar desde la balsa** en cualquier dirección. En el agua oscura las sombras son más grandes y oscuras, y salen cosas que no hay en la orilla: **veta de cobre**, medusa de vidrio, cofre hundido, cristal de mar (de noche), la brújula y el timón de Marea. La fila de agua oscura de la Colección da +8 ★.
+- **Cobre** (nuevo material): abre el **almacén nivel 3** (600/150).
+- **Las olas grandes:** un muro de olas en el noroeste que la balsa no puede cruzar. Detrás se ve otra isla con un faro. Tocar más allá lleva la balsa hasta el borde y las olas la devuelven.
+- **Capítulo 6 · Mar adentro** (9 metas, 3 etapas: La balsa, Agua oscura, La voz de las olas). La historia sigue: la brújula de Marea apunta a las olas, y el timón trae su última hoja: «Encontré la caracola grande y crucé… Te espero en la isla del faro». Es la pista para el capítulo 7.
+- **Arreglo:** ya no se puede ubicar un edificio donde ninguna figura llega (antes podía quedar como obra para siempre).
+- **Ritmo (bot):** capítulo 6 en unos 13 minutos; capítulos 1 a 6 en unos 51 minutos de bot (una persona, unas 2 horas).
+
 Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates por turnos) y **docs/economia.md** (plan de economía: topes, mejoras, cadenas por era, sumideros y ritmo objetivo).
 
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **v0.14 · La balsa** (ver docs/diseno-exploracion.md): navegar, zonas profundas y oleaje; que gaste madera, tablas y algas. Después, la cueva con el primer combate por turnos.
+- **Siguiente:** la cueva con el primer combate por turnos (v0.15), y después la caracola grande que calma las olas y la isla del faro.
 
 ## Decisiones tomadas
 

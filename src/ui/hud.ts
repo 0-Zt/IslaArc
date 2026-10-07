@@ -25,6 +25,7 @@ export const ICON: Record<ResKey, string> = {
   vidrio: mkIcon(['.......', '..GGG..', '.GHGGG.', '.GHGGG.', '.GGGGG.', '..GGG..', '.......'], { G: '#8fd4e0', H: '#e8fbff' }),
   lingote: mkIcon(['.......', '.......', '..MMMMM', '.MHMMMD', 'MMMMMD.', 'MDDDD..'], { M: '#b8c0cc', H: '#ffffff', D: '#6a7280' }),
   algas: mkIcon(['.G...G.', '.GL.GL.', '..GLG..', '..LGL..', '.GLG.G.', 'GG..GG.'], { G: '#3f8a4a', L: '#7fc955' }),
+  cobre: mkIcon(['.......', '..CCC..', '.CHCCC.', 'CCCCCDC', 'CCHCCDC', '.CCDDD.'], { C: '#c8763a', H: '#f0b070', D: '#8a4a22' }),
   carbon: mkIcon(['.......', '..KK...', '.KHKK.K', '.KKKKKH', 'KKHKKKK', '.KKKDK.'], { K: '#3a3632', H: '#6a625a', D: '#e0602a' }),
 };
 export const img = (k: ResKey) => `<img src="${ICON[k]}" alt="">`;
@@ -52,6 +53,12 @@ export const XICON: Record<string, string> = {
   llave: mkIcon(['.GGG...', 'G.G.G..', '.GGG...', '..G....', '..GG...', '..GGG..'], { G: '#5aa88a' }),
   ancla: mkIcon(['...G...', '..GGG..', '...G...', 'G..G..G', 'GG.G.GG', '.GGGGG.'], { G: '#8a96a4' }),
   cofre: mkIcon(['.......', '.BBBBB.', 'BLLYLLB', 'BBBYBBB', 'BLLLLLB', 'BBBBBBB'], { B: '#6a4226', L: '#a8743e', Y: '#f2c14e' }),
+  brujula: mkIcon(['..BBB..', '.BWWWB.', 'BWWRWWB', 'BWWRWWB', '.BWWWB.', '..BBB..'], { B: '#a8743e', W: '#f0e6d0', R: '#d9463c' }),
+  hundido: mkIcon(['.......', '.BBBBB.', 'BGGYGGB', 'BBBYBBB', 'BGGGGGB', 'BBBBBBB'], { B: '#3a4a3e', G: '#5a7a5e', Y: '#c8a040' }),
+  timon: mkIcon(['B..B..B', '.BBBBB.', '.B.Y.B.', 'BBYYYBB', '.B.Y.B.', '.BBBBB.'], { B: '#8a5a2e', Y: '#c8a040' }),
+  cristal: mkIcon(['...C...', '..CHC..', '.CCHCC.', '.CCCCC.', '..CCC..', '...C...'], { C: '#5ab8e8', H: '#e8fbff' }),
+  medusa: mkIcon(['..GGG..', '.GHGGG.', 'GGGGGGG', '.G.G.G.', '.G.G.G.', 'G..G..G'], { G: '#a8d8f0', H: '#ffffff' }),
+  balsa: mkIcon(['...M...', '...MS..', '...MSS.', 'TTTTTTT', 'TLTLTLT', '.......'], { M: '#6a4226', S: '#f0e6d0', T: '#b08450', L: '#7fc955' }),
   hondo: mkIcon(['.......', '..DDD..', '.DDDDD.', '.D.D.D.', '.DDDDD.', '..D.D..'], { D: '#2a3a5a' }),
   invento: mkIcon(['..YYY..', '.YHYYY.', '.YHYYY.', '..YYY..', '..GGG..', '...G...'], { Y: '#f2c14e', H: '#fff3c0', G: '#8a8f9a' }),
 };

@@ -1,7 +1,7 @@
 import { on } from '../core/events';
 import { gfx, setGfx, resetGfx } from '../render/renderer';
 import { S, DATA, afford, pay, type Cost, type ResKey } from '../game/state';
-import { buildings, has, smelt, startPlace, buildingDef, isDone, nextLevel, startUpgrade, type Building } from '../game/buildings';
+import { buildings, has, smelt, startPlace, buildingDef, isDone, nextLevel, startUpgrade, levelLock, type Building } from '../game/buildings';
 import { caps, REFINED } from '../game/economy';
 import { refreshTools } from '../game/crew';
 import { KINDS, expandCost, startSite, enterExpandMode, exitExpandMode, type ExpandKind } from '../game/expansion';
@@ -10,13 +10,14 @@ import { refreshDay } from '../render/daynight';
 import { setSound } from '../audio/sfx';
 import { unlocked } from '../game/progress';
 import { recipesAt, RECIPES, INV, invState, startInvention, jobInfo, MAX_QUEUE } from '../game/production';
-import { ICON } from './hud';
+import { ICON, XICON } from './hud';
 import { diarioHTML, diarioClick, diarioSig, setTab, type DiarioTab } from './diario';
 import { BRAZIERS, rebuildBrazier } from '../game/ruins';
 import { initPuzzles, openPuzzle, closePuzzle, puzzleHTML, puzzleClick, puzzleSig } from './puzzles';
 import { runeSVG } from '../assets/ruins';
 import { LORE_TEXT } from '../game/beach';
-import { STORY } from '../game/fishing';
+import { STORY, startFishing } from '../game/fishing';
+import { startSailing, hasRaft } from '../game/raft';
 import { assignIdleBuilder } from '../game/crew';
 import { ICONS } from '../assets/buildings';
 import { $, img, toast } from './hud';
@@ -24,7 +25,7 @@ import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'prod' | 'taller' | 'almacen' | 'historia' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
+type SheetType = 'build' | 'casa' | 'prod' | 'taller' | 'almacen' | 'historia' | 'muelle' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
 let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {};
@@ -57,9 +58,10 @@ function upgradeHTML(b: Building) {
   let h = `<h3>Nivel ${b.up ? `${b.lvl} → ${b.up}` : b.lvl}</h3>`;
   if (b.up) return h + `<div class="row"><div class="thumb lvl">${b.up}</div><div class="info"><b>Mejora en obra</b><small>Una figura la levanta a martillazos. Mientras tanto el edificio no trabaja.</small><div class="dbar sm"><i style="width:${Math.round(b.work / b.need * 100)}%"></i></div></div></div>`;
   if (!L) return h + '<p style="color:var(--muted)">Ya está en su nivel más alto por ahora.</p>';
-  if (L.locked) return h + `<div class="row dim"><div class="thumb lvl">${b.lvl + 1}</div><div class="info"><b>Nivel ${b.lvl + 1}</b><small>${L.text}. ${L.locked}.</small></div><span class="done">${LOCK}</span></div>`;
+  const lock = levelLock(L), title = L.title || `Mejorar a nivel ${b.lvl + 1}`;
+  if (lock) return h + `<div class="row dim"><div class="thumb lvl">${b.lvl + 1}</div><div class="info"><b>${L.title || `Nivel ${b.lvl + 1}`}</b><small>${L.text}. ${lock}.</small></div><span class="done">${LOCK}</span></div>`;
   const ok = afford(L.cost) && isDone(b);
-  return h + `<div class="row"><div class="thumb lvl">${b.lvl + 1}</div><div class="info"><b>Mejorar a nivel ${b.lvl + 1}</b><small>${L.text}</small>${costHTML(L.cost)}</div><button class="btn${ok ? ' main' : ''}" data-upgrade="1" ${ok ? '' : 'disabled'}>Mejorar</button></div>`;
+  return h + `<div class="row"><div class="thumb lvl">${b.lvl + 1}</div><div class="info"><b>${title}</b><small>${L.text}</small>${costHTML(L.cost)}</div><button class="btn${ok ? ' main' : ''}" data-upgrade="1" ${ok ? '' : 'disabled'}>${L.title ? 'Armar' : 'Mejorar'}</button></div>`;
 }
 
 function render() {
@@ -118,6 +120,13 @@ function render() {
       h += `<div class="stk${v >= cap ? ' full' : ''}"><img class="pix" src="${(ICON as any)[k]}" alt=""><div><div class="dbar sm"><i style="width:${pct}%"></i></div><small>${v}/${cap}</small></div></div>`;
     }
     h += '</div>' + upgradeHTML(arg);
+  } else if (type === 'muelle' && arg) {
+    const raft = hasRaft();
+    h += `<h2>Muelle</h2><p>Desde la punta se pesca lo que el mar devuelve.${raft ? ' La balsa de Marea espera amarrada al final.' : ''}</p>`
+      + `<div class="row"><div class="thumb">${ICONS.anzuelo}</div><div class="info"><b>Pescar desde el muelle</b><small>Orilla y aguas medias. Lanza cerca de una sombra y toca cuando el corcho se hunda.</small></div><button class="btn main" data-act="fish">Pescar</button></div>`
+      + (raft ? `<div class="row"><div class="thumb"><img class="pix" src="${(XICON as any).balsa}" alt=""></div><div class="info"><b>Zarpar en la balsa</b><small>Toca el mar para navegar. En las manchas oscuras está lo más raro.</small></div><button class="btn main" data-act="sail">Zarpar</button></div>` : '')
+      + `<div class="row"><div class="info"><b>Colección del mar</b><small>Lo que ya sacaste y lo que falta.</small></div><button class="btn" data-act="coleccion">Ver</button></div>`
+      + upgradeHTML(arg);
   } else if (type === 'taller' && arg) {
     const b = arg;
     h += '<h2>Taller de inventos</h2><p>Cada invento cambia algo para siempre. El taller trabaja en uno a la vez.</p>';
@@ -222,6 +231,9 @@ export function initSheetEvents() {
     if (b.dataset.upgrade && arg) { const r = startUpgrade(arg); if (r) toast(r); else assignIdleBuilder(); render(); return; }
     if (b.dataset.recipe && arg) { if (!smelt(arg, b.dataset.recipe)) toast('No se puede ahora'); render(); return; }
     if (b.dataset.invent && arg) { const r = startInvention(b.dataset.invent, arg.jobs); if (r) toast(r); render(); return; }
+    if (b.dataset.act === 'fish' && arg) { const m = arg; closeSheet(); const r = startFishing(m); if (r) toast(r); return; }
+    if (b.dataset.act === 'sail' && arg) { const m = arg; closeSheet(); const r = startSailing(m); if (r) toast(r); return; }
+    if (b.dataset.act === 'coleccion') { openDiario('mar'); return; }
     if (b.dataset.act === 'gfx') { openSheet('gfx'); return; }
     if (b.dataset.act === 'expand') { closeSheet(); enterExpandMode(); return; }
     if (b.dataset.act === 'plant') { openSheet('plantar'); return; }

@@ -28,7 +28,9 @@ export const has = (type: string) => buildings.some(b => b.type === type && (isD
 /** Highest finished level of a building type (0 when there is none). */
 export const levelOf = (type: string) => buildings.reduce((m, b) => b.type === type && (isDone(b) || b.up > 0) ? Math.max(m, b.lvl) : m, 0);
 export const saved = (): SavedBuilding[] => buildings.map(b => ({ type: b.type, i: b.i, j: b.j, rot: b.rot, jobs: b.jobs, prog: b.prog, prog2: b.prog2, work: b.work, lvl: b.lvl, up: b.up } as SavedBuilding));
-export interface Level { cost: Cost; work: number; text: string; locked?: string }
+export interface Level { cost: Cost; work: number; text: string; locked?: string; title?: string; needsFlag?: string; lockedFlag?: string }
+/** Why the next level cannot be started yet (a fixed lock, or a story flag still missing). */
+export const levelLock = (L: Level) => L.locked || (L.needsFlag && !S.flags[L.needsFlag] ? L.lockedFlag || 'Todavía no' : '');
 const def = (type: string) => (DATA.BUILDINGS as any)[type] as { name: string; size: [number, number]; cost: Cost; requires?: string; work?: number; deco?: boolean; levels?: Level[]; coast?: boolean };
 /** For a pier: which way the sea is from a tile (as a rotation 0..3), or -1 when it is not on the coast. */
 export function seaSide(i: number, j: number) {
@@ -119,14 +121,14 @@ function setFlag(b: Building) {
 export function startUpgrade(b: Building): string | null {
   const L = nextLevel(b);
   if (!L) return 'Ya está en su nivel más alto';
-  if (L.locked) return L.locked;
+  if (levelLock(L)) return levelLock(L);
   if (!isDone(b)) return 'Termina la obra primero';
   if (!afford(L.cost)) return 'Te faltan materiales';
   pay(L.cost);
   b.up = b.lvl + 1; b.work = 0; b.need = L.work;
   addScaffold(b);
   for (const t of b.tiles) puff(t.wx, topY(t) + 0.3, t.wz, '#d8c8a8', 6, 1.4, 1.4, topY(t));
-  emit('toast', `Mejora en obra: ${def(b.type).name.toLowerCase()} nivel ${b.up}. Una figura la levanta a martillazos.`);
+  emit('toast', `${L.title ? L.title : `Mejora en obra: ${def(b.type).name.toLowerCase()} nivel ${b.up}`}. Una figura la levanta a martillazos.`);
   emit('changed');
   return null;
 }
@@ -144,7 +146,8 @@ export function buildHit(b: Building, power = 1) {
   emit('obraDone', !!def(b.type).deco);
   if (b.up) {
     b.lvl = b.up; b.up = 0; setFlag(b);
-    emit('toast', `${def(b.type).name} nivel ${b.lvl}: ${def(b.type).levels![b.lvl - 2].text.toLowerCase()}`);
+    const L = def(b.type).levels![b.lvl - 2];
+    emit('toast', L.title ? `¡Listo! ${L.title.toLowerCase()}: ${L.text.toLowerCase()}` : `${def(b.type).name} nivel ${b.lvl}: ${L.text.toLowerCase()}`);
     emit('upgraded', b); emit('changed');
     return true;
   }

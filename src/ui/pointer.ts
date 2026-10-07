@@ -10,6 +10,8 @@ import { slots, center } from '../game/ruins';
 import { currentGoal } from '../game/goals';
 import { S } from '../game/state';
 import { fishingActive, fishState, bestShadow } from '../game/fishing';
+import { sailingActive, sailState } from '../game/raft';
+import { DEEP, SURGE } from '../world/sea';
 import { on } from '../core/events';
 
 /* A bouncing arrow over whatever the current goal needs you to tap next: first the figure
@@ -51,10 +53,20 @@ function gather(kinds: JobKind[], who: string, target: () => THREE.Vector3 | nul
 const leader = () => crew.find(q => q.id === selected) || crew.find(q => q.id === 'arci') || crew[0];
 const idleAt = (b: Building | undefined) => b && !b.jobs?.length ? overBuilding(b) : null;
 
-const FISH_GOALS = new Set(['pescar1', 'pescar6', 'vasija', 'algas', 'llave', 'cofre', 'coleccion']);
+const FISH_GOALS = new Set(['pescar1', 'pescar6', 'vasija', 'algas', 'llave', 'cofre', 'coleccion', 'hondo1', 'cobre', 'brujula', 'timon']);
+const SEA_GOALS = new Set(['zarpar', 'hondo', 'hondo1', 'cobre', 'brujula', 'olas', 'timon']);
+/** Out at sea: towards the nearest dark water, or the big waves. */
+function seaTarget(goal: string): THREE.Vector3 | null {
+  const st = sailState(); if (!st || st.mode !== 'sailing' || st.moving) return null;
+  if (goal === 'olas') return new THREE.Vector3(Math.cos(SURGE.angle) * (SURGE.r - 1.5), 0.9, Math.sin(SURGE.angle) * (SURGE.r - 1.5));
+  if (goal === 'zarpar' || st.deep) return null;   // in dark water the bar says what to do
+  const d = [...DEEP].sort((a, b) => Math.hypot(a.x - st.x, a.z - st.z) - Math.hypot(b.x - st.x, b.z - st.z))[0];
+  return new THREE.Vector3(d.x, 0.9, d.z);
+}
 export function pointerTarget(): THREE.Vector3 | null {
   const g = currentGoal(); if (!g) return null;
   if (fishingActive() && !FISH_GOALS.has(g.id)) return null;
+  if (sailingActive() && !fishingActive()) return SEA_GOALS.has(g.id) ? seaTarget(g.id) : null;
   const here = leader() ? tileOf(leader()!) : null;
   switch (g.id) {
     case 'talar': case 'madera10':
@@ -91,6 +103,11 @@ export function pointerTarget(): THREE.Vector3 | null {
       const st = fishState(); if (!st || st.st !== 'ready') return null;
       const sh = bestShadow(); return sh ? new THREE.Vector3(sh.x, 0.9, sh.z) : null;
     }
+    case 'balsa': case 'zarpar': case 'hondo': case 'hondo1': case 'cobre': case 'brujula': case 'olas': case 'timon': {
+      if (fishingActive()) { const st = fishState(); if (!st || st.st !== 'ready') return null; const sh = bestShadow(); return sh ? new THREE.Vector3(sh.x, 0.9, sh.z) : null; }
+      const m = buildings.find(b => b.type === 'muelle'); return m && !m.up && isDone(m) ? overBuilding(m) : null;
+    }
+    case 'almacen3': { const a = done('almacen'); return a && !a.up ? overBuilding(a) : null; }
     case 'anzuelo': return !S.tools.anzuelo && done('casa') ? overBuilding(done('casa')!) : null;
     case 'botellas': { const it = S.beach.items[0]; const t = it && tileAt(it.i, it.j); return t ? at(t, 1.1) : null; }
   }

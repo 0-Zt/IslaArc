@@ -118,8 +118,8 @@ Simples y tácticos, pensados para el celular.
 1. **v0.11 · Fuego, parte 1:** Taller de inventos (primera era), aserradero, ladrillos y vidrio, habilidades de cada figura en la isla, cajas y botellas que llegan a la playa.
 2. **v0.12 · Economía, parte 1** (ver docs/economia.md): almacén y topes, mejoras de edificios, carbón.
 3. **Hecho · v0.13 · Pesca:** muelle, gancho, minijuego, objetos que solo salen del mar, carnada y la Colección del mar en el Diario.
-4. **v0.14 · La balsa:** se arma con el plano de Marea (tablas, cuerda de algas). Navegar alrededor de la isla, zonas profundas más oscuras con objetos raros (las tres siluetas de "Aguas profundas" de la colección), oleaje que bloquea partes del mar. Debe gastar madera, tablas y algas, que en el capítulo 5 sobran.
-5. **v0.15 · Prototipo de cueva:** modo exploración tipo GBA, un nivel, una criatura y el primer combate por turnos.
+4. **Hecho · v0.14 · La balsa:** se arma con el plano de Marea (tablas, cuerda de algas). Navegar alrededor de la isla, zonas profundas más oscuras con objetos raros (las tres siluetas de "Aguas profundas" de la colección), oleaje que bloquea partes del mar. Debe gastar madera, tablas y algas, que en el capítulo 5 sobran.
+5. **v0.15 · Prototipo de cueva:** (la caracola grande podría estar en el fondo de la cueva, así la cueva abre el camino a la isla del faro) modo exploración tipo GBA, un nivel, una criatura y el primer combate por turnos.
 6. **v0.16 · Economía, parte 2:** barco de trueques, figuras asignadas a edificios, mejoras de nivel 3.
 7. **v0.17 · Cueva completa** con el Gólem de magma, y **v0.18 · Mar adentro** con la primera isla nueva, el objeto que calma las olas y los remolinos.
 8. **Después:** Ciudad de los Alfareros, el Espectro y el Faro.

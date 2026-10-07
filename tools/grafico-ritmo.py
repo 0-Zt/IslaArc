@@ -7,7 +7,7 @@ S=json.load(open(sp+'series.json'))
 t=[p['t'] for p in S]
 REF={'lingote','tablas','ladrillo','vidrio','carbon'}
 mats=[('madera','Madera'),('piedra','Piedra'),('arena','Arena'),('tierra','Tierra'),('mineral','Mineral'),('lingote','Lingotes'),('tablas','Tablas'),('ladrillo','Ladrillos'),('carbon','Carbón')]
-bounds=[];names=['1 Barro','2 Claro','3 Ruinas','4 Fuego','5 Muelle'];ends=[9,14,18,30,39]
+bounds=[];names=['1 Barro','2 Claro','3 Ruinas','4 Fuego','5 Muelle','6 Mar'];ends=[9,14,18,30,39,48]
 for e in ends:
     tt=next((p['t'] for p in S if p['goal']>=e),None); bounds.append(tt)
 SURF='#fcfcfb'; INK='#0b0b0b'; INK2='#52514e'; GRID='#e4e3df'; S1='#2a78d6'; S2='#eb6834'
