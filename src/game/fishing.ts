@@ -334,26 +334,30 @@ function reward(id: string) {
 }
 
 /* ---------- the tug (big shadows) ---------- */
-const pull = { on: false, fish: 0.5, ft: 0.5, fnext: 0, zone: 0.35, zv: 0, prog: 0.35, hold: false, heavy: false };
-const ZONE = 0.3;
+const pull = { on: false, fish: 0.5, ft: 0.5, fnext: 0, zone: 0.335, zv: 0, prog: 0.4, hold: false, heavy: false, t: 0 };
+/* Tuned with a simulated player (scratch pullsim): the green zone is about twice as fast as what bites,
+   so it can always be caught; the first second never counts against you. */
+const ZONE = 0.33, ZONE_SPEED = 1.1;
 function startPull(heavy: boolean) {
-  Object.assign(pull, { on: true, fish: 0.5, ft: 0.5, fnext: 0, zone: 0.35, zv: 0, prog: 0.35, hold: false, heavy });
+  Object.assign(pull, { on: true, fish: 0.5, ft: 0.5, fnext: 0.8, zone: 0.5 - ZONE / 2, zv: 0, prog: 0.4, hold: false, heavy, t: 0 });
   el('fishPull').hidden = false;
 }
 function hidePull() { pull.on = false; const e = document.getElementById('fishPull'); if (e) e.hidden = true; }
 function tickPull(dt: number) {
   if (!pull.on || !ses) return;
   const auto = (globalThis as any).__fishAuto;
-  pull.fnext -= dt;
-  if (pull.fnext <= 0) { pull.fnext = (pull.heavy ? 0.5 : 0.7) + Math.random() * 0.8; pull.ft = Math.random(); }
-  pull.fish += Math.sign(pull.ft - pull.fish) * Math.min(Math.abs(pull.ft - pull.fish), dt * (pull.heavy ? 0.9 : 0.65));
+  pull.fnext -= dt; pull.t += dt;
+  // what bit darts to a new spot every second or two, never across the whole bar at once
+  if (pull.fnext <= 0) { pull.fnext = (pull.heavy ? 0.7 : 0.9) + Math.random() * 1.0; pull.ft = Math.max(0.03, Math.min(0.97, pull.fish + (Math.random() * 2 - 1) * 0.75)); }
+  pull.fish += Math.sign(pull.ft - pull.fish) * Math.min(Math.abs(pull.ft - pull.fish), dt * (pull.heavy ? 0.74 : 0.55));
   const hold = auto ? pull.zone + ZONE / 2 < pull.fish : pull.hold;
-  pull.zv += (hold ? 2.4 : -2.0) * dt; pull.zv = Math.max(-1.2, Math.min(1.2, pull.zv));
+  // the zone answers quickly (a little weight, no long slide)
+  pull.zv += ((hold ? ZONE_SPEED : -ZONE_SPEED) - pull.zv) * Math.min(1, dt * 6);
   pull.zone += pull.zv * dt;
   if (pull.zone < 0) { pull.zone = 0; pull.zv = Math.max(0, pull.zv) * 0.3; }
   if (pull.zone > 1 - ZONE) { pull.zone = 1 - ZONE; pull.zv = Math.min(0, pull.zv) * 0.3; }
   const inside = pull.fish >= pull.zone && pull.fish <= pull.zone + ZONE;
-  pull.prog += (inside ? 0.3 : -0.22) * dt;
+  pull.prog += (inside ? 0.22 : pull.t < 1 ? 0 : -0.17) * dt;
   ses.c.swing = inside ? -0.6 + Math.sin(performance.now() / 90) * 0.15 : -0.2;
   if (ses.target) { const tip = ahead(ses.sp(), 0.25); ses.target.x += (tip.x - ses.target.x) * dt * (inside ? 0.15 : -0.05); ses.target.z += (tip.z - ses.target.z) * dt * (inside ? 0.15 : -0.05); bobber.position.set(ses.target.x, WATER_Y - 0.06, ses.target.z); }
   const e = document.getElementById('fishPull');
@@ -361,7 +365,7 @@ function tickPull(dt: number) {
     (e.querySelector('.pz') as HTMLElement).style.left = `${pull.zone * 100}%`;
     (e.querySelector('.pf') as HTMLElement).style.left = `${pull.fish * 100}%`;
     (e.querySelector('.pp i') as HTMLElement).style.width = `${Math.max(0, Math.min(1, pull.prog)) * 100}%`;
-    e.classList.toggle('in', inside);
+    e.classList.toggle('in', inside); e.classList.toggle('hold', hold);
   }
   if (pull.prog >= 1) { hidePull(); land(); }
   else if (pull.prog <= 0) {
@@ -444,7 +448,7 @@ function el(id: string) {
     e.querySelector('#fExit')!.addEventListener('click', ev => { ev.stopPropagation(); stopFishing(); });
   }
   if (id === 'fishPull') {
-    e.innerHTML = '<div class="fpbox"><b>¡Algo grande tira!</b><small>Mantén apretado para subir la zona verde y seguirlo</small><div class="pt"><div class="pz"></div><div class="pf"></div></div><div class="pp"><i></i></div></div>';
+    e.innerHTML = '<div class="fpbox"><b>¡Algo grande tira!</b><small>Deja el punto dentro de la zona verde hasta llenar la barra</small><div class="pt"><div class="pz"></div><div class="pf"></div></div><div class="pk"><span class="kl">◀ suelta</span><span class="kr">mantén apretado ▶</span></div><div class="pp"><i></i></div></div>';
     const down = (ev: Event) => { ev.preventDefault(); pull.hold = true; }, up = () => { pull.hold = false; };
     e.addEventListener('pointerdown', down); e.addEventListener('pointerup', up); e.addEventListener('pointercancel', up); e.addEventListener('pointerleave', up);
   }
