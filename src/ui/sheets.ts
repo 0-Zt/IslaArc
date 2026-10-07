@@ -191,8 +191,8 @@ function render() {
     h += diarioHTML();
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
-    h += `<h2>¡La isla despierta!</h2><p>Fundiste metal, desenterraste a Musgo, llegaste a las ruinas y despertaste a Brasa en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}.</p>`
-      + '<p>Sigue expandiendo y ordenando tu isla: planta semillas, traza senderos y deja espacio para lo que viene: decoración, la cueva del volcán y el secreto de Brasa.</p>'
+    h += `<h2>¡Tienes la caracola grande!</h2><p>De la primera rama a la cueva del volcán en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}: despertaste a Musgo y a Brasa, pescaste lo que guardaba el mar, cruzaste el agua oscura y bajaste hasta el río de lava.</p>`
+      + '<p>Aquí termina esta versión. Lo que viene: soplar la caracola frente a las olas grandes, el gólem que despierta y la isla del faro, donde espera Marea. Mientras, sigue haciendo crecer tu isla.</p>'
       + '<button class="btn main" data-act="close" style="width:100%">Seguir jugando</button>';
   }
   $('sheet').innerHTML = h;

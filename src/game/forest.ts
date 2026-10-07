@@ -158,7 +158,7 @@ export function removeStump(tile: Tile): 'stump' | 'sprout' | false {
 }
 
 /** Where a seedling can go (planted by hand or spread by the forest). */
-export const canGrowOn = (t: Tile | null) => !!t && GRASS.includes(t.type) && !t.tree && !t.sprout && !t.rock && !t.building && !t.ancient && !t.mound && !t.mark && !stumps.has(t);
+export const canGrowOn = (t: Tile | null) => !!t && GRASS.includes(t.type) && !t.tree && !t.sprout && !t.rock && !t.building && !t.ancient && !t.mound && !t.mark && !t.solid && !stumps.has(t);
 
 let nextSpread = 0;
 function spread() {

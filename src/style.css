@@ -372,3 +372,27 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 
 #sailBar[hidden],#fishBar[hidden]{display:none}
 #sailBar.deep{border-color:#5a7ab8;background:#0a1830ee}
+
+/* ---------- the volcano cave (v0.15) ---------- */
+body.incave #labels,body.incave #bottom{display:none}
+#caveUI[hidden]{display:none}
+#cvPad{position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:156px;height:156px;z-index:5;touch-action:none;user-select:none;-webkit-user-select:none}
+#cvPad i{position:absolute;left:52px;top:52px;width:52px;height:52px;background:#1a2a36cc;border-radius:8px}
+#cvPad button{position:absolute;width:52px;height:52px;background:var(--glass);border:2px solid var(--line);border-radius:12px;color:var(--text);display:grid;place-items:center;box-shadow:0 3px 0 #0006;touch-action:none}
+#cvPad button.on{background:var(--glass2);border-color:var(--sun);color:var(--sun);transform:translateY(2px);box-shadow:0 1px 0 #0006}
+#cvPad .dN{left:52px;top:0}#cvPad .dS{left:52px;top:104px}#cvPad .dS svg{transform:rotate(180deg)}
+#cvPad .dW{left:0;top:52px}#cvPad .dW svg{transform:rotate(-90deg)}#cvPad .dE{left:104px;top:52px}#cvPad .dE svg{transform:rotate(90deg)}
+#cvA{position:fixed;right:18px;bottom:calc(30px + env(safe-area-inset-bottom,0px));width:84px;height:84px;border-radius:50%;background:var(--sun);color:var(--sun-ink);border:3px solid #b0822a;box-shadow:0 4px 0 #0007;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5;touch-action:manipulation}
+#cvA b{font-family:var(--display);font-size:28px;line-height:1}
+#cvA small{font-size:12px;font-weight:600;margin-top:2px}
+#cvA:active{transform:translateY(3px);box-shadow:0 1px 0 #0007}
+#cvA.dim{background:#8a7a5a;border-color:#6a5a3a}
+#cvBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(126px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;align-items:center;z-index:5;max-width:calc(100vw - 24px)}
+#cvBar span{font-family:var(--display);font-size:13px;color:#ffcf8a;background:#1a100acc;border:1.5px solid #5a3a22;border-radius:8px;padding:4px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cvBar button{background:var(--glass);border:1.5px solid var(--line);border-radius:10px;padding:5px 9px;font-size:12px;white-space:nowrap}
+@media (max-width:520px){#cvBar{bottom:calc(178px + env(safe-area-inset-bottom,0px));left:12px;transform:none}}
+#cvSign{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%);font-family:var(--display);font-size:24px;color:#ffe2b0;background:#1a100ae6;border:2px solid #8a5a2e;border-radius:6px;padding:10px 20px;z-index:6;pointer-events:none;box-shadow:0 0 0 4px #0006;text-align:center;white-space:nowrap}
+#cvSign.in{animation:cvsign 3.2s ease-out forwards}
+@keyframes cvsign{0%{opacity:0;transform:translate(-50%,-30%)}10%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1}100%{opacity:0}}
+#cvFade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:8;transition:opacity .28s}
+#cvFade.on{opacity:1}

@@ -13,6 +13,8 @@ import { fishingActive, fishState, bestShadow } from '../game/fishing';
 import { sailingActive, sailState } from '../game/raft';
 import { DEEP, SURGE } from '../world/sea';
 import { on } from '../core/events';
+import { caveActive, caveHint } from '../game/cave';
+import { mouthTarget } from '../game/cavemouth';
 
 /* A bouncing arrow over whatever the current goal needs you to tap next: first the figure
    (when one has to be chosen), then the tree, rock, building or ruin. It hides while the
@@ -54,6 +56,7 @@ const leader = () => crew.find(q => q.id === selected) || crew.find(q => q.id ==
 const idleAt = (b: Building | undefined) => b && !b.jobs?.length ? overBuilding(b) : null;
 
 const FISH_GOALS = new Set(['pescar1', 'pescar6', 'vasija', 'algas', 'llave', 'cofre', 'coleccion', 'hondo1', 'cobre', 'brujula', 'timon']);
+const CAVE_GOALS = new Set(['grieta', 'bajar', 'cvBraseros', 'cvSalon', 'cvEstatuas', 'cvRio', 'cvCruzar', 'cvCaracola']);
 const SEA_GOALS = new Set(['zarpar', 'hondo', 'hondo1', 'cobre', 'brujula', 'olas', 'timon']);
 /** Out at sea: towards the nearest dark water, or the big waves. */
 function seaTarget(goal: string): THREE.Vector3 | null {
@@ -65,6 +68,12 @@ function seaTarget(goal: string): THREE.Vector3 | null {
 }
 export function pointerTarget(): THREE.Vector3 | null {
   const g = currentGoal(); if (!g) return null;
+  if (caveActive()) return caveHint(g.id);
+  if (CAVE_GOALS.has(g.id)) {
+    if (g.id === 'grieta' && !S.tools.pico) return done('casa') ? overBuilding(done('casa')!) : null;
+    if (g.id === 'grieta' && busy('cueva')) return null;
+    return mouthTarget();
+  }
   if (fishingActive() && !FISH_GOALS.has(g.id)) return null;
   if (sailingActive() && !fishingActive()) return SEA_GOALS.has(g.id) ? seaTarget(g.id) : null;
   const here = leader() ? tileOf(leader()!) : null;

@@ -37,6 +37,8 @@ import { tickLabels, clearLabels } from './ui/labels';
 import { tickPointer, pointerTarget } from './ui/pointer';
 import './game/economy';
 import { capOf } from './game/state';
+import { tickCave, caveActive, enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold } from './game/cave';
+import { placeCaveMouth, tickCaveMouth, mouth, mouthTap } from './game/cavemouth';
 import { GOALS } from './game/goals';
 
 const SEED = 4242;
@@ -46,7 +48,7 @@ renderer.info.autoReset = false;
 setOccupiedTest(occupied);
 
 function newGame(state: typeof S | null) {
-  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearFishing(); clearRaft(); clearSites(); clearMarks(); clearRuins(); clearBeach();
+  exitCave(true); cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearFishing(); clearRaft(); clearSites(); clearMarks(); clearRuins(); clearBeach();
   clearCrew(); clearBuildings(); clearForest(); clearLabels();
   while (worldGroup.children.length) worldGroup.remove(worldGroup.children[0]);
   clearTrees();
@@ -69,6 +71,7 @@ function newGame(state: typeof S | null) {
   buildForestEdge();
   for (const b of S.buildings) { if (b.type === 'brasero') prepareBrazier(b.i, b.j); createBuilding(b.type, b.i, b.j, b.rot, false, b); }
   spawnRuins(); fixBrazierModels();
+  placeCaveMouth();          // the way into the volcano (v0.15)
   rebuildDeco();
   // start near the centre, on open flat ground
   const c0 = tileAt(Math.floor(N / 2), Math.floor(N / 2)) || landTiles()[0];
@@ -120,6 +123,7 @@ on('siteChanged', () => persist());
 on('marksChanged', () => persist());
 on('pathsChanged', () => { buildTerrain(); rebuildDeco(); buildForestEdge(); persist(); });
 on('goalAdvanced', () => persist());
+on('caveChanged', () => persist());
 
 $('clock').addEventListener('click', () => {
   const m = Math.max(1, Math.round(minutesToNight()));
@@ -161,6 +165,7 @@ let fpsAcc = 0, fpsFrames = 0;
 
 /* keep the camera over the island */
 function clampCamera() {
+  if (caveActive()) return;
   const t = controls.target, lim = sailingActive() ? 36 : N / 2 - 1;
   const cx = Math.max(-lim, Math.min(lim, t.x)), cz = Math.max(-lim, Math.min(lim, t.z));
   if (cx !== t.x || cz !== t.z) { camera.position.x += cx - t.x; camera.position.z += cz - t.z; t.x = cx; t.z = cz; }
@@ -192,13 +197,15 @@ function frame(now: number) {
   tickFishing(dt, T);
   tickRaft(dt, T);
   tickSea(dt, T);
+  tickCaveMouth(dt, T);
+  tickCave(dt, T);
   tickPointer(dt, T, sheetOpen());
   uiAcc += dt; if (uiAcc > 0.25) { refreshHUD(uiAcc); refreshSheet(); uiAcc = 0; }
   tickWater(T);
   tickAmbience(raw, nightK);
   tickFly(raw); controls.update(); clampCamera();
   sunAcc += dt; if (sunAcc > 0.5) { sunAcc = 0; placeSun(); }
-  const ft = focusTarget(); focusOn(ft ? ft.setY(ft.y + 0.5).project(camera).y : null, raw, !!place);
+  const ft = focusTarget(); focusOn(ft ? ft.setY(ft.y + 0.5).project(camera).y : null, raw, !!place || caveActive());
   fpsAcc += raw; fpsFrames++;
   if (fpsAcc > 0.5) { const el = $('fps'); el.hidden = !gfx.fps; if (gfx.fps) el.textContent = `${Math.round(fpsFrames / fpsAcc)} fps · ${pixelRatio().toFixed(2)}x`; fpsAcc = 0; fpsFrames = 0; }
   adaptResolution(raw); // resizing clears the canvas, so it must happen before drawing
@@ -214,8 +221,9 @@ if (location.hash === '#debug') {
     get S() { return S; }, crew, buildings, trees, rocks, ancients, get mound() { return mound; }, grove: () => grove,
     renderer, camera, controls, order, tileAt, landTiles, checkGoals, pixelRatio,
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
-    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickRaft(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
+    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickRaft(0.05, T); tickCaveMouth(0.05, T); tickCave(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
     scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, cancelFly, startSailing, fishHere, goBack, sailState, DEEP, sailTo: (x: number, z: number) => { const r = new THREE.Raycaster(); r.ray.origin.set(x, 5, z); r.ray.direction.set(0, -1, 0); return sailTap(r); }, startFishing, stopFishing, castAt, fishState, useBait, fishShadows, bestShadow, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
+    enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold, caveActive, mouthTap, mouth: () => mouth && { i: mouth.tile.i, j: mouth.tile.j, open: mouth.open, x: mouth.tile.wx, z: mouth.tile.wz },
   };
 }

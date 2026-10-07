@@ -26,6 +26,7 @@ export const ICON: Record<ResKey, string> = {
   lingote: mkIcon(['.......', '.......', '..MMMMM', '.MHMMMD', 'MMMMMD.', 'MDDDD..'], { M: '#b8c0cc', H: '#ffffff', D: '#6a7280' }),
   algas: mkIcon(['.G...G.', '.GL.GL.', '..GLG..', '..LGL..', '.GLG.G.', 'GG..GG.'], { G: '#3f8a4a', L: '#7fc955' }),
   cobre: mkIcon(['.......', '..CCC..', '.CHCCC.', 'CCCCCDC', 'CCHCCDC', '.CCDDD.'], { C: '#c8763a', H: '#f0b070', D: '#8a4a22' }),
+  cuarzo: mkIcon(['...Q...', '..QHQ..', '.Q.QH.Q', '.QH.QQH', 'QQHQQQ.', '.DDDDD.'], { Q: '#7ad8f0', H: '#e8fbff', D: '#4a5a6a' }),
   carbon: mkIcon(['.......', '..KK...', '.KHKK.K', '.KKKKKH', 'KKHKKKK', '.KKKDK.'], { K: '#3a3632', H: '#6a625a', D: '#e0602a' }),
 };
 export const img = (k: ResKey) => `<img src="${ICON[k]}" alt="">`;
@@ -119,7 +120,7 @@ export function refreshHUD(dt = 0) {
   const st = chapterStep();
   const gn = st ? `Cap. ${st.ch + 1}<span class="gp">${Array.from({ length: st.of }, (_, i) => `<i class="${i < st.done ? 'on' : i === st.done ? 'cur' : ''}"></i>`).join('')}</span>` : 'Listo';
   if ($('goalN').innerHTML !== gn) $('goalN').innerHTML = gn;
-  const gt = g ? goalText(g) : 'Sigue con los encargos del tablón. El capítulo 4 llega pronto.';
+  const gt = g ? goalText(g) : 'Sigue con los encargos del tablón. La isla del faro llega pronto.';
   if ($('goalT').textContent !== gt) $('goalT').textContent = gt;
   const hint = g && !place ? g.hint : undefined;
   // crew cards

@@ -356,10 +356,71 @@
     ]
   },
   {
-    "id": "origen",
-    "title": "El origen",
+    "id": "cueva",
+    "title": "La cueva del volcán",
+    "desc": "Al norte de la isla, una grieta en la roca negra respira aire tibio. Marea dejó la caracola allá abajo.",
+    "reward": {
+      "stars": 15,
+      "text": "La caracola grande y +15 ★"
+    },
+    "stages": [
+      {
+        "name": "La boca",
+        "n": 3
+      },
+      {
+        "name": "Las salas",
+        "n": 3
+      },
+      {
+        "name": "La caracola",
+        "n": 3
+      }
+    ],
+    "goals": [
+      {
+        "id": "grieta",
+        "text": "Abre con el pico la grieta que humea al norte"
+      },
+      {
+        "id": "bajar",
+        "text": "Toca la entrada y baja a la cueva"
+      },
+      {
+        "id": "cvBraseros",
+        "text": "Enciende los dos braseros de la entrada ({br}/2)"
+      },
+      {
+        "id": "cvSalon",
+        "text": "Cruza la puerta de runas y baja al segundo piso"
+      },
+      {
+        "id": "cvEstatuas",
+        "text": "Haz que las cuatro guardianas miren al altar ({es}/4)"
+      },
+      {
+        "id": "cvRio",
+        "text": "Baja al tercer piso, donde corre la lava"
+      },
+      {
+        "id": "cvCruzar",
+        "text": "Cruza el río de lava: empuja rocas para enfriarla"
+      },
+      {
+        "id": "cvCaracola",
+        "text": "Toma la caracola grande"
+      },
+      {
+        "id": "cvSalir",
+        "text": "Vuelve a la isla con la caracola"
+      }
+    ]
+  },
+  {
+    "id": "faro",
+    "title": "La isla del faro",
     "locked": true,
-    "desc": "La caracola grande, la isla del faro y los que esperan al otro lado. (Próximamente.)",
+    "desc": "Con la caracola, las olas grandes se calman. Al otro lado esperan Marea y otros como tú. (Próximamente.)",
     "goals": []
   }
 ]

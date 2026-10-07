@@ -2,6 +2,7 @@ import { on, emit } from '../core/events';
 import { S, DATA } from './state';
 import { has, buildings, isDone, levelOf } from './buildings';
 import { addStars } from './progress';
+import CAVE from '../data/cave.json';
 
 /* The main route: chapters of guided goals (data/chapters.json). Goals are done in order;
    finishing the last goal of a chapter gives its reward. The checks live here. */
@@ -77,7 +78,18 @@ const CHECK: Record<string, () => boolean> = {
   brujula: () => !!S.fish.brujula,
   olas: () => !!S.flags.olas,
   timon: () => !!S.fish.timon,
+  grieta: () => !!S.flags.cuevaAbierta,
+  bajar: () => !!S.flags.cuevaEntro,
+  cvBraseros: () => !!S.cave?.f[0]?.door,
+  cvSalon: () => (S.cave?.max ?? -1) >= 1,
+  cvEstatuas: () => !!S.cave?.f[1]?.door,
+  cvRio: () => (S.cave?.max ?? -1) >= 2,
+  cvCruzar: () => !!S.flags.lavaCruzada,
+  cvCaracola: () => !!S.cave?.caracola,
+  cvSalir: () => !!S.flags.caracolaIsla,
 };
+/** Guardians of the second cave floor already looking at the altar. */
+const statuesRight = () => { const f = S.cave?.f[1]; return f ? (CAVE.floors[1].statues || []).filter(s => f.dirs[`${s.x},${s.z}`] === s.want).length : 0; };
 const builtBraziers = () => buildings.filter(b => b.type === 'brasero' && isDone(b)).length;
 
 export const currentGoal = () => GOALS[S.goal] || null;
@@ -93,7 +105,7 @@ export const goalText = (g: { text: string }) => g.text
   .replace('{n}', String(S.ruins.lit.filter(Boolean).length)).replace('{b}', String(builtBraziers()))
   .replace('{t}', String(Math.min(15, S.stats.tablas || 0))).replace('{l}', String(Math.min(10, S.stats.ladrillo || 0))).replace('{v}', String(Math.min(6, S.stats.vidrio || 0)))
   .replace('{i}', String(Math.min(3, Object.keys(S.inv).length))).replace('{b2}', String(Math.min(2, S.lore.length))).replace('{c}', String(Math.min(8, S.stats.carbon || 0)))
-  .replace('{p}', String(Math.min(6, S.stats.pescados || 0))).replace('{va}', String(Math.min(4, S.fish.vasija || 0))).replace('{al}', String(Math.min(10, S.got.algas || 0))).replace('{cu}', String(Math.min(4, S.got.cobre || 0))).replace('{co}', String(Math.min(10, Object.keys(S.fish).filter(k => S.fish[k] > 0).length)));
+  .replace('{p}', String(Math.min(6, S.stats.pescados || 0))).replace('{va}', String(Math.min(4, S.fish.vasija || 0))).replace('{al}', String(Math.min(10, S.got.algas || 0))).replace('{cu}', String(Math.min(4, S.got.cobre || 0))).replace('{br}', String(S.cave?.f[0]?.lit.length || 0)).replace('{es}', String(statuesRight())).replace('{co}', String(Math.min(10, Object.keys(S.fish).filter(k => S.fish[k] > 0).length)));
 export const goalDone = (i: number) => i < S.goal;
 
 export function checkGoals(quiet = false) {

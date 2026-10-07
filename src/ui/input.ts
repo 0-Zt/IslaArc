@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { fishingActive, fishTap, startFishing } from '../game/fishing';
 import { sailingActive, sailTap } from '../game/raft';
+import { caveActive, caveTap } from '../game/cave';
+import { mouth, mouthTap } from '../game/cavemouth';
 import { on, emit } from '../core/events';
 import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
 import { tileProxies, topY, tileAt as tileAtIJ, type Tile } from '../world/island';
@@ -35,7 +37,7 @@ export function centreTile(): Tile | null {
   return h ? h.object.userData.tile : null;
 }
 
-type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'sprout' | 'mark' | 'site' | 'ruin' | 'shrine' | 'beach' | 'tile'; mk?: MarkKind; k?: number; tile?: Tile; id?: CharId; b?: any };
+type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'sprout' | 'mark' | 'site' | 'ruin' | 'shrine' | 'beach' | 'cave' | 'tile'; mk?: MarkKind; k?: number; tile?: Tile; id?: CharId; b?: any };
 function pick(): Hit | null {
   const hits: Hit[] = [];
   const up = (o: THREE.Object3D | null, key: string) => { while (o && o.userData[key] === undefined) o = o.parent; return o ? o.userData[key] : undefined; };
@@ -52,6 +54,7 @@ function pick(): Hit | null {
   const uh = ray.intersectObjects(ruinPropMeshes(), true)[0]; if (uh) hits.push({ d: uh.distance - 0.3, kind: 'ruin', k: up(uh.object, 'ruinSlot') });
   const bh2 = ray.intersectObjects(beachMeshes(), true)[0]; if (bh2) { const it = up(bh2.object, 'beachItem'); if (it) hits.push({ d: bh2.distance - 0.6, kind: 'beach', tile: tileAtIJ(it.i, it.j) }); }
   const qh = ray.intersectObjects(shrineMeshes(), true)[0]; if (qh) hits.push({ d: qh.distance, kind: 'shrine' });
+  if (mouth) { const ch2 = ray.intersectObject(mouth.group, true)[0]; if (ch2) hits.push({ d: ch2.distance - 0.25, kind: 'cave', tile: mouth.tile }); }
   const gh = ray.intersectObjects(tileProxies, false)[0]; if (gh) hits.push({ d: gh.distance + 0.05, kind: 'tile', tile: gh.object.userData.tile });
   hits.sort((a, b) => a.d - b.d);
   // with a figure selected, tapping "through" it at a job behind it gives the order instead of deselecting
@@ -78,6 +81,8 @@ function seeGrove() {
 export function onTap(x: number, y: number) {
   scene.updateMatrixWorld();
   aim(x, y);
+  // underground, taps walk the party or use what was tapped
+  if (caveActive()) { if (sheetOpen()) { closeSheet(); return; } caveTap(ray); return; }
   // at the pier every tap is about the line: cast, wait, strike
   if (fishingActive()) { if (sheetOpen()) { closeSheet(); return; } fishTap(ray); return; }
   if (sailingActive()) { if (sheetOpen()) { closeSheet(); return; } sailTap(ray); return; }
@@ -110,6 +115,7 @@ export function onTap(x: number, y: number) {
   if (!h) { select(null); return; }
   if (h.kind === 'char') { select(selected === h.id ? null : h.id!); return; }
   if (h.kind === 'ruin') { select(null); openRuin(h.k!); return; }
+  if (h.kind === 'cave') { mouthTap(); return; }
   if (h.kind === 'beach' && h.tile) {
     // the selected figure goes to pick it up, or else the nearest free one
     const sel = selected ? crew.find(q => q.id === selected) : null;

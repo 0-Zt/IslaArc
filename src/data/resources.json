@@ -49,5 +49,10 @@
     "name": "Cobre",
     "hidden": true,
     "nohud": true
+  },
+  "cuarzo": {
+    "name": "Cuarzo",
+    "hidden": true,
+    "nohud": true
   }
 }

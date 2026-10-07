@@ -1,0 +1,227 @@
+{
+  "legend": {
+    "#": "pared",
+    ".": "suelo",
+    ",": "suelo con musgo",
+    "S": "escalera de subida (entrada)",
+    ">": "escalera de bajada",
+    "B": "roca que se empuja",
+    "O": "pozo (una roca lo tapa)",
+    "~": "lava (una roca la enfría)",
+    "R": "escombros (se rompen con el pico)",
+    "t": "brasero apagado",
+    "D": "puerta de runas",
+    "G": "reja",
+    "P": "placa de presión",
+    "s": "estatua",
+    "A": "altar",
+    "C": "cristal (cuarzo)",
+    "M": "veta de cobre",
+    "K": "cofre",
+    "L": "tablilla",
+    "Q": "pedestal de la caracola",
+    "g": "gólem dormido",
+    "*": "estalagmita"
+  },
+  "floors": [
+    {
+      "name": "La boca del volcán",
+      "intro": "Aire tibio y olor a piedra quemada. En la penumbra se ven dos braseros apagados y una puerta con runas.",
+      "door": "braseros",
+      "map": [
+        "################",
+        "#######>########",
+        "#######.########",
+        "#######D########",
+        "###.....,..L####",
+        "##t.....########",
+        "##......BO.t####",
+        "##..,...########",
+        "###..C.....K####",
+        "####.....M.,####",
+        "#######R########",
+        "#######S########",
+        "################"
+      ],
+      "decor": {
+        "mushrooms": [
+          [
+            3,
+            7
+          ],
+          [
+            10,
+            9
+          ],
+          [
+            4,
+            4
+          ]
+        ],
+        "stalagmites": [
+          [
+            13,
+            7
+          ],
+          [
+            2,
+            8
+          ]
+        ]
+      },
+      "lore": "«Bajo el volcán cocimos a los primeros. El fuego de la montaña le da a la arcilla lo que el horno no puede: un corazón.» — tablilla de los Alfareros",
+      "chest": {
+        "gives": {
+          "lingote": 4,
+          "vidrio": 2
+        },
+        "stars": 1
+      }
+    },
+    {
+      "name": "El salón de las guardianas",
+      "intro": "Cuatro guardianas rodean un altar. Ninguna lo mira. Algunas parecen tomadas de la mano con la del frente.",
+      "door": "estatuas",
+      "map": [
+        "#################",
+        "########>########",
+        "########D########",
+        "####C........####",
+        "###.....s.....###",
+        "###..........####",
+        "###.s...A...Gs###",
+        "###..........####",
+        "###.....s.....###",
+        "###.........M.###",
+        "###.B...P..,..###",
+        "####K.L.......###",
+        "#######...#######",
+        "########S########",
+        "#################"
+      ],
+      "statues": [
+        {
+          "x": 8,
+          "z": 4,
+          "dir": "N",
+          "want": "S",
+          "link": [
+            8,
+            8
+          ]
+        },
+        {
+          "x": 4,
+          "z": 6,
+          "dir": "W",
+          "want": "E",
+          "link": [
+            13,
+            6
+          ]
+        },
+        {
+          "x": 13,
+          "z": 6,
+          "dir": "S",
+          "want": "W"
+        },
+        {
+          "x": 8,
+          "z": 8,
+          "dir": "E",
+          "want": "N"
+        }
+      ],
+      "decor": {
+        "mushrooms": [
+          [
+            5,
+            12
+          ],
+          [
+            14,
+            4
+          ],
+          [
+            3,
+            9
+          ]
+        ],
+        "stalagmites": []
+      },
+      "lore": "«Las cuatro guardianas miran al centro. Lo que miran no se puede robar: solo se puede pedir prestado.» — tablilla de los Alfareros",
+      "chest": {
+        "gives": {
+          "cuarzo": 3,
+          "tablas": 6
+        },
+        "stars": 2
+      }
+    },
+    {
+      "name": "El río de lava",
+      "intro": "El calor aprieta. La lava corre de lado a lado; las rocas sueltas tal vez sirvan de puente.",
+      "door": "",
+      "map": [
+        "###################",
+        "########Q##########",
+        "######....L########",
+        "#####g......,######",
+        "####..........K####",
+        "####~~~~~~~~~~~####",
+        "####~~~~~~~~~~~####",
+        "####....B......####",
+        "####.....B.....####",
+        "####.........M.####",
+        "####~~~~~~~~~~~####",
+        "####......B....####",
+        "####.,.........####",
+        "#####.L.....C.#####",
+        "########S##########",
+        "###################"
+      ],
+      "decor": {
+        "mushrooms": [
+          [
+            5,
+            12
+          ],
+          [
+            13,
+            12
+          ]
+        ],
+        "stalagmites": [
+          [
+            4,
+            8
+          ],
+          [
+            14,
+            11
+          ]
+        ]
+      },
+      "lore": "«Aquí estuvo Marea. Soplé la caracola una vez y el mar se calmó. La devolví a su lugar: es de la montaña. Quien la necesite, que la pida.» — grabado con una uña, junto a una M",
+      "lore2": "«El gólem guarda el calor de la montaña. Duerme mientras nadie le quite lo que cuida.» — tablilla de los Alfareros",
+      "chest": {
+        "gives": {
+          "lingote": 6,
+          "cobre": 2
+        },
+        "stars": 3
+      }
+    }
+  ],
+  "story": {
+    "cueva": {
+      "title": "La cueva del volcán",
+      "text": "La roca cede con un crujido. Desde abajo sube aire tibio y un brillo naranja muy débil.\n\nToca la entrada para bajar. Adentro las figuras se mueven en fila, casilla a casilla: usa las flechas o toca el suelo, y el botón A para mirar, empujar o tocar lo que tengas al frente."
+    },
+    "caracola": {
+      "title": "La caracola grande",
+      "text": "Pesada y tibia, con un brillo de nácar por dentro. Al levantarla, la montaña suspira.\n\nEn la oscuridad, a tu lado, los ojos del gólem se encienden un instante… y vuelven a apagarse.\n\nCon esta caracola, las olas grandes deberían calmarse. Al otro lado espera la isla del faro."
+    }
+  }
+}

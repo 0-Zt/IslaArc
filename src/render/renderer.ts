@@ -231,6 +231,7 @@ const mixHex = (a: string, b: string, k: number) => '#' + _ca.set(a).lerp(_cb.se
 let skySig = '';
 /** Lighting between two presets (k = 0 → a, 1 → b). The day-night cycle calls this every few frames. */
 export function applyBlend(ka: TimeKey, kb: TimeKey, k: number, azimuth = 35) {
+  if (caveMode) return;   // underground the day does not reach
   const a: Preset = TIMES[ka], b: Preset = TIMES[kb], L = (x: number, y: number) => x + (y - x) * k;
   const sky = [0, 1, 2].map(i => mixHex(a.sky[i], b.sky[i], k));
   const sig = sky.join();
@@ -251,6 +252,25 @@ export function applyBlend(ka: TimeKey, kb: TimeKey, k: number, azimuth = 35) {
   placeSun();
 }
 export function applyTime(k: TimeKey) { applyBlend(k, k, 0); }
+
+/* ---------- underground: the volcano cave has its own light ---------- */
+let caveMode = false;
+const CAVE_BG = new THREE.Color('#0d0907');
+/** Switches the cave lighting on (dark, warm, light from the lanterns) or back to the island sky. */
+export function setCaveMode(on: boolean) {
+  caveMode = on;
+  const fog = scene.fog as THREE.Fog;
+  if (on) {
+    scene.background = CAVE_BG; fog.color.copy(CAVE_BG); fog.near = 21; fog.far = 34;
+    hemi.color.set('#aaa0bc'); hemi.groundColor.set('#2a2018'); hemi.intensity = 0.95;
+    sun.color.set('#ffcf9a'); sun.intensity = 1.3; sunEl = 70; sunAz = 100;
+    rim.intensity = 0; scene.environmentIntensity = 0.04; glowMul = 2.2;
+    placeSun();
+  } else {
+    scene.background = skyTex; fog.near = 50; fog.far = 110; skySig = '';
+  }
+}
+export const inCaveLight = () => caveMode;
 
 buildComposer();
 

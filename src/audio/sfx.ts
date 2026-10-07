@@ -74,13 +74,23 @@ function startWaves() {
   lfo.connect(lg).connect(g.gain);
   s.connect(fl).connect(g).connect(ambBus); s.start(); lfo.start();
 }
-let ambAcc = 0;
+let ambAcc = 0, cave = false;
+/** Underground there are no birds: drops of water with a little echo, and the mountain rumbling now and then. */
+export function setCaveAmbience(on: boolean) { cave = on; ambAcc = 0.5; }
 /** Called every frame with how much night it is (0..1): birds by day, crickets by night. */
 export function tickAmbience(dt: number, night: number) {
   if (!ctx || !enabled) return;
   ambAcc -= dt; if (ambAcc > 0) return;
   ambAcc = 0.4 + Math.random() * 1.6;
   const t = ctx.currentTime;
+  if (cave) {
+    ambAcc = 0.9 + Math.random() * 2.2;
+    if (Math.random() < 0.8) {
+      const f = 1500 + Math.random() * 900;
+      for (let k = 0; k < 3; k++) tone(t + k * 0.21, f, f * 0.55, 0.05, 0.05 / (1 + k * 2.2), 'sine', ambBus);
+    } else tone(t, 70, 46, 1.1, 0.07, 'triangle', ambBus);
+    return;
+  }
   if (night < 0.5 && Math.random() < 0.55) {
     // a little bird: two or three quick rising chirps
     const f = 2200 + Math.random() * 1400, n = 2 + Math.floor(Math.random() * 3);

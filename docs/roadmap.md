@@ -174,11 +174,24 @@ Mecánicas tomadas de Animal Crossing y Stardew Valley, en el formato de la isla
 
 Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates por turnos) y **docs/economia.md** (plan de economía: topes, mejoras, cadenas por era, sumideros y ritmo objetivo).
 
+## La cueva del volcán (v0.15)
+
+- **La grieta:** al norte de la isla hay un cono pequeño de roca volcánica con una grieta que brilla y humea. Desde el capítulo 7, una figura con el **pico de metal** la abre en 12 golpes; queda una boca oscura con luz naranja adentro. Para entrar hace falta la **linterna**.
+- **Modo cueva, estilo Pokémon de GBA:** cámara alta y cercana desde el sur, luz propia (oscuro, cálido, con luces de faroles, braseros, cristales y lava). El equipo baja en fila (Arci adelante, Musgo y Brasa detrás) y se mueve casilla a casilla con la **cruceta** (se puede mantener apretada) o **tocando el suelo**. El **botón A** usa lo que está al frente y dice qué haría: empujar, encender, girar, romper, picar, abrir, leer, tomar o mirar. Tocar un objeto lleva al equipo al lado y lo usa. También hay teclado (flechas/WASD y espacio).
+- **Piso 1 · La boca del volcán:** escombros que se rompen con el pico, una roca que se empuja a un pozo para pasar, dos braseros que encender y una puerta de runas que se hunde en el suelo.
+- **Piso 2 · El salón de las guardianas:** cuatro estatuas de arcilla que giran con A y tienen que mirar al altar. Algunas están **unidas de la mano** con la del frente y giran juntas. Una está detrás de una **reja** que se abre con una **placa de presión**: hay que empujar una roca encima (si la pisa una figura, la reja baja apenas se aleja). Con las cuatro mirando, el orbe del altar se enciende y la puerta se abre.
+- **Piso 3 · El río de lava:** las rocas que caen a la lava la enfrían y forman camino. Hay que cruzar dos ríos (uno de dos filas). Al fondo, la **caracola grande** sobre un pedestal y un **gólem dormido** que abre un ojo cuando la tomas.
+- **Detalle:** paredes en columnas irregulares (bajas delante para no tapar el suelo, altas detrás), musgo, guijarros, grietas, hongos que brillan, estalagmitas, cristales en las paredes, chispas que suben de la lava, rocas que ruedan y caen con polvo y vapor, estatuas con ojos que se encienden, sonido de gotas con eco y retumbos.
+- **Botín y lore:** un cofre por piso (lingotes, vidrio, cuarzo, tablas, cobre y estrellas), cristales de **cuarzo** (material nuevo), vetas de cobre, tres tablillas de los Alfareros y un grabado de Marea. Logro nuevo **Espeleólogo**.
+- **Lo resuelto se guarda** (rocas, braseros, estatuas, puertas, cofres). "Reiniciar sala" devuelve las rocas si quedan trabadas, y "Salir" vuelve a la isla desde cualquier piso.
+- **Capítulo 7 · La cueva del volcán** (9 metas, 3 etapas: La boca, Las salas, La caracola; premio +15 ★). El timón de Marea ahora dice que devolvió la caracola a la montaña y que busques la grieta que humea. El capítulo 8, **La isla del faro**, queda anunciado.
+- **Ritmo:** el recorrido mínimo es de 84 pasos más las acciones (resuelto por un buscador automático y por un recorrido de prueba completo); para una persona son unos 10 a 15 minutos.
+
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **Siguiente:** la cueva con el primer combate por turnos (v0.15), y después la caracola grande que calma las olas y la isla del faro.
+- **Siguiente:** soplar la caracola para calmar las olas grandes, el gólem que despierta (primer combate por turnos) y la isla del faro.
 
 ## Decisiones tomadas
 

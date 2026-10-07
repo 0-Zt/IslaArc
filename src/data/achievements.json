@@ -174,5 +174,16 @@
       12,
       30
     ]
+  },
+  {
+    "id": "espeleologo",
+    "name": "Espeleólogo",
+    "desc": "Cofres, cristales y vetas de la cueva",
+    "stat": "cueva",
+    "tiers": [
+      2,
+      5,
+      9
+    ]
   }
 ]
