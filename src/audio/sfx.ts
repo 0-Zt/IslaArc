@@ -36,7 +36,7 @@ function tone(t: number, f0: number, f1: number, dur: number, gain: number, type
   o.connect(g).connect(out); o.start(t); o.stop(t + dur + 0.05);
 }
 
-export type Sfx = 'chop' | 'pick' | 'dig' | 'hammer' | 'fall' | 'pop' | 'coin' | 'level' | 'solve' | 'splash' | 'fire' | 'tap';
+export type Sfx = 'chop' | 'pick' | 'dig' | 'hammer' | 'fall' | 'pop' | 'coin' | 'level' | 'solve' | 'splash' | 'fire' | 'tap' | 'cast' | 'plop' | 'nibble' | 'bite' | 'catch' | 'snap';
 let lastPop = 0;
 export function sfx(kind: Sfx, vol = 1) {
   if (!ctx || !enabled) return;
@@ -54,6 +54,13 @@ export function sfx(kind: Sfx, vol = 1) {
     case 'splash': noise(t, 0.35, 1200, 0.6, 0.35 * vol, 'lowpass'); break;
     case 'fire': noise(t, 0.25, 600, 0.5, 0.2 * vol, 'lowpass'); break;
     case 'tap': tone(t, 1200, 900, 0.04, 0.06 * vol, 'sine'); break;
+    // fishing
+    case 'cast': noise(t, 0.3, 2400, 0.7, 0.18 * vol, 'highpass'); tone(t, 900, 500, 0.25, 0.04 * vol, 'sine'); break;
+    case 'plop': tone(t, 620 * r, 180, 0.12, 0.22 * vol, 'sine'); noise(t + 0.02, 0.12, 900, 1, 0.12 * vol, 'lowpass'); break;
+    case 'nibble': tone(t, 880 * r, 640, 0.06, 0.12 * vol, 'sine'); break;
+    case 'bite': noise(t, 0.3, 1100, 0.7, 0.4 * vol, 'lowpass'); tone(t, 300, 120, 0.2, 0.25 * vol, 'sine'); break;
+    case 'catch': [0, 0.09, 0.18, 0.3].forEach((d, k) => tone(t + d, [587, 740, 880, 1175][k], [587, 740, 880, 1175][k], 0.25, 0.15 * vol, 'triangle')); noise(t, 0.3, 1400, 0.6, 0.15 * vol, 'lowpass'); break;
+    case 'snap': noise(t, 0.08, 3200, 2, 0.3 * vol, 'highpass'); tone(t + 0.05, 400, 140, 0.25, 0.18 * vol, 'triangle'); break;
   }
 }
 

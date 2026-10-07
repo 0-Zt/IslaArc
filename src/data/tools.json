@@ -14,5 +14,13 @@
       "lingote": 3,
       "piedra": 8
     }
+  },
+  "anzuelo": {
+    "name": "Anzuelo de metal",
+    "desc": "Aguanta las sombras medianas y grandes del mar. Sin él, se escapan.",
+    "cost": {
+      "lingote": 3,
+      "tablas": 4
+    }
   }
 }

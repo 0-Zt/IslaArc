@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { fishingActive, fishTap, startFishing } from '../game/fishing';
 import { on, emit } from '../core/events';
 import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
 import { tileProxies, topY, tileAt as tileAtIJ, type Tile } from '../world/island';
@@ -76,6 +77,8 @@ function seeGrove() {
 export function onTap(x: number, y: number) {
   scene.updateMatrixWorld();
   aim(x, y);
+  // at the pier every tap is about the line: cast, wait, strike
+  if (fishingActive()) { if (sheetOpen()) { closeSheet(); return; } fishTap(ray); return; }
   if (place) { const g = ray.intersectObjects(tileProxies, false)[0]; if (g) movePlace(g.object.userData.tile); return; }
   if (expandMode) {
     // tapping a plot that is only marked takes it back (materials are returned)
@@ -123,6 +126,7 @@ export function onTap(x: number, y: number) {
       else toast(`${b.up ? `Mejora de ${buildingDef(b.type).name.toLowerCase()}` : buildingDef(b.type).name} en obra: ${Math.round(b.work / b.need * 100)}%. Toca una figura y luego la obra.`);
       return;
     }
+    if (b.type === 'muelle') { const r = startFishing(b); if (r) toast(r); return; }
     if (b.type === 'horno' && c0 && c0.id === 'brasa') { const r = order(c0, b.tiles[0], 'avivar'); if (r !== true) toast(r); else { select(null); toast('Brasa va a avivar el fuego del horno'); } return; }
     if (b.type === 'casa') { select(null); openSheet('casa', b); }
     if (b.type === 'horno' || b.type === 'aserradero') { select(null); openSheet('prod', b); }

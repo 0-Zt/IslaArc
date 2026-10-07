@@ -321,3 +321,51 @@ button:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .stk>div{flex:1;min-width:0}
 .stk small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .qline .bar+.bar{margin-top:4px}
+
+/* fishing: bottom bar, the tug, the catch card, the Sea collection and story pages */
+#fishBar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;gap:8px;align-items:center;background:var(--glass);border:1.5px solid var(--line);border-radius:16px;padding:10px 10px 10px 14px}
+#fishBar span{flex:1;font-size:14px;line-height:1.3}
+#fishBar.now{border-color:var(--sun);box-shadow:0 0 0 3px #f2c14e55}
+#fishBar.now span{font-family:var(--display);font-size:20px;color:var(--sun)}
+#fishBar .fbtns{display:flex;gap:6px}
+#fishBar button{background:var(--glass2);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;color:var(--text)}
+#fishBar button:disabled{opacity:.45}
+#fishPull{position:fixed;inset:0;z-index:7;display:flex;align-items:flex-end;justify-content:center;padding:0 12px calc(90px + env(safe-area-inset-bottom,0px));touch-action:none;user-select:none;-webkit-user-select:none}
+#fishPull[hidden]{display:none}
+.fpbox{width:100%;max-width:420px;background:var(--glass);border:2px solid var(--sun);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.fpbox b{font-family:var(--display);font-size:20px;color:var(--sun)}
+.fpbox small{color:var(--muted);font-size:12.5px}
+.pt{position:relative;height:30px;border-radius:10px;background:#0a1830;overflow:hidden;margin-top:4px}
+.pz{position:absolute;top:0;bottom:0;width:30%;background:#5fb84a88;border:2px solid #8ae070;border-radius:8px;box-sizing:border-box}
+#fishPull.in .pz{background:#8ae070aa}
+.pf{position:absolute;top:5px;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:#f2c14e;box-shadow:0 0 0 3px #2a1a08}
+.pp{height:8px;border-radius:4px;background:#0006;overflow:hidden}
+.pp i{display:block;height:100%;background:linear-gradient(90deg,#f2c14e,#ffd97a)}
+#fishCard{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:#0006;padding:16px}
+#fishCard[hidden]{display:none}
+.fcard{width:100%;max-width:360px;background:var(--glass);border:2px solid var(--sun);border-radius:20px;padding:18px 18px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;animation:fcin .35s ease-out}
+@keyframes fcin{from{transform:scale(.8) translateY(20px);opacity:0}}
+.fic{width:88px;height:88px;border-radius:22px;background:#0a1830;display:grid;place-items:center;box-shadow:inset 0 0 0 2px #35506a}
+.fic img{width:64px;height:64px;image-rendering:pixelated}
+.fcard small{color:var(--muted);font-size:13px}
+.fcard>b{font-family:var(--display);font-size:24px;color:var(--sun)}
+.fcard em{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#2a1a08;background:var(--sun);border-radius:999px;padding:2px 10px}
+.fcard p{margin:2px 0;font-size:14px;line-height:1.4}
+.frew{font-size:13.5px;color:#e8d49a;background:#0003;border-radius:10px;padding:6px 10px}
+.ftap{font-size:12px;color:var(--muted);margin-top:4px}
+@media (prefers-reduced-motion:reduce){.fcard{animation:none}}
+.mtier{display:flex;justify-content:space-between;align-items:baseline;margin:12px 2px 6px;gap:8px}
+.mtier b{font-size:13.5px}
+.mtier small{font-size:12px;color:var(--muted);white-space:nowrap}
+.mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.mcell{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--glass2);border:1.5px solid var(--line);border-radius:12px;padding:8px 4px 6px;text-align:center;min-width:0}
+.mcell.got{border-color:#4a7a5a}
+.mcell img{width:34px;height:34px;image-rendering:pixelated}
+.mcell img.sil{filter:brightness(0) opacity(.45)}
+.mcell b{font-size:12px;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mcell small{font-size:10.5px;color:var(--muted);line-height:1.2}
+.lore.story p{margin:0 0 10px}
+.lore.story p:last-child{margin:0}
+.dtabs button{padding-left:4px;padding-right:4px}
+
+.lore p,#sheet .lore p{color:#3a2a18!important}

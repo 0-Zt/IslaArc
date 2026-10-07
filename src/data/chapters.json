@@ -233,10 +233,72 @@
     ]
   },
   {
+    "id": "muelle",
+    "title": "El muelle",
+    "desc": "Bajo el agua hay postes viejos. Alguien pescó aquí antes que tú.",
+    "reward": {
+      "stars": 10,
+      "text": "El cuaderno de Marea con el plano de la balsa y +10 ★"
+    },
+    "stages": [
+      {
+        "name": "Primer lance",
+        "n": 3
+      },
+      {
+        "name": "La vasija",
+        "n": 3
+      },
+      {
+        "name": "Marea",
+        "n": 3
+      }
+    ],
+    "goals": [
+      {
+        "id": "muelle",
+        "text": "Construye el muelle en la orilla",
+        "hint": "build"
+      },
+      {
+        "id": "pescar1",
+        "text": "Toca el muelle y pesca algo: cuando el corcho se hunda, toca"
+      },
+      {
+        "id": "pescar6",
+        "text": "Saca 6 cosas del mar ({p}/6)"
+      },
+      {
+        "id": "anzuelo",
+        "text": "Fabrica el anzuelo de metal en la casa"
+      },
+      {
+        "id": "vasija",
+        "text": "Junta los 4 trozos de vasija ({va}/4)"
+      },
+      {
+        "id": "algas",
+        "text": "Saca 10 algas del mar ({al}/10)"
+      },
+      {
+        "id": "llave",
+        "text": "Pesca lo que el mar guarda para ti: una sombra mediana"
+      },
+      {
+        "id": "cofre",
+        "text": "Saca lo que brilla bajo el agua, cerca del muelle"
+      },
+      {
+        "id": "coleccion",
+        "text": "Llena 10 casillas de la Colección del mar ({co}/10)"
+      }
+    ]
+  },
+  {
     "id": "mar",
     "title": "Mar adentro",
     "locked": true,
-    "desc": "Una balsa, islas que nadie ha pisado y las primeras batallas. (La cueva del volcán llega antes.)",
+    "desc": "Con el plano de Marea se arma la balsa: zonas profundas, oleaje y otras islas. (Próxima versión.)",
     "goals": []
   },
   {

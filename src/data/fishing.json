@@ -1,0 +1,189 @@
+{
+  "items": {
+    "alga": {
+      "name": "Alga larga",
+      "size": "s",
+      "tier": "orilla",
+      "w": 30,
+      "desc": "Larga y elástica. Trenzada, se vuelve cuerda.",
+      "gives": {
+        "algas": 3
+      }
+    },
+    "concha": {
+      "name": "Concha rosada",
+      "size": "s",
+      "tier": "orilla",
+      "w": 14,
+      "desc": "Rosada y lisa. Molida, es arena fina.",
+      "gives": {
+        "arena": 5
+      }
+    },
+    "deriva": {
+      "name": "Madera a la deriva",
+      "size": "s",
+      "tier": "orilla",
+      "w": 12,
+      "desc": "Un tronco blanqueado por el sol y la sal.",
+      "gives": {
+        "madera": 6
+      }
+    },
+    "canto": {
+      "name": "Canto rodado",
+      "size": "s",
+      "tier": "orilla",
+      "w": 10,
+      "desc": "Una piedra redonda, pulida por el mar.",
+      "gives": {
+        "piedra": 5
+      }
+    },
+    "bota": {
+      "name": "Bota de arcilla",
+      "size": "s",
+      "tier": "orilla",
+      "w": 6,
+      "desc": "Una bota de arcilla, sola. ¿Y la otra?"
+    },
+    "bota2": {
+      "name": "La otra bota",
+      "size": "s",
+      "tier": "orilla",
+      "w": 5,
+      "after": "bota",
+      "once": true,
+      "desc": "¡La otra bota! Ahora alguien tiene un par completo.",
+      "stars": 1
+    },
+    "botella": {
+      "name": "Botella con mensaje",
+      "size": "s",
+      "tier": "orilla",
+      "w": 6,
+      "desc": "Un papel enrollado adentro, todavía seco.",
+      "lore": true
+    },
+    "vasija": {
+      "name": "Trozo de vasija",
+      "size": "s",
+      "tier": "orilla",
+      "w": 24,
+      "pieces": 4,
+      "desc": "Un pedazo de vasija pintada a mano."
+    },
+    "estrella": {
+      "name": "Estrella de arcilla",
+      "size": "s",
+      "tier": "orilla",
+      "w": 6,
+      "time": "noche",
+      "desc": "Brilla apenas de noche. Nadie sabe quién las hornea.",
+      "stars": 1
+    },
+    "engranaje": {
+      "name": "Engranaje oxidado",
+      "size": "m",
+      "tier": "media",
+      "w": 18,
+      "desc": "Dientes gastados, verde de óxido. Era de una máquina grande.",
+      "gives": {
+        "mineral": 4,
+        "lingote": 1
+      }
+    },
+    "caracola": {
+      "name": "Caracola grande",
+      "size": "m",
+      "tier": "media",
+      "w": 10,
+      "desc": "Al soplarla suena como el mar entero. Dicen que una más grande calmaba las olas."
+    },
+    "perla": {
+      "name": "Perla de arcilla",
+      "size": "m",
+      "tier": "media",
+      "w": 7,
+      "time": "noche",
+      "desc": "Perfecta, redonda… y de arcilla cocida. Alguien la hizo a mano.",
+      "stars": 2
+    },
+    "llave": {
+      "name": "Llave de la ola",
+      "size": "m",
+      "tier": "media",
+      "w": 40,
+      "after": "vasija",
+      "once": true,
+      "story": "llave",
+      "desc": "Verde de óxido, con una ola tallada en el mango."
+    },
+    "ancla": {
+      "name": "Ancla pequeña",
+      "size": "l",
+      "tier": "media",
+      "w": 12,
+      "desc": "Metal bueno, de los Alfareros. Ellos navegaban.",
+      "gives": {
+        "lingote": 3
+      }
+    },
+    "cofre": {
+      "name": "Cofre de Marea",
+      "size": "l",
+      "tier": "media",
+      "w": 0,
+      "after": "llave",
+      "once": true,
+      "special": true,
+      "story": "cofre",
+      "desc": "Cerrado con una ola de bronce. La llave entra justo."
+    },
+    "hondo1": {
+      "name": "???",
+      "size": "m",
+      "tier": "profunda",
+      "w": 0,
+      "desc": ""
+    },
+    "hondo2": {
+      "name": "???",
+      "size": "l",
+      "tier": "profunda",
+      "w": 0,
+      "desc": ""
+    },
+    "hondo3": {
+      "name": "???",
+      "size": "l",
+      "tier": "profunda",
+      "w": 0,
+      "desc": ""
+    }
+  },
+  "pieces": [
+    "Un trozo de vasija pintada: se ve el borde de una ola.",
+    "Otro trozo: una mano de arcilla azul sosteniendo una red.",
+    "Un trozo con una balsa pequeña, de tablas atadas con algas.",
+    "El último trozo tiene una palabra grabada a fuego: MAREA."
+  ],
+  "story": {
+    "muelle": {
+      "title": "Postes viejos",
+      "text": "Al clavar los tablones, Arci encuentra postes viejos bajo el agua, comidos por la sal. Alguien tuvo un muelle aquí, hace mucho.\n\nToca el muelle para pescar. Las figuras no sacan peces: el mar devuelve cosas."
+    },
+    "vasija": {
+      "title": "La vasija de Marea",
+      "text": "Pegados los cuatro trozos, la vasija cuenta una escena: una figura de arcilla azul pesca desde una balsa, lejos de la orilla, donde el agua se pone oscura.\n\nDebajo, grabado: MAREA.\n\nNinguna de tus figuras es azul."
+    },
+    "llave": {
+      "title": "La llave de la ola",
+      "text": "Una llave verde de óxido, con una ola tallada en el mango.\n\nAl sacarla, algo grande se mueve bajo el agua cerca del muelle. Y brilla."
+    },
+    "cofre": {
+      "title": "El cuaderno de Marea",
+      "text": "El cofre se abre con la llave. Adentro, seco, hay un cuaderno de hojas de arcilla:\n\n«Día 12. Los Alfareros ya no bajan al mar. Dicen que el agua oscura guarda lo que se les perdió.\n\nDía 40. Terminé la balsa: tablas, cuerda de algas y paciencia. Mar adentro el fondo se vuelve negro y las olas cambian de voz.\n\nDía 41. Si alguien encuentra esto: no estás solo. Nunca lo estuvimos.»\n\nEntre las hojas hay un plano: la balsa de Marea."
+    }
+  }
+}

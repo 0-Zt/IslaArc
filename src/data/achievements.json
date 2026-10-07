@@ -152,5 +152,16 @@
       5,
       7
     ]
+  },
+  {
+    "id": "pescador",
+    "name": "Pescador de cosas",
+    "desc": "Cosas sacadas del mar",
+    "stat": "pescados",
+    "tiers": [
+      5,
+      25,
+      80
+    ]
   }
 ]

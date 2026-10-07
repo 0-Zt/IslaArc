@@ -140,6 +140,22 @@
     "work": 12,
     "requires": "aserradero"
   },
+  "muelle": {
+    "name": "Muelle",
+    "desc": "Tablones sobre el agua para pescar. Va en la orilla, mirando al mar.",
+    "size": [
+      1,
+      1
+    ],
+    "cost": {
+      "tablas": 12,
+      "madera": 20,
+      "piedra": 10
+    },
+    "work": 10,
+    "requires": "aserradero",
+    "coast": true
+  },
   "farol": {
     "name": "Farol",
     "desc": "Se enciende solo al caer la noche.",

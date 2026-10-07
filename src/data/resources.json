@@ -39,5 +39,10 @@
   "carbon": {
     "name": "Carbón",
     "hidden": true
+  },
+  "algas": {
+    "name": "Algas",
+    "hidden": true,
+    "nohud": true
   }
 }

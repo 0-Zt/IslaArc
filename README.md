@@ -25,7 +25,7 @@ src/
   render/            renderer, cámara, luces, post-proceso, calidad, resolución dinámica y ciclo de día y noche
   world/             isla (generación y terreno), texturas del suelo, agua, árboles, rocas, partículas
   assets/            modelos voxel: texturas de detalle, personajes, edificios, decoración, el claro secreto, las ruinas
-  game/              lógica: progreso (capítulos, estrellas, logros), tablón de encargos, estado, figuras y trabajos, edificios, bosque (zonas, tocones, retoños), marcas de plantar y senderos, expansión, ruinas de Brasa, claro de Musgo, objetivos, producción e inventos, la playa
+  game/              lógica: progreso (capítulos, estrellas, logros), tablón de encargos, estado, figuras y trabajos, edificios, bosque (zonas, tocones, retoños), marcas de plantar y senderos, expansión, ruinas de Brasa, claro de Musgo, objetivos, producción e inventos, la playa, la pesca
   audio/             sonido generado con Web Audio (golpes, ambiente, avisos)
   ui/                interfaz: HUD, paneles, acertijos de las llamas, burbujas de estado, entrada táctil
   data/              balance y contenido en JSON (recursos, edificios, herramientas, recetas, inventos, capítulos, logros, mensajes)

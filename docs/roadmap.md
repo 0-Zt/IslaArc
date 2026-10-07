@@ -142,13 +142,31 @@ Siguiendo las láminas de referencia (árboles, bloques, adornos):
 - **Esperar a la noche:** el acertijo de la luna tiene un botón que adelanta el reloj hasta que cae la noche (antes se podían perder hasta 7 minutos esperando).
 - **Bot de ritmo con gráfico:** registra cada material, su tope y el tiempo de las figuras cada 30 segundos. Resultado: 29 minutos para los capítulos 1 a 4 (Barro 6, Claro 2,5, Ruinas 10,5, Fuego 10,5), sin acumulación sin fin (la madera termina en 117 en vez de 1.700) y casi sin tiempo de figuras esperando espacio.
 
+## El muelle: pesca y la historia de Marea (v0.13)
+
+Mecánicas tomadas de Animal Crossing y Stardew Valley, en el formato de la isla:
+- **Muelle** (después del aserradero): se ubica en la orilla y se gira solo mirando al mar. Al construirlo aparecen postes viejos bajo el agua: alguien pescó aquí antes.
+- **Sombras en el agua** (Animal Crossing): pequeñas, medianas y grandes. El tamaño dice qué puede ser. Junto al muelle aparece la burbuja "Algo se mueve".
+- **Pescar:** al tocar el muelle, una figura sale a la punta con la caña y la cámara mira al mar. Se toca el agua frente a una sombra para lanzar; si cae encima, se asusta. La sombra se acerca, **pica varias veces** (si tocas antes, se va) y luego **se hunde el corcho con un "!"**: ahí hay que tocar.
+- **Sombras grandes tiran** (Stardew Valley simplificado): una barra con una zona verde que sube mientras mantienes apretado; hay que seguir el objeto hasta llenar la barra.
+- **No hay peces:** el mar devuelve cosas. En la orilla salen algas, conchas, madera a la deriva, cantos, botellas con mensaje, trozos de vasija, una bota de arcilla (y más tarde la otra) y, de noche, estrellas de arcilla. En aguas medias: engranajes, caracolas, perlas (de noche) y anclas.
+- **Anzuelo de metal** (en la casa): sin él, las sombras medianas y grandes se escapan.
+- **Carnada:** tirar semillas al agua atrae una sombra, más seguido una grande. Por fin las semillas que sobran tienen destino.
+- **Tarjeta de captura** con ícono grande, descripción y "Nuevo en la colección".
+- **Colección del mar** (Diario → Mar): siluetas de todo lo que se puede sacar, con pistas de tamaño y hora. Llenar la fila de la orilla da +3 ★ y la de aguas medias +5 ★. Las aguas profundas se ven bloqueadas hasta tener la balsa.
+- **Capítulo 5 · El muelle** (9 metas, 3 etapas: Primer lance, La vasija, Marea).
+- **Mini historia de Marea:** cuatro trozos de vasija muestran a una figura azul que pescaba desde una balsa. Al juntarlos, la primera sombra mediana trae la **Llave de la ola**; después brilla un **cofre** bajo el agua y adentro está el **cuaderno de Marea** con el plano de la balsa. Marea aparece como pista en el Diario → Equipo.
+- **Logro** "Pescador de cosas" y sonidos propios (lanzar, corcho, picada, tirón, captura, se corta).
+- **Ritmo (bot):** el capítulo 5 toma unos 8–9 minutos al bot; una persona, unos 20. Los pasos de la historia no dependen de la suerte: un trozo de vasija sale a más tardar cada 5 capturas pequeñas, y la llave es la primera mediana después de la vasija.
+- **Hallazgo para la v0.14:** durante el capítulo 5 la madera, la piedra y la arena llegan al tope porque casi no se gastan. La balsa y sus mejoras deberían ser ese gasto.
+
 Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates por turnos) y **docs/economia.md** (plan de economía: topes, mejoras, cadenas por era, sumideros y ritmo objetivo).
 
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **v0.13 · Pesca** y **v0.14 · La balsa** (ver docs/diseno-exploracion.md), después la cueva con el primer combate por turnos.
+- **v0.14 · La balsa** (ver docs/diseno-exploracion.md): navegar, zonas profundas y oleaje; que gaste madera, tablas y algas. Después, la cueva con el primer combate por turnos.
 
 ## Decisiones tomadas
 

@@ -9,6 +9,8 @@ import { marks } from '../game/marks';
 import { S, DATA, afford } from '../game/state';
 import { ICON } from './hud';
 import { openSheet, sheetOpen } from './sheets';
+import { fishingActive, startFishing, shadows } from '../game/fishing';
+const BOBBER = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="5" y="8" width="6" height="5" fill="#f4f0e8"/><rect x="5" y="4" width="6" height="4" fill="#d9463c"/><rect x="7.5" y="1" width="1" height="3" fill="#3a2e24"/><path d="M1 14h14" stroke="#7ec0f0" stroke-width="1.5"/></svg>';
 
 /* Status bubbles pinned to the world: what a building is doing, who is idle, what is ready. */
 
@@ -84,6 +86,12 @@ export function tickLabels() {
         const last = lastJob.get(b) || '', info = jobInfo(last);
         show(b, at.clone(), `${info.out ? `<img src="${(ICON as any)[info.out]}" alt="">` : BULB}<b>¡${info.name} listo!</b>`, 'done', `${info.name} listo`, open);
       }
+    }
+    if (b.type === 'muelle' && !fishingActive() && shadows.length) {
+      // like the ripples in Animal Crossing: something is moving in the water by the pier
+      const at = _v.copy(b.group.position); at.y += 1.0;
+      show(b, at.clone(), `${BOBBER}<b>${shadows.some(q => q.special) ? '¡Algo brilla!' : 'Algo se mueve'}</b>`, 'done', 'Hay sombras en el agua junto al muelle', () => { const r = startFishing(b); if (r) emit('toast', r); });
+      continue;
     }
     if (b.type === 'casa') {
       const ready = Object.entries(DATA.TOOLS).some(([k, d]: [string, any]) => !S.tools[k] && afford(d.cost));

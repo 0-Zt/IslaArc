@@ -79,16 +79,22 @@ let shadowFrame = 0;
 export function tickShadows() { if (++shadowFrame % 2 === 0) renderer.shadowMap.needsUpdate = true; }
 
 /* ---------- smooth camera moves ---------- */
-let fly: { from: THREE.Vector3; to: THREE.Vector3; off: THREE.Vector3; z0: number; z1: number; t: number } | null = null;
-export function flyTo(target: THREE.Vector3, zoom: number) {
-  fly = { from: controls.target.clone(), to: target.clone(), off: camera.position.clone().sub(controls.target), z0: camera.zoom, z1: zoom, t: 0 };
+let fly: { from: THREE.Vector3; to: THREE.Vector3; off: THREE.Vector3; off1: THREE.Vector3; z0: number; z1: number; t: number } | null = null;
+/** Glides the camera to look at `target`; `off` (camera minus target) also swings it around when given. */
+export function flyTo(target: THREE.Vector3, zoom: number, off?: THREE.Vector3) {
+  const off0 = camera.position.clone().sub(controls.target);
+  fly = { from: controls.target.clone(), to: target.clone(), off: off0, off1: off ? off.clone() : off0.clone(), z0: camera.zoom, z1: zoom, t: 0 };
 }
+export const cameraOffset = () => camera.position.clone().sub(controls.target);
 export function tickFly(dt: number) {
   if (!fly) return;
   fly.t = Math.min(1, fly.t + dt * 1.8);
   const k = fly.t * fly.t * (3 - 2 * fly.t);
   controls.target.lerpVectors(fly.from, fly.to, k);
-  camera.position.copy(controls.target).add(fly.off);
+  // swing around the target keeping the distance (slerp of the direction)
+  const a = fly.off, b = fly.off1, len = a.length() + (b.length() - a.length()) * k;
+  const dir = a.clone().normalize().lerp(b.clone().normalize(), k).normalize();
+  camera.position.copy(controls.target).addScaledVector(dir, len);
   camera.zoom = fly.z0 + (fly.z1 - fly.z0) * k; camera.updateProjectionMatrix();
   if (fly.t >= 1) fly = null;
 }

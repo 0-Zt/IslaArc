@@ -59,6 +59,15 @@ const CHECK: Record<string, () => boolean> = {
   inventos: () => Object.keys(S.inv).length >= 3,
   botellas: () => S.lore.length >= 2,
   linterna: () => !!S.inv.linterna,
+  muelle: () => has('muelle'),
+  pescar1: () => (S.stats.pescados || 0) >= 1,
+  pescar6: () => (S.stats.pescados || 0) >= 6,
+  anzuelo: () => !!S.tools.anzuelo,
+  vasija: () => (S.fish.vasija || 0) >= 4,
+  algas: () => (S.got.algas || 0) >= 10,
+  llave: () => !!S.fish.llave,
+  cofre: () => !!S.fish.cofre,
+  coleccion: () => Object.keys(S.fish).filter(k => S.fish[k] > 0).length >= 10,
 };
 const builtBraziers = () => buildings.filter(b => b.type === 'brasero' && isDone(b)).length;
 
@@ -74,7 +83,8 @@ export function chapterStep() {
 export const goalText = (g: { text: string }) => g.text
   .replace('{n}', String(S.ruins.lit.filter(Boolean).length)).replace('{b}', String(builtBraziers()))
   .replace('{t}', String(Math.min(15, S.stats.tablas || 0))).replace('{l}', String(Math.min(10, S.stats.ladrillo || 0))).replace('{v}', String(Math.min(6, S.stats.vidrio || 0)))
-  .replace('{i}', String(Math.min(3, Object.keys(S.inv).length))).replace('{b2}', String(Math.min(2, S.lore.length))).replace('{c}', String(Math.min(8, S.stats.carbon || 0)));
+  .replace('{i}', String(Math.min(3, Object.keys(S.inv).length))).replace('{b2}', String(Math.min(2, S.lore.length))).replace('{c}', String(Math.min(8, S.stats.carbon || 0)))
+  .replace('{p}', String(Math.min(6, S.stats.pescados || 0))).replace('{va}', String(Math.min(4, S.fish.vasija || 0))).replace('{al}', String(Math.min(10, S.got.algas || 0))).replace('{co}', String(Math.min(10, Object.keys(S.fish).filter(k => S.fish[k] > 0).length)));
 export const goalDone = (i: number) => i < S.goal;
 
 export function checkGoals(quiet = false) {

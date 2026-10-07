@@ -16,6 +16,7 @@ import { BRAZIERS, rebuildBrazier } from '../game/ruins';
 import { initPuzzles, openPuzzle, closePuzzle, puzzleHTML, puzzleClick, puzzleSig } from './puzzles';
 import { runeSVG } from '../assets/ruins';
 import { LORE_TEXT } from '../game/beach';
+import { STORY } from '../game/fishing';
 import { assignIdleBuilder } from '../game/crew';
 import { ICONS } from '../assets/buildings';
 import { $, img, toast } from './hud';
@@ -23,7 +24,7 @@ import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'prod' | 'taller' | 'almacen' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
+type SheetType = 'build' | 'casa' | 'prod' | 'taller' | 'almacen' | 'historia' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
 let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {};
@@ -40,11 +41,14 @@ export function openRuin(k: number) { ruinK = k; openSheet('ruina'); }
 export function openFlame(k: number) { openPuzzle(k); openSheet('puzzle'); }
 let msgK = 0;
 export function openMessage(k: number) { msgK = k; openSheet('mensaje'); }
+let storyK = '';
+/** A page of a short story (the pier, Marea's vase, the key, the notebook). */
+export function openStory(k: string) { storyK = k; openSheet('historia'); }
 export function openDiario(t: DiarioTab = 'ruta') { setTab(t); openSheet('diario'); }
 
 const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => `<span class="${S.res[k as ResKey] >= (v as number) ? '' : 'no'}">${img(k as ResKey)}${S.res[k as ResKey]}/${v}</span>`).join('')}</div>`;
 // the settings sheet never re-renders by itself, so sliders keep working while dragged
-const signature = () => type === 'gfx' ? 'gfx' : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.jobs?.length, arg?.jobs?.[0], arg?.lvl, arg?.up, arg && Math.floor(arg.work), S.inv, S.expanded.length]);
+const signature = () => type === 'gfx' ? 'gfx' : type === 'historia' ? 'historia' + storyK : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.jobs?.length, arg?.jobs?.[0], arg?.lvl, arg?.up, arg && Math.floor(arg.work), S.inv, S.expanded.length]);
 
 /** The level block shown in a building's sheet: what the next level does, its cost, or the upgrade in progress. */
 function upgradeHTML(b: Building) {
@@ -169,6 +173,11 @@ function render() {
     h += puzzleHTML();
   } else if (type === 'mensaje') {
     h += `<h2>Mensaje en una botella</h2><p class="lore">${LORE_TEXT[msgK]}</p><p style="color:var(--muted)">Mensaje ${S.lore.length} de ${LORE_TEXT.length}. Los guardas en el Diario, pestaña Equipo.</p><button class="btn main" data-act="close" style="width:100%">Guardar</button>`;
+  } else if (type === 'historia' && STORY[storyK]) {
+    const st = STORY[storyK];
+    h += `<h2>${st.title}</h2><div class="lore story">${st.text.split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('')}</div>`
+      + (storyK === 'cofre' ? '<p style="color:var(--muted)">Con este plano se arma la balsa en el capítulo 6, Mar adentro (próxima versión).</p>' : '')
+      + '<button class="btn main" data-act="close" style="width:100%">Seguir</button>';
   } else if (type === 'diario') {
     h += diarioHTML();
   } else if (type === 'fin') {

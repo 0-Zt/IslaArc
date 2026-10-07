@@ -8,10 +8,10 @@ window.bot = (() => {
   const tOf = c => I.tileAt(Math.floor(c.root.position.x + H), Math.floor(c.root.position.z + H));
   const dist = (a, b) => Math.abs(a.i - b.i) + Math.abs(a.j - b.j);
   const KIND = { madera: 'tree', piedra: 'rock', mineral: 'rock', arena: 'sand', tierra: 'soil' };
-  const ONEOFF = ['build', 'fill', 'avivar', 'dig', 'ancient', 'recoger', 'walk'];
+  const ONEOFF = ['build', 'fill', 'avivar', 'dig', 'ancient', 'recoger', 'pescar', 'walk'];
   const RECIPE_AT = { lingote: 'horno', ladrillo: 'horno', vidrio: 'horno', tablas: 'aserradero', carbon: 'horno' };
   const RECIPE_COST = { lingote: { mineral: 2, madera: 1 }, ladrillo: { tierra: 2, arena: 1, madera: 1 }, vidrio: { arena: 3, madera: 1 }, tablas: { madera: 2 }, carbon: { madera: 3 } };
-  const BCOST = { casa: { madera: 20 }, horno: { piedra: 15, arena: 12, madera: 8 }, tablon: { madera: 12 }, almacen: { madera: 30, piedra: 20 }, aserradero: { madera: 30, piedra: 15, lingote: 3 }, taller: { tablas: 16, ladrillo: 14, lingote: 5, piedra: 20 } };
+  const BCOST = { casa: { madera: 20 }, horno: { piedra: 15, arena: 12, madera: 8 }, tablon: { madera: 12 }, almacen: { madera: 30, piedra: 20 }, muelle: { tablas: 12, madera: 20, piedra: 10 }, aserradero: { madera: 30, piedra: 15, lingote: 3 }, taller: { tablas: 16, ladrillo: 14, lingote: 5, piedra: 20 } };
   const UPC = { horno: { ladrillo: 20, piedra: 25, carbon: 8 }, almacen: { tablas: 25, ladrillo: 15, madera: 40 } };
   const INVC = { carretilla: { tablas: 8, lingote: 2 }, palaM: { tablas: 4, lingote: 3 }, martillo: { tablas: 5, lingote: 3 }, catalejo: { vidrio: 4, lingote: 3, tablas: 4 }, linterna: { vidrio: 3, lingote: 2, tablas: 2, carbon: 2 } };
   const BRAZ = [{ piedra: 12 }, { piedra: 10, arena: 8 }, { piedra: 15 }, { piedra: 10, madera: 12 }, { piedra: 10, lingote: 3 }];
@@ -181,6 +181,19 @@ window.bot = (() => {
       case 'horno2': case 'almacen2': { const t = g === 'horno2' ? 'horno' : 'almacen'; need = Object.assign({}, UPC[t]); const b = has(t); if (b && isDone(b) && b.lvl < 2 && !b.up && afford(UPC[t])) { const r = I.startUpgrade(b); log.push(min() + ' upgrade ' + t + ' ' + (r || 'ok')); } if (g === 'almacen2') add(need, { carbon: 0 }); break; }
       case 'avivar': { const b = I.crew.find(c => c.id === 'brasa'); if (b && !(b.job && b.job.kind === 'avivar')) I.order(b, has('horno').tiles[0], 'avivar'); need = UPC.horno; break; }
       case 'taller': need = BCOST.taller; build = 'taller'; break;
+      case 'muelle': need = BCOST.muelle; build = 'muelle'; break;
+      case 'pescar1': case 'pescar6': case 'anzuelo': case 'vasija': case 'algas': case 'llave': case 'cofre': case 'coleccion': {
+        need = g === 'anzuelo' ? { lingote: 3, tablas: 4 } : { madera: 20 };
+        if (!S().tools.anzuelo && afford({ lingote: 3, tablas: 4 }) && has('casa')) { I.openSheet('casa', has('casa')); const e = document.querySelector('[data-tool=anzuelo]'); if (e) e.click(); const x = document.querySelector('[data-act=close]'); if (x) x.click(); log.push(min() + ' anzuelo'); }
+        globalThis.__fishAuto = true;
+        const st = I.fishState();
+        if (!st) { const m = has('muelle'); if (m) I.startFishing(m); break; }
+        // close catch cards and story pages like a player would
+        const card = document.getElementById('fishCard'); if (card && !card.hidden) card.click();
+        const sh = document.querySelector('#sheet:not([hidden]) [data-act=close]'); if (sh) sh.click();
+        if (st.st === 'ready') { const want = (g === 'vasija' || g === 'algas' || g === 'pescar1' || g === 'pescar6') ? 's' : (g === 'llave' ? 'm' : undefined); const b = I.bestShadow(want) || (g === 'coleccion' || g === 'cofre' ? I.bestShadow() : null); if (b) { const m = has('muelle'), mp = m.group.position, dx = mp.x - b.x, dz = mp.z - b.z, d = Math.hypot(dx, dz) || 1; I.castAt(b.x + dx / d * 0.6, b.z + dz / d * 0.6); } else if (S().res.semilla > 3 && g !== 'vasija' && g !== 'algas') I.useBait(); }
+        break;
+      }
       case 'inventos': case 'botellas': case 'linterna': {
         const order = ['carretilla', 'martillo', 'palaM', 'catalejo', 'linterna'];
         const next = order.find(id => !s.inv[id]);
@@ -205,7 +218,7 @@ window.bot = (() => {
       if (g === 'done') return 'done';
       if (g !== lastG) { log.push(`${min()} goal ${g}`); lastG = g; since = S().time; }
       if (S().stDone.length + S().chDone.length !== lastStage) { lastStage = S().stDone.length + S().chDone.length; log.push(`${min()} === ${S().stDone.slice(-1)[0] || ''} ${S().chDone.join(',')}`); }
-      if (S().time - since > 900) { log.push(`${min()} STUCK on ${g} res=${JSON.stringify(S().res)} jobs=${JSON.stringify(I.crew.map(c => [c.id, c.job && c.job.kind]))}`); since = S().time; }
+      if (S().time - since > 900) { log.push(`${min()} STUCK on ${g} fish=${JSON.stringify(I.fishState())} shadows=${I.fishShadows.map(q=>q.size).join('')} muelle=${(()=>{const m=has('muelle');return m?[m.i,m.j,m.rot]:null})()} caught=${S().stats.pescados||0} res=${JSON.stringify(S().res)} jobs=${JSON.stringify(I.crew.map(c => [c.id, c.job && c.job.kind]))}`); since = S().time; }
       const cs = I.crew; samples += cs.length;
       for (const c of cs) { if (!c.job && !c.path.length) idleN++; else if (c.job && ['tree','rock','sand','soil'].includes(c.job.kind) && !c.path.length && c.anim === 'idle') blocked++; else busy++; }
       if (S().time >= nextSample) { nextSample = S().time + 30; series.push({ t: +(S().time / 60).toFixed(2), res: Object.assign({}, S().res), cap: [I.capOf('madera'), I.capOf('tablas')], goal: S().goal, crew: cs.length, blocked: blocked / Math.max(1, samples), idle: idleN / Math.max(1, samples) }); busy = blocked = idleN = samples = 0; }

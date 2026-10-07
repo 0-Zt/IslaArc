@@ -28,7 +28,8 @@ import { initProgress, checkAchievements } from './game/progress';
 import { fillBoard } from './game/board';
 import { restoreBeach, clearBeach, tickBeach } from './game/beach';
 import { $, initHUD, refreshHUD, toast } from './ui/hud';
-import { initSheets, initSheetEvents, refreshSheet, closeSheet, openMessage, sheetOpen } from './ui/sheets';
+import { initSheets, initSheetEvents, refreshSheet, closeSheet, openMessage, sheetOpen, openStory } from './ui/sheets';
+import { tickFishing, clearFishing, startFishing, stopFishing, castAt, fishState, useBait, shadows as fishShadows, bestShadow } from './game/fishing';
 import { initInput, centreTile, tickMarker, onTap, debugPick } from './ui/input';
 import { tickLabels, clearLabels } from './ui/labels';
 import { tickPointer, pointerTarget } from './ui/pointer';
@@ -43,7 +44,7 @@ renderer.info.autoReset = false;
 setOccupiedTest(occupied);
 
 function newGame(state: typeof S | null) {
-  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearSites(); clearMarks(); clearRuins(); clearBeach();
+  cancelPlace(); closeSheet(); exitExpandMode(); exitMarkMode(); clearFishing(); clearSites(); clearMarks(); clearRuins(); clearBeach();
   clearCrew(); clearBuildings(); clearForest(); clearLabels();
   while (worldGroup.children.length) worldGroup.remove(worldGroup.children[0]);
   clearTrees();
@@ -101,6 +102,9 @@ on('boardChanged', () => persist());
 on('beachChanged', () => persist());
 on('invented', () => persist());
 on('bottleRead', (i: number) => openMessage(i));
+on('story', (k: string) => openStory(k));
+on('fishMode', (f: boolean) => { $('bottom').hidden = f; });
+on('fishCaught', () => persist());
 on('levelUp', () => persist());
 on('finaleStart', (c: Tile) => { closeSheet(); select(null); flyTo(new THREE.Vector3(c.wx, 1, c.wz), Math.max(camera.zoom, 1.1)); toast('La tierra tiembla en las ruinas…'); });
 on('brasaAwake', (c: Tile) => {
@@ -182,6 +186,7 @@ function frame(now: number) {
   tickMarker(dt);
   pulseMarkers(T);
   tickLabels();
+  tickFishing(dt, T);
   tickPointer(dt, T, sheetOpen());
   uiAcc += dt; if (uiAcc > 0.25) { refreshHUD(uiAcc); refreshSheet(); uiAcc = 0; }
   tickWater(T);
@@ -204,8 +209,8 @@ if (location.hash === '#debug') {
     get S() { return S; }, crew, buildings, trees, rocks, ancients, get mound() { return mound; }, grove: () => grove,
     renderer, camera, controls, order, tileAt, landTiles, checkGoals, pixelRatio,
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
-    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
+    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
-    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
+    scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, startFishing, stopFishing, castAt, fishState, useBait, fishShadows, bestShadow, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
   };
 }

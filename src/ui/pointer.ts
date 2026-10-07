@@ -9,6 +9,7 @@ import { ancients, mound } from '../game/grove';
 import { slots, center } from '../game/ruins';
 import { currentGoal } from '../game/goals';
 import { S } from '../game/state';
+import { fishingActive, fishState, bestShadow } from '../game/fishing';
 import { on } from '../core/events';
 
 /* A bouncing arrow over whatever the current goal needs you to tap next: first the figure
@@ -50,8 +51,10 @@ function gather(kinds: JobKind[], who: string, target: () => THREE.Vector3 | nul
 const leader = () => crew.find(q => q.id === selected) || crew.find(q => q.id === 'arci') || crew[0];
 const idleAt = (b: Building | undefined) => b && !b.jobs?.length ? overBuilding(b) : null;
 
+const FISH_GOALS = new Set(['pescar1', 'pescar6', 'vasija', 'algas', 'llave', 'cofre', 'coleccion']);
 export function pointerTarget(): THREE.Vector3 | null {
   const g = currentGoal(); if (!g) return null;
+  if (fishingActive() && !FISH_GOALS.has(g.id)) return null;
   const here = leader() ? tileOf(leader()!) : null;
   switch (g.id) {
     case 'talar': case 'madera10':
@@ -81,6 +84,14 @@ export function pointerTarget(): THREE.Vector3 | null {
       return selected === 'brasa' ? overBuilding(h) : overFigure(b);
     }
     case 'inventos': case 'linterna': { const t = done('taller'); return t && !t.jobs?.some(j => j.startsWith('inv:')) ? overBuilding(t) : null; }
+    case 'pescar1': case 'pescar6': case 'vasija': case 'algas': case 'llave': case 'cofre': case 'coleccion': {
+      const m = done('muelle');
+      if (!m) return null;
+      if (!fishingActive()) return overBuilding(m);
+      const st = fishState(); if (!st || st.st !== 'ready') return null;
+      const sh = bestShadow(); return sh ? new THREE.Vector3(sh.x, 0.9, sh.z) : null;
+    }
+    case 'anzuelo': return !S.tools.anzuelo && done('casa') ? overBuilding(done('casa')!) : null;
     case 'botellas': { const it = S.beach.items[0]; const t = it && tileAt(it.i, it.j); return t ? at(t, 1.1) : null; }
   }
   return null;

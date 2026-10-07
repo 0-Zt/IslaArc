@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { emit } from '../core/events';
 import { scene, glowMul } from '../render/renderer';
-import { worldGroup, tileAt, topY, rebuildDeco, blocked, type Tile } from '../world/island';
+import { worldGroup, tileAt, topY, rebuildDeco, blocked, N, type Tile } from '../world/island';
 import { removeTree } from '../world/trees';
 import { rocks } from '../world/rocks';
 import { puff, smoke } from '../world/particles';
@@ -29,7 +29,15 @@ export const has = (type: string) => buildings.some(b => b.type === type && (isD
 export const levelOf = (type: string) => buildings.reduce((m, b) => b.type === type && (isDone(b) || b.up > 0) ? Math.max(m, b.lvl) : m, 0);
 export const saved = (): SavedBuilding[] => buildings.map(b => ({ type: b.type, i: b.i, j: b.j, rot: b.rot, jobs: b.jobs, prog: b.prog, prog2: b.prog2, work: b.work, lvl: b.lvl, up: b.up } as SavedBuilding));
 export interface Level { cost: Cost; work: number; text: string; locked?: string }
-const def = (type: string) => (DATA.BUILDINGS as any)[type] as { name: string; size: [number, number]; cost: Cost; requires?: string; work?: number; deco?: boolean; levels?: Level[] };
+const def = (type: string) => (DATA.BUILDINGS as any)[type] as { name: string; size: [number, number]; cost: Cost; requires?: string; work?: number; deco?: boolean; levels?: Level[]; coast?: boolean };
+/** For a pier: which way the sea is from a tile (as a rotation 0..3), or -1 when it is not on the coast. */
+export function seaSide(i: number, j: number) {
+  const D: [number, number][] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+  // prefer a side with open water two tiles out, so the pier does not point into a narrow inlet
+  let best = -1, score = -1;
+  D.forEach(([di, dj], r) => { if (tileAt(i + di, j + dj) || i + di < 0 || j + dj < 0 || i + di >= N || j + dj >= N) return; const sc = (tileAt(i + 2 * di, j + 2 * dj) ? 0 : 1) + (tileAt(i + di + dj, j + dj + di) ? 0 : 0.5) + (tileAt(i + di - dj, j + dj - di) ? 0 : 0.5); if (sc > score) { score = sc; best = r; } });
+  return best;
+}
 /** The next level of a building, if it has one. */
 export const nextLevel = (b: Building): Level | null => def(b.type).levels?.[b.lvl - 1] || null;
 
@@ -172,7 +180,7 @@ function finishJob(b: Building, job: string) {
 export function tickBuildings(dt: number) {
   for (const b of buildings) {
     if (!isDone(b)) continue;
-    if (b.type === 'farol' && b.glow) {
+    if ((b.type === 'farol' || b.type === 'muelle') && b.glow) {
       const f = lampK * (1 + 0.06 * Math.sin(performance.now() / 180 + b.i));
       (b.glow.material as THREE.MeshBasicMaterial).color.setRGB(0.4 + 2.6 * f, 0.3 + 1.5 * f, 0.12 + 0.4 * f);
       if (b.light) { (b.light.material as THREE.MeshBasicMaterial).opacity = 0.55 * f; b.light.visible = f > 0.02; }
@@ -224,8 +232,9 @@ export function rotatePlace() { if (!place) return; place.rot = (place.rot + 1) 
 function updatePlace() {
   if (!place) return;
   while (fpGroup.children.length) fpGroup.remove(fpGroup.children[0]);
+  if (def(place.type).coast) { const r = seaSide(place.i, place.j); if (r >= 0) place.rot = r; }
   const tiles = footprint(place.type, place.i, place.j, place.rot);
-  place.valid = footprintValid(tiles);
+  place.valid = footprintValid(tiles) && (!def(place.type).coast || seaSide(place.i, place.j) >= 0);
   for (const t of tiles) {
     if (!t) continue;
     const y = topY(t) + 0.025;

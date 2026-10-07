@@ -19,10 +19,12 @@ import { collectAt } from './beach';
 import { sfx, type Sfx } from '../audio/sfx';
 import { buildings, buildHit, isDone, type Building } from './buildings';
 
-export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'plant' | 'path' | 'build' | 'avivar' | 'recoger' | 'walk';
+export type JobKind = 'tree' | 'rock' | 'sand' | 'soil' | 'stump' | 'fill' | 'ancient' | 'dig' | 'plant' | 'path' | 'build' | 'avivar' | 'recoger' | 'pescar' | 'walk';
 export interface Job { kind: JobKind; tile: Tile }
 export interface Crew extends Figure {
-  job: Job | null; path: Tile[]; anim: 'idle' | 'walk' | 'work' | 'wave';
+  job: Job | null; path: Tile[]; anim: 'idle' | 'walk' | 'work' | 'wave' | 'fish';
+  /** fishing pose: 0 = holding the rod, 1 = rod thrown forward (cast), -1 = pulled back (strike) */
+  swing?: number;
   t: number; phase: number; blink: number; dir: number; hits: number;
   toolKey: ToolKey; workHit: boolean; lastStep: number; off: number; offz: number;
   light?: THREE.Mesh;
@@ -69,8 +71,10 @@ export function clearCrew() { for (const c of crew) scene.remove(c.root); crew.l
 
 function setAnim(c: Crew, a: Crew['anim']) { if (c.anim !== a) { c.anim = a; c.t = 0; c.workHit = false; } }
 function setTool(c: Crew, kind: JobKind) {
-  c.toolKey = kind === 'tree' || kind === 'ancient' ? (S.tools.hacha ? 'axeM' : 'axe') : kind === 'rock' ? (S.tools.pico ? 'pickM' : 'pick') : kind === 'build' ? 'hammer' : kind === 'avivar' ? ('' as ToolKey) : 'shovel';
+  c.toolKey = kind === 'tree' || kind === 'ancient' ? (S.tools.hacha ? 'axeM' : 'axe') : kind === 'rock' ? (S.tools.pico ? 'pickM' : 'pick') : kind === 'build' ? 'hammer' : kind === 'pescar' ? 'rod' : kind === 'avivar' ? ('' as ToolKey) : 'shovel';
 }
+/** Ends a one-off task: goes back to what the figure was gathering, or rests. */
+export const finishTask = (c: Crew) => stop(c);
 export function refreshTools() { for (const c of crew) if (c.job) setTool(c, c.job.kind); }
 
 /* ---------- pathfinding (grid BFS; steps of at most one level) ---------- */
@@ -94,7 +98,7 @@ export function bfs(start: Tile, goal: (t: Tile) => boolean): Tile[] | null {
 export function order(c: Crew, tile: Tile, kind: JobKind): true | string {
   const here = tileOf(c); if (!here) return 'No hay camino hasta ahí';
   const standOn = kind === 'walk' || kind === 'sand' || kind === 'soil' || kind === 'path' || kind === 'recoger';
-  const b: Building | undefined = kind === 'build' || kind === 'avivar' ? tile.building : undefined;
+  const b: Building | undefined = kind === 'build' || kind === 'avivar' || kind === 'pescar' ? tile.building : undefined;
   const reach = standOn ? (t: Tile) => t === tile
     : b ? (t: Tile) => b.tiles.some(q => adjacent(t, q) && Math.abs(t.h - q.h) <= 1)   // any side of a building site
     : (t: Tile) => adjacent(t, tile) && Math.abs(t.h - tile.h) <= 1;
@@ -112,6 +116,7 @@ function arrive(c: Crew) {
   if (!j || j.kind === 'walk') { c.job = null; setAnim(c, 'idle'); emit('changed'); return; }
   const p = c.root.position;
   if (j.kind === 'recoger') { collectAt(j.tile, c); stop(c); return; }
+  if (j.kind === 'pescar') { setTool(c, 'pescar'); setAnim(c, 'fish'); emit('fishArrive', c); emit('changed'); return; }
   if ((j.kind === 'build' || j.kind === 'avivar') && j.tile.building) { const bt = j.tile.building.tiles as Tile[]; const n = bt.reduce((a, q) => Math.hypot(q.wx - p.x, q.wz - p.z) < Math.hypot(a.wx - p.x, a.wz - p.z) ? q : a, bt[0]); c.dir = Math.atan2(n.wx - p.x, n.wz - p.z); }
   else if (j.kind !== 'sand' && j.kind !== 'soil' && j.kind !== 'path') c.dir = Math.atan2(j.tile.wx - p.x, j.tile.wz - p.z);
   setTool(c, j.kind); setAnim(c, 'work'); emit('changed');
@@ -131,7 +136,7 @@ export function statusOf(c: Crew) {
   if (c.path.length) return 'Caminando';
   const j = c.job; if (!j) return 'Esperando órdenes';
   if (blockedBy(c)) return 'Almacén lleno';
-  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', plant: 'Plantando', path: 'Haciendo sendero', build: 'Construyendo', avivar: 'Avivando el horno', recoger: 'Recogiendo', walk: 'Esperando' } as const)[j.kind];
+  return ({ tree: 'Talando', rock: 'Picando piedra', sand: 'Juntando arena', soil: 'Cavando tierra', stump: 'Arrancando tocón', fill: 'Rellenando parcela', ancient: 'Talando árbol antiguo', dig: 'Cavando', plant: 'Plantando', path: 'Haciendo sendero', build: 'Construyendo', avivar: 'Avivando el horno', recoger: 'Recogiendo', pescar: 'Pescando', walk: 'Esperando' } as const)[j.kind];
 }
 
 function nearestTile(c: Crew, test: (t: Tile) => boolean, max = 6, from?: Tile) {
@@ -323,7 +328,7 @@ function updateOne(c: Crew, dt: number, T: number) {
   const [L, R] = c.arms, [hl, hr] = c.hips;
   let sy = 1, sxz = 1, bob = 0, lean = 0, hx = 0, hz = 0;
   L.rotation.set(0, 0, 0); R.rotation.set(0, 0, 0); hl.rotation.set(0, 0, 0); hr.rotation.set(0, 0, 0); c.head.rotation.set(0, 0, 0);
-  for (const k in c.tools) c.tools[k as ToolKey].visible = c.anim === 'work' && k === c.toolKey;
+  for (const k in c.tools) c.tools[k as ToolKey].visible = (c.anim === 'work' && k === c.toolKey) || (c.anim === 'fish' && k === 'rod');
   if (c.anim === 'idle') {
     const b = Math.sin(T * 2.3 + c.phase); sy = 1 + 0.035 * b; sxz = 1 - 0.018 * b; L.rotation.z = 0.12 + 0.04 * b; R.rotation.z = -0.12 - 0.04 * b; hz = Math.sin(T * 0.7 + c.phase) * 0.12; hx = Math.sin(T * 0.5 + c.phase) * 0.05;
   } else if (c.anim === 'walk') {
@@ -344,6 +349,12 @@ function updateOne(c: Crew, dt: number, T: number) {
       onWorkHit(c);
     }
     if (q < 0.3) c.workHit = false;
+  } else if (c.anim === 'fish') {
+    // holding the rod out over the water; `swing` throws it forward (cast) or yanks it back (strike)
+    const w = c.swing || 0, b = Math.sin(T * 1.8 + c.phase);
+    R.rotation.x = -1.05 - 0.9 * Math.max(0, -w) + 0.55 * Math.max(0, w) + 0.03 * b; R.rotation.z = -0.1;
+    L.rotation.x = -0.7 - 0.4 * Math.max(0, -w); L.rotation.z = 0.25;
+    lean = 0.05 * w - 0.12 * Math.max(0, -w); sy = 1 + 0.02 * b; hx = 0.12 + 0.05 * b;
   } else if (c.anim === 'wave') {
     const w = Math.sin(c.t * 11); R.rotation.z = -2.55 + w * 0.35; L.rotation.z = 0.15; sy = 1 + 0.03 * Math.sin(c.t * 5.5); hz = -0.12 + w * 0.04; bob = Math.max(0, Math.sin(c.t * 5.5)) * 0.03;
   }

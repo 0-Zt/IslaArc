@@ -4,7 +4,7 @@ import { levelOf } from './buildings';
 /* Storage limits. Without an almacén, 40 of each island material and 15 of each refined one
    fit; each almacén level raises both, and the house at level 2 adds a little more. */
 
-export const REFINED: ResKey[] = ['lingote', 'tablas', 'ladrillo', 'vidrio', 'carbon', 'semilla'] as ResKey[];
+export const REFINED: ResKey[] = ['lingote', 'tablas', 'ladrillo', 'vidrio', 'carbon', 'semilla', 'algas'] as ResKey[];
 const C = DATA.BALANCE.caps as { base: [number, number]; almacen: [number, number][]; casa2: [number, number] };
 
 /** [island materials, refined materials] that fit right now. */

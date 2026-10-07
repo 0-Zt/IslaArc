@@ -24,6 +24,7 @@ export const ICON: Record<ResKey, string> = {
   ladrillo: mkIcon(['.......', 'RRR.RRR', 'RHR.RHR', '.......', 'RR.RRRR', 'RH.RHRR', '.......'], { R: '#b85a3a', H: '#d87a52' }),
   vidrio: mkIcon(['.......', '..GGG..', '.GHGGG.', '.GHGGG.', '.GGGGG.', '..GGG..', '.......'], { G: '#8fd4e0', H: '#e8fbff' }),
   lingote: mkIcon(['.......', '.......', '..MMMMM', '.MHMMMD', 'MMMMMD.', 'MDDDD..'], { M: '#b8c0cc', H: '#ffffff', D: '#6a7280' }),
+  algas: mkIcon(['.G...G.', '.GL.GL.', '..GLG..', '..LGL..', '.GLG.G.', 'GG..GG.'], { G: '#3f8a4a', L: '#7fc955' }),
   carbon: mkIcon(['.......', '..KK...', '.KHKK.K', '.KKKKKH', 'KKHKKKK', '.KKKDK.'], { K: '#3a3632', H: '#6a625a', D: '#e0602a' }),
 };
 export const img = (k: ResKey) => `<img src="${ICON[k]}" alt="">`;
@@ -36,6 +37,22 @@ export const XICON: Record<string, string> = {
   encargo: mkIcon(['.......', '.PPPPP.', '.PLLLP.', '.PPPPP.', '.PLLPP.', '.PPPPP.'], { P: '#f0e0b8', L: '#8a7050' }),
   caja: mkIcon(['.......', 'BBBBBBB', 'BLLBLLB', 'BBBBBBB', 'BLLBLLB', 'BBBBBBB'], { B: '#8a5a2e', L: '#c08a50' }),
   botella: mkIcon(['...C...', '..GGG..', '..GHG..', '.GGHGG.', '.GPPGG.', '.GGGGG.'], { C: '#a8763a', G: '#6ab8a0', H: '#d8f8ee', P: '#f0e0b8' }),
+  // things from the sea
+  alga: mkIcon(['.G...G.', '.GL.GL.', '..GLG..', '..LGL..', '.GLG.G.', 'GG..GG.'], { G: '#3f8a4a', L: '#7fc955' }),
+  concha: mkIcon(['.......', '..PPP..', '.PLPLP.', 'PLPLPLP', '.PPPPP.', '...P...'], { P: '#e8a0a8', L: '#fff0f0' }),
+  deriva: mkIcon(['.......', '.......', 'WWWWWW.', 'WLLLLLW', '.WWWWWW', '.......'], { W: '#d8d0c0', L: '#b8ac98' }),
+  canto: mkIcon(['.......', '..GGG..', '.GHGGG.', '.GGGGD.', '..GDD..', '.......'], { G: '#a8b0b8', H: '#e0e8ee', D: '#7a838d' }),
+  bota: mkIcon(['..BBB..', '..BLB..', '..BBB..', '..BBBB.', '.BBBBBB', '.DDDDDD'], { B: '#b07a44', L: '#d4a060', D: '#6a4226' }),
+  bota2: mkIcon(['BBB.BBB', 'BLB.BLB', 'BBB.BBB', 'BBBBBBB', 'BBBBBBB', 'DDDDDDD'], { B: '#b07a44', L: '#d4a060', D: '#6a4226' }),
+  vasija: mkIcon(['.......', '..RR...', '.RWRR..', 'RRBBRR.', '.RRRR..', '..RR...'], { R: '#c06a42', W: '#f0d0a0', B: '#3a6ab0' }),
+  estrella: mkIcon(['...Y...', '..YYY..', 'YYYHYYY', '.YYYYY.', '.YY.YY.', 'Y.....Y'], { Y: '#f2c14e', H: '#fff3c0' }),
+  engranaje: mkIcon(['.G.G.G.', 'GGGGGGG', '.GG.GG.', 'GG...GG', '.GG.GG.', 'GGGGGGG'], { G: '#6a9a7a' }),
+  caracola: mkIcon(['....PP.', '..PPLPP', '.PLPPP.', 'PPLLP..', '.PPP...', 'PP.....'], { P: '#e8c8a0', L: '#c08868' }),
+  perla: mkIcon(['.......', '..WWW..', '.WHWWW.', '.WWWWW.', '..WWD..', '.......'], { W: '#f0e8f0', H: '#ffffff', D: '#c8b8d0' }),
+  llave: mkIcon(['.GGG...', 'G.G.G..', '.GGG...', '..G....', '..GG...', '..GGG..'], { G: '#5aa88a' }),
+  ancla: mkIcon(['...G...', '..GGG..', '...G...', 'G..G..G', 'GG.G.GG', '.GGGGG.'], { G: '#8a96a4' }),
+  cofre: mkIcon(['.......', '.BBBBB.', 'BLLYLLB', 'BBBYBBB', 'BLLLLLB', 'BBBBBBB'], { B: '#6a4226', L: '#a8743e', Y: '#f2c14e' }),
+  hondo: mkIcon(['.......', '..DDD..', '.DDDDD.', '.D.D.D.', '.DDDDD.', '..D.D..'], { D: '#2a3a5a' }),
   invento: mkIcon(['..YYY..', '.YHYYY.', '.YHYYY.', '..YYY..', '..GGG..', '...G...'], { Y: '#f2c14e', H: '#fff3c0', G: '#8a8f9a' }),
 };
 /** Any icon by key: a material or one of the extra ones. */
