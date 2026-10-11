@@ -1,6 +1,8 @@
 # Isla Arcilla
 
-Juego de progresión y descubrimiento inspirado en la serie GROW. Guías a figuras de arcilla que transforman una isla: talan, pican, construyen, funden metal y, poco a poco, despiertan sus secretos.
+Juego de progresión y descubrimiento inspirado en la serie GROW. Guías a figuras de arcilla que transforman una isla: talan, pican, construyen, funden metal y, poco a poco, despiertan sus secretos. Desde la isla se sale a pescar, a navegar en balsa y a explorar la cueva del volcán, con puzles al estilo de Pokémon de GBA, un combate por turnos y una habilidad distinta para cada figura.
+
+**Estado:** v0.17 · 9 capítulos jugables (unas 3 horas). Lo que viene está en `docs/vision.md`.
 
 Hecho con [Three.js](https://threejs.org/) y TypeScript, pensado primero para celular.
 
@@ -25,14 +27,17 @@ src/
   render/            renderer, cámara, luces, post-proceso, calidad, resolución dinámica y ciclo de día y noche
   world/             isla (generación y terreno), texturas del suelo, agua, árboles, rocas, partículas
   assets/            modelos voxel: texturas de detalle, personajes, edificios, decoración, el claro secreto, las ruinas
-  game/              lógica: progreso (capítulos, estrellas, logros), tablón de encargos, estado, figuras y trabajos, edificios, bosque (zonas, tocones, retoños), marcas de plantar y senderos, expansión, ruinas de Brasa, claro de Musgo, objetivos, producción e inventos, la playa, la pesca
+  game/              lógica: progreso (capítulos, estrellas, logros), tablón de encargos, estado, figuras y trabajos, edificios, bosque (zonas, tocones, retoños), marcas de plantar y senderos, expansión, ruinas de Brasa, claro de Musgo, objetivos, producción e inventos, la playa, la pesca, la balsa, la cueva (exploración por casillas, habilidades de cada figura) y el combate por turnos
   audio/             sonido generado con Web Audio (golpes, ambiente, avisos)
   ui/                interfaz: HUD, paneles, acertijos de las llamas, burbujas de estado, entrada táctil
   data/              balance y contenido en JSON (recursos, edificios, herramientas, recetas, inventos, capítulos, logros, mensajes)
 legacy/              prototipos anteriores (2D, taller de assets, corte vertical en un archivo)
-docs/roadmap.md      visión, eras y fases
-docs/diseno-exploracion.md  exploración, inventos y combates por turnos (lo que viene)
+docs/vision.md       el mapa del juego: los tres círculos, las llaves del mundo, la historia en cinco actos y el orden de trabajo
+docs/plan-figuras.md repaso y plan: que cada figura cuente y que valga la pena volver (con referencias de otros juegos)
+docs/roadmap.md      lo hecho versión por versión
+docs/diseno-exploracion.md  exploración, inventos y combates por turnos
 docs/economia.md     plan de economía: topes, mejoras, cadenas por era y ritmo
+tools/               bot que juega solo para medir el ritmo, y su gráfico
 ```
 
 Para equilibrar el juego (costos, tiempos, probabilidades) se editan los archivos de `src/data/`, sin tocar código.
@@ -60,6 +65,7 @@ Medido en la misma escena y resolución de pantalla de celular: la v0.6 tardaba 
 | Expandir la isla | Construir → Expandir la isla, elegir una casilla de agua | Igual |
 | Plantar o trazar senderos | Construir → Jardín, tocar el pasto y luego Listo | Igual |
 | Llegar a las ruinas | Construir → Expandir → Puente, marcar tramos hacia el islote | Igual |
+| Explorar la cueva | Cruceta o tocar el suelo; botón A; tocar una cara para cambiar quién va adelante | Flechas o WASD, espacio |
 | Mover la cámara | Un dedo | Arrastrar con clic izquierdo |
 | Zoom y giro | Dos dedos | Rueda y clic derecho |
 
