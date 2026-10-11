@@ -3,6 +3,7 @@ import { scene } from '../render/renderer';
 import { makeCanvas } from '../core/canvas';
 import { tileUnder } from './island';
 import { puff } from './particles';
+import { S } from '../game/state';
 
 /* The open sea around the island: patches of deep, dark water (rarer things live there),
    a wall of big waves that the raft cannot cross yet, and far behind it the outline of
@@ -21,8 +22,19 @@ export const SEA_LIMIT = 37;
 
 const angDiff = (a: number, b: number) => { let d = a - b; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; };
 export const deepAt = (x: number, z: number) => DEEP.find(d => Math.hypot(x - d.x, z - d.z) < d.r) || null;
-export const surgeAt = (x: number, z: number) => Math.hypot(x, z) > SURGE.r && Math.abs(angDiff(Math.atan2(z, x), SURGE.angle)) < SURGE.half;
-export const outOfSea = (x: number, z: number) => Math.hypot(x, z) > SEA_LIMIT;
+/** Once the shell has been blown, a lane opens through the middle of the waves, out towards the lighthouse. */
+export const LANE = { half: 0.13, far: 42.5 };
+export const inLane = (x: number, z: number) => Math.abs(angDiff(Math.atan2(z, x), SURGE.angle)) < LANE.half;
+const open = () => !!S.flags.olasAbiertas;
+export const surgeAt = (x: number, z: number) => Math.hypot(x, z) > SURGE.r && Math.abs(angDiff(Math.atan2(z, x), SURGE.angle)) < SURGE.half && !(open() && inLane(x, z));
+export const outOfSea = (x: number, z: number) => Math.hypot(x, z) > (open() && inLane(x, z) ? LANE.far : SEA_LIMIT);
+/** Near enough to the big waves to blow the shell at them. */
+export const nearWaves = (x: number, z: number) => { const r = Math.hypot(x, z); return r > SURGE.r - 4 && r < SURGE.r + 2 && Math.abs(angDiff(Math.atan2(z, x), SURGE.angle)) < SURGE.half + 0.08; };
+/** Past the waves, in the lane, on the lighthouse side. */
+export const pastWaves = (x: number, z: number) => open() && inLane(x, z) && Math.hypot(x, z) > SURGE.r + 5.5;
+let calmPulse = 0, openK = 0;
+/** The shell's call: a weak one only makes the waves bow for a moment. */
+export function calmWaves() { calmPulse = 1; }
 export const isOpenWater = (x: number, z: number) => !tileUnder(x, z);
 
 /* ---------- deep zones: dark discs with a soft edge that slowly turn ---------- */
@@ -43,7 +55,7 @@ for (const d of DEEP) {
 
 /* ---------- the wall of waves ---------- */
 const surge = new THREE.Group(); scene.add(surge);
-const crests: { g: THREE.Group; ph: number; y0: number }[] = [];
+const crests: { g: THREE.Group; ph: number; y0: number; lane: boolean }[] = [];
 {
   const body = [new THREE.MeshLambertMaterial({ color: '#1f6fa8' }), new THREE.MeshLambertMaterial({ color: '#2a80b8' }), new THREE.MeshLambertMaterial({ color: '#3890c4' })];
   const foam = new THREE.MeshLambertMaterial({ color: '#f4fbff' }), spray = new THREE.MeshLambertMaterial({ color: '#d8f0fa' });
@@ -60,7 +72,7 @@ const crests: { g: THREE.Group; ph: number; y0: number }[] = [];
       if (Math.random() < 0.6) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), spray); sp.position.set((Math.random() - 0.5) * w * 0.6, h + 0.25, 0.1); g.add(sp); }
       g.position.set(Math.cos(a) * r, WATER_Y - 0.12, Math.sin(a) * r);
       g.rotation.y = -a - Math.PI / 2;   // the curl faces the island
-      surge.add(g); crests.push({ g, ph: Math.random() * 6.28 + row, y0: g.position.y });
+      surge.add(g); crests.push({ g, ph: Math.random() * 6.28 + row, y0: g.position.y, lane: Math.abs(angDiff(a, SURGE.angle)) < LANE.half + 0.05 });
     }
   }
   // darker, rough water beyond the wall
@@ -89,7 +101,14 @@ export function tickSea(dt: number, T: number) {
   // bubbles rising from the deep
   bub -= dt;
   if (bub <= 0) { bub = 0.25; for (const d of DEEP) { const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * d.r * 0.9; puff(d.x + Math.cos(a) * r, WATER_Y + 0.02, d.z + Math.sin(a) * r, Math.random() < 0.5 ? '#8fd0f0' : '#c8ecff', 1, 0.6, 0.15, WATER_Y); } }
-  for (const c of crests) { const w = Math.sin(T * 1.5 + c.ph); c.g.position.y = c.y0 + w * 0.13; c.g.rotation.x = 0.12 + 0.12 * Math.sin(T * 1.5 + c.ph + 0.9); c.g.scale.y = 1 + 0.18 * w; }
+  // the shell: a weak call makes every wave bow for a moment; the tuned one opens a lane for good
+  calmPulse = Math.max(0, calmPulse - dt * 0.35); openK += ((open() ? 1 : 0) - openK) * Math.min(1, dt * 0.8);
+  const bow = Math.sin(Math.min(1, calmPulse) * Math.PI) * 0.9;
+  for (const c of crests) {
+    const w = Math.sin(T * 1.5 + c.ph), down = c.lane ? openK * 1.3 : openK * 0.25;
+    c.g.position.y = c.y0 + w * 0.13 * (1 - bow * 0.8) - bow * 0.45 - down; c.g.rotation.x = 0.12 + 0.12 * Math.sin(T * 1.5 + c.ph + 0.9); c.g.scale.y = (1 + 0.18 * w) * (1 - bow * 0.5) * (c.lane ? 1 - openK * 0.8 : 1);
+    c.g.visible = !(c.lane && openK > 0.97);
+  }
   const lamp = (far as any).lamp as THREE.Mesh; const f = 0.6 + 0.4 * Math.max(0, Math.sin(T * 1.3));
   (lamp.material as THREE.MeshBasicMaterial).color.setRGB(3 * f, 2.4 * f, 1.1 * f);
 }

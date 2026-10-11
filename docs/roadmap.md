@@ -187,11 +187,23 @@ Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates p
 - **Capítulo 7 · La cueva del volcán** (9 metas, 3 etapas: La boca, Las salas, La caracola; premio +15 ★). El timón de Marea ahora dice que devolvió la caracola a la montaña y que busques la grieta que humea. El capítulo 8, **La isla del faro**, queda anunciado.
 - **Ritmo:** el recorrido mínimo es de 84 pasos más las acciones (resuelto por un buscador automático y por un recorrido de prueba completo); para una persona son unos 10 a 15 minutos.
 
+## El guardián (v0.16)
+
+- **La cueva con vida (estilo Core Keeper):** oscuridad que solo se abre alrededor de la linterna, los braseros, la lava y los cristales; murciélagos que duermen en las paredes y salen volando cuando pasas (o cuando cae una roca); escarabajos que brillan y arrancan del equipo; gotas que caen del techo en charcos; polvo flotando en la luz; burbujas en la lava. Sonidos nuevos: pasos, aleteos y chillidos, gotas con eco, viento de cueva (reemplaza al mar) y lava que burbujea.
+- **Paredes huecas y reliquias:** en cada piso hay una pared agrietada que se rompe con el pico y esconde un nicho con una reliquia de los Alfareros (figurita sin cocer, molde de manos, sello del horno), +2 ★ y un texto. La pestaña del Diario ahora se llama **Hallazgos** y suma las reliquias.
+- **Capítulo 8 · El guardián** (6 metas, 3 etapas: La voz débil, El guardián, El paso; premio +15 ★):
+  1. Navegar hasta las olas grandes y **soplar la caracola**: las olas se agachan un momento y vuelven. En la cueva, el gólem despierta.
+  2. Volver al río de lava y **calmar al gólem** en el primer **combate por turnos**.
+  3. **Afinar la caracola** en el taller con 6 de cuarzo (el cuarzo por fin tiene uso).
+  4. Soplarla otra vez: **las olas se abren** en un paso de agua tranquila, y se puede navegar hasta ver la isla del faro.
+- **Combate:** la barra del gólem es de **calor** y hay que bajarla a cero (no se rompe, se calma). Arci: golpe de pico y cubrir. Musgo: musgo húmedo (enfría más cuando el gólem está al rojo) y brotes (cura y levanta). Brasa: absorber calor y avivar (el siguiente ataque pega ×1,6). El gólem **anuncia lo que hará** un turno antes; a mitad de la pelea se pone al rojo y puede recalentarse una vez. Perder no cuesta nada: el equipo vuelve a la escalera.
+- El gólem calmado aparece en el Equipo como guardián de la montaña.
+
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **Siguiente:** soplar la caracola para calmar las olas grandes, el gólem que despierta (primer combate por turnos) y la isla del faro.
+- **Siguiente:** la isla del faro (v0.17). El orden completo está en docs/vision.md.
 
 ## Decisiones tomadas
 

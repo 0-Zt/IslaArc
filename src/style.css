@@ -399,3 +399,37 @@ body.incave #labels,body.incave #bottom{display:none}
 @keyframes cvsign{0%{opacity:0;transform:translate(-50%,-30%)}10%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1}100%{opacity:0}}
 #cvFade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:8;transition:opacity .28s}
 #cvFade.on{opacity:1}
+
+/* ---------- the guardian fight (v0.16) ---------- */
+#caveUI.fight #cvPad,#caveUI.fight #cvA,#caveUI.fight #cvBar{display:none}
+#battle[hidden]{display:none}
+#battle{position:fixed;inset:0;z-index:6;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:calc(130px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
+.bTop{pointer-events:auto;align-self:center;width:100%;max-width:420px;background:#1a100ae6;border:2px solid #8a5a2e;border-radius:14px;padding:8px 12px;display:flex;flex-direction:column;gap:5px}
+.bTop b{font-family:var(--display);font-size:17px;color:#ffcf8a}
+.bHeat{position:relative;height:16px;border-radius:8px;background:#0008;overflow:hidden}
+.bHeat i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#c84a1a,#ff9a30);transition:width .35s}
+#battle.red .bHeat i{background:linear-gradient(90deg,#ff5a1a,#ffd060);animation:bpulse .6s infinite alternate}
+@keyframes bpulse{to{filter:brightness(1.35)}}
+.bHeat span{position:absolute;inset:0;font-size:11px;font-weight:700;line-height:16px;padding-left:8px;color:#fff;text-shadow:0 1px 2px #000}
+.bIntent{font-size:13px;color:#ffe0b0}
+.bIntent small{color:var(--muted);font-size:11.5px;margin-right:4px}
+.bLog{align-self:center;max-width:420px;text-align:center;font-size:14px;line-height:1.35;background:#000a;border-radius:10px;padding:6px 12px;margin-top:auto;margin-bottom:8px}
+.bLog:empty{display:none}
+.bBottom{pointer-events:auto;align-self:center;width:100%;max-width:420px;display:flex;flex-direction:column;gap:8px}
+.bTeam{display:flex;gap:6px}
+.bF{flex:1;min-width:0;background:var(--glass);border:2px solid var(--line);border-radius:12px;padding:5px 8px}
+.bF.on{border-color:var(--sun);background:var(--glass2)}
+.bF.down{opacity:.5}
+.bF b{font-family:var(--display);font-size:14px;font-weight:500}
+.bF small{font-size:11px;color:var(--muted)}
+.bHp{height:7px;border-radius:4px;background:#0008;overflow:hidden;margin:3px 0 1px}
+.bHp i{display:block;height:100%;background:linear-gradient(90deg,#5fb84a,#a8e070);transition:width .3s}
+.bMoves{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bMoves:empty{display:none}
+.bMoves button{background:var(--sun);color:var(--sun-ink);border:2px solid #b0822a;border-radius:14px;padding:10px 8px;display:flex;flex-direction:column;gap:2px;text-align:left;box-shadow:0 3px 0 #0006}
+.bMoves button:active{transform:translateY(2px);box-shadow:0 1px 0 #0006}
+.bMoves b{font-size:15px}
+.bMoves small{font-size:11.5px;line-height:1.25;opacity:.85}
+.bNum{position:fixed;z-index:7;transform:translate(-50%,-50%);font-family:var(--display);font-size:22px;font-weight:700;pointer-events:none;animation:bnum 1.1s ease-out forwards;text-shadow:0 2px 0 #000,0 0 6px #000}
+.bNum.dmg{color:#ff7a5a}.bNum.heal{color:#9ae87a}.bNum.cool{color:#9ad8ff}
+@keyframes bnum{0%{opacity:0;margin-top:8px}15%{opacity:1}100%{opacity:0;margin-top:-46px}}

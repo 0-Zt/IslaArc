@@ -21,7 +21,7 @@ export interface Req {
 export interface SavedBuilding { type: string; i: number; j: number; rot: number; queue?: number; jobs?: string[]; prog: number; prog2?: number; work?: number; lvl?: number; up?: number }
 /** One floor of the volcano cave: where its boulders are and what was solved there. */
 export interface CaveFloorSave { b: ([number, number] | null)[]; fill: string[]; broken: string[]; lit: string[]; dirs: Record<string, string>; mined: string[]; opened: string[]; read: string[]; door: boolean }
-export interface CaveSave { at?: [number, number]; hits: number; max: number; f: CaveFloorSave[]; caracola: boolean; chests: number }
+export interface CaveSave { at?: [number, number]; hits: number; max: number; f: CaveFloorSave[]; caracola: boolean; chests: number; relics?: string[] }
 export interface State {
   res: Record<ResKey, number>;
   got: Record<ResKey, number>;

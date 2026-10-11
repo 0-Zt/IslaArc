@@ -6,7 +6,7 @@ import INVENTIONS from '../data/inventions.json';
    workshop (inventions). Each building works through its own queue, one item at a time. */
 
 export interface Recipe { name: string; desc: string; cost: Cost; out: string; seconds: number; at: string; n?: number; lvl?: number; maxLvl?: number }
-export interface Invention { name: string; desc: string; cost: Cost; seconds?: number; tier: number; needs?: string[]; locked?: string }
+export interface Invention { name: string; desc: string; cost: Cost; seconds?: number; tier: number; needs?: string[]; locked?: string; needsFlag?: string; flagText?: string }
 export const RECIPES = DATA.RECIPES as Record<string, Recipe>;
 export const INV = INVENTIONS as Record<string, Invention>;
 export const MAX_QUEUE = 6;
@@ -36,7 +36,7 @@ export function invState(id: string, queued: string[]): InvState {
   const d = INV[id];
   if (S.inv[id]) return 'done';
   if (queued.includes('inv:' + id)) return 'working';
-  if (d.locked) return 'locked';
+  if (d.locked || (d.needsFlag && !S.flags[d.needsFlag])) return 'locked';
   if ((d.needs || []).some(n => !S.inv[n])) return 'needs';
   return 'ready';
 }

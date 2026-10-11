@@ -60,6 +60,8 @@ function runeTex(seed: number) {
   }));
 }
 
+/** The guardian of the volcano, in parts so it can wake up, stand and swing its arms. */
+export interface Golem { g: THREE.Group; torso: THREE.Group; head: THREE.Group; armL: THREE.Group; armR: THREE.Group; eyes: THREE.Mesh[]; cracks: THREE.Mesh[] }
 export interface FloorView {
   root: THREE.Group;
   boulders: Map<string, THREE.Group>;           // key "x,z" → mesh (moves with the boulder)
@@ -68,17 +70,18 @@ export interface FloorView {
   doors: Map<string, THREE.Group>; gates: Map<string, THREE.Group>; plates: Map<string, THREE.Mesh>;
   crystals: Map<string, THREE.Group>; veins: Map<string, THREE.Group>; chests: Map<string, { lid: THREE.Group }>;
   rubble: Map<string, THREE.Group>; pits: Map<string, THREE.Group>; lava: Map<string, THREE.Mesh>;
-  altar: { orb: THREE.Mesh } | null; shell: THREE.Group | null; golem: { eyes: THREE.Mesh[]; g: THREE.Group } | null;
+  altar: { orb: THREE.Mesh } | null; shell: THREE.Group | null; golem: Golem | null;
+  cracked: Map<string, THREE.Group>; relic: THREE.Group | null;
   embers: THREE.Vector3[]; lavaLights: THREE.PointLight[];
 }
 
 const isWall = (c: string | undefined) => !c || c === '#';
 
-export function buildFloor(map: string[], dirs: Record<string, string>, decor: { mushrooms: number[][]; stalagmites: number[][] }): FloorView {
+export function buildFloor(map: string[], dirs: Record<string, string>, decor: { mushrooms: number[][]; stalagmites: number[][] }, relicKind = 0): FloorView {
   const W = map[0].length, Hh = map.length;
   const at = (x: number, z: number) => (map[z] && map[z][x]) || '#';
   const root = new THREE.Group(); root.position.set(CAVE_X, 0, CAVE_Z);
-  const v: FloorView = { root, boulders: new Map(), braziers: new Map(), statues: new Map(), doors: new Map(), gates: new Map(), plates: new Map(), crystals: new Map(), veins: new Map(), chests: new Map(), rubble: new Map(), pits: new Map(), lava: new Map(), altar: null, shell: null, golem: null, embers: [], lavaLights: [] };
+  const v: FloorView = { root, boulders: new Map(), braziers: new Map(), statues: new Map(), doors: new Map(), gates: new Map(), plates: new Map(), crystals: new Map(), veins: new Map(), chests: new Map(), rubble: new Map(), pits: new Map(), lava: new Map(), altar: null, shell: null, golem: null, embers: [], lavaLights: [], cracked: new Map(), relic: null };
   const S = P(); const glowParts: Record<string, L> = {};
   const addGlow = (k: keyof typeof GLOW, g: THREE.BufferGeometry) => { (glowParts[k] = glowParts[k] || []).push(g); };
   const box = (w: number, h: number, d: number, x: number, y: number, z: number) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); return g; };
@@ -251,16 +254,47 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
         root.add(G); v.shell = sh; break;
       }
       case 'g': {
-        // the sleeping golem: a hunched mass of dark clay, cracks of ember, two dim eyes
-        const s = 1.25; G.scale.setScalar(s);
-        vbox(pp.brick, 0, 0.45, 0, 0.9, 0.8, 0.8, '#4a3a30'); vbox(pp.brick, 0, 0.98, 0.1, 0.62, 0.42, 0.56, '#54423a');
-        vbox(pp.brick, 0.55, 0.3, 0.1, 0.28, 0.6, 0.3, '#4a3a30'); vbox(pp.brick, -0.55, 0.3, 0.1, 0.28, 0.6, 0.3, '#4a3a30');
-        vbox(pp.brick, 0, 1.22, 0.1, 0.4, 0.08, 0.4, '#3a2c24');
-        merge(pp, G);
-        for (const [a, b, c2] of [[0.2, 0.6, 0.41], [-0.25, 0.4, 0.41], [0.05, 0.25, 0.41]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.01), GLOW.flame); m.position.set(a, b, c2); G.add(m); }
+        // the guardian: a hunched mass of dark clay with ember cracks, built in parts (hips, torso,
+        // head, two arms) so it can wake up and fight. Asleep it leans forward with its head down.
+        G.scale.setScalar(1.25);
+        const base = P(); vbox(base.brick, 0, 0.2, 0, 0.86, 0.4, 0.7, '#45362d'); vbox(base.brick, -0.24, 0.1, 0.12, 0.3, 0.2, 0.5, '#3e3028'); vbox(base.brick, 0.24, 0.1, 0.12, 0.3, 0.2, 0.5, '#3e3028'); merge(base, G);
+        const torso = new THREE.Group(); torso.position.y = 0.4; G.add(torso);
+        const tp = P(); vbox(tp.brick, 0, 0.32, 0, 0.92, 0.66, 0.74, '#4a3a30'); vbox(tp.brick, 0, 0.5, 0.06, 0.7, 0.3, 0.7, '#54423a'); vbox(tp.brick, 0.32, 0.62, -0.05, 0.3, 0.16, 0.5, '#3e3028'); vbox(tp.brick, -0.32, 0.62, -0.05, 0.3, 0.16, 0.5, '#3e3028'); merge(tp, torso);
+        const cracks: THREE.Mesh[] = [];
+        for (const [a, b, w2] of [[0.18, 0.22, 0.22], [-0.22, 0.38, 0.18], [0.05, 0.5, 0.14], [-0.05, 0.12, 0.12]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w2, 0.035, 0.01), GLOW.flame); m.position.set(a, b, 0.376); torso.add(m); cracks.push(m); }
+        const head = new THREE.Group(); head.position.set(0, 0.66, 0.08); torso.add(head);
+        const hp = P(); vbox(hp.brick, 0, 0.17, 0, 0.56, 0.34, 0.5, '#54423a'); vbox(hp.brick, 0, 0.36, -0.02, 0.4, 0.06, 0.4, '#3a2c24'); vbox(hp.brick, 0, 0.06, 0.24, 0.3, 0.08, 0.04, '#3a2c24'); merge(hp, head);
         const eyes: THREE.Mesh[] = [];
-        for (const ex of [-0.13, 0.13]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.05, 0.02), GLOW.eye); e.position.set(ex, 1.02, 0.39); G.add(e); eyes.push(e); }
-        root.add(G); v.golem = { eyes, g: G }; break;
+        for (const ex of [-0.12, 0.12]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.05, 0.02), GLOW.eye); e.position.set(ex, 0.2, 0.255); head.add(e); eyes.push(e); }
+        const arm = (side: number) => {
+          const a = new THREE.Group(); a.position.set(side * 0.56, 0.58, 0.05); torso.add(a);
+          const ap = P(); vbox(ap.brick, 0, -0.22, 0, 0.26, 0.44, 0.28, '#4a3a30'); vbox(ap.brick, 0, -0.52, 0.04, 0.32, 0.26, 0.34, '#3e3028'); merge(ap, a);
+          const c = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.2, 0.03), GLOW.flame); c.position.set(side * 0.135, -0.25, 0.05); a.add(c); cracks.push(c);
+          return a;
+        };
+        const armL = arm(-1), armR = arm(1);
+        torso.rotation.x = 0.42; head.rotation.x = 0.35; armL.rotation.x = armR.rotation.x = -0.2;
+        root.add(G); v.golem = { g: G, torso, head, armL, armR, eyes, cracks }; break;
+      }
+      case 'X': {
+        // a wall that sounds hollow: lighter rock, a web of cracks, a little dust at its feet
+        vbox(pp.stone, 0, 0.45, 0, 0.98, 0.9, 0.98, '#5a5360'); vbox(pp.stone, 0.05, 0.95, -0.05, 0.8, 0.12, 0.8, '#4c4652');
+        for (const [a, b, w2, h2] of [[-0.12, 0.6, 0.05, 0.4], [0.05, 0.42, 0.34, 0.04], [0.18, 0.3, 0.05, 0.3], [-0.2, 0.25, 0.22, 0.04], [0.02, 0.75, 0.2, 0.04]]) for (const f of [1, -1]) vbox(pp.stone, a, b, f * 0.495, w2, h2, 0.01, '#1e1a22');
+        for (const [a, b, w2, h2] of [[-0.12, 0.6, 0.05, 0.4], [0.05, 0.42, 0.34, 0.04]]) for (const f of [1, -1]) vbox(pp.stone, f * 0.495, b, a, 0.01, h2, w2, '#1e1a22');
+        for (let k = 0; k < 4; k++) vbox(pp.stone, (H(x, z, k + 100) - 0.5) * 0.8, 0.04, (H(x, z, k + 103) - 0.5) * 0.8, 0.1, 0.08, 0.1, '#6a6070');
+        merge(pp, G); root.add(G); v.cracked.set(key, G); break;
+      }
+      case 'Y': {
+        vbox(pp.stone, 0, 0.18, 0, 0.5, 0.36, 0.5, '#5e5650'); vbox(pp.stone, 0, 0.38, 0, 0.6, 0.06, 0.6, '#6a625a');
+        merge(pp, G);
+        const item = new THREE.Group(); item.position.y = 0.42; G.add(item);
+        const ip = P();
+        if (relicKind === 0) { vbox(ip.brick, 0, 0.12, 0, 0.12, 0.16, 0.1, '#c9a07a'); vbox(ip.brick, 0, 0.26, 0, 0.13, 0.12, 0.12, '#d4ac86'); vbox(ip.brick, 0.09, 0.12, 0, 0.04, 0.1, 0.04, '#c9a07a'); vbox(ip.brick, -0.09, 0.12, 0, 0.04, 0.1, 0.04, '#c9a07a'); }
+        else if (relicKind === 1) { vbox(ip.stone, 0, 0.04, 0, 0.36, 0.08, 0.26, '#7a7068'); vbox(ip.stone, -0.08, 0.085, 0, 0.1, 0.01, 0.14, '#3a3430'); vbox(ip.stone, 0.08, 0.085, 0, 0.1, 0.01, 0.14, '#3a3430'); }
+        else { vbox(ip.bark, 0, 0.1, 0, 0.22, 0.2, 0.06, '#b08840'); vbox(ip.bark, 0, 0.1, 0.035, 0.08, 0.12, 0.01, '#e0c070'); }
+        merge(ip, item);
+        const d = lightDecal(1.4, '#ffd890'); d.position.y = 0.02; G.add(d);
+        root.add(G); v.relic = item; break;
       }
     }
   }

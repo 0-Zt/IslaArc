@@ -60,6 +60,10 @@ export const XICON: Record<string, string> = {
   cristal: mkIcon(['...C...', '..CHC..', '.CCHCC.', '.CCCCC.', '..CCC..', '...C...'], { C: '#5ab8e8', H: '#e8fbff' }),
   medusa: mkIcon(['..GGG..', '.GHGGG.', 'GGGGGGG', '.G.G.G.', '.G.G.G.', 'G..G..G'], { G: '#a8d8f0', H: '#ffffff' }),
   balsa: mkIcon(['...M...', '...MS..', '...MSS.', 'TTTTTTT', 'TLTLTLT', '.......'], { M: '#6a4226', S: '#f0e6d0', T: '#b08450', L: '#7fc955' }),
+  figurita: mkIcon(['...H...', '..HHH..', '...H...', '.HHHHH.', '..HHH..', '..H.H..'], { H: '#d4ac86' }),
+  molde: mkIcon(['.......', 'SSSSSSS', 'SDDSDDS', 'SDDSDDS', 'SSSSSSS', '.......'], { S: '#8a8078', D: '#3a3430' }),
+  sello: mkIcon(['..BBB..', '.BBBBB.', 'BBYYYBB', 'BBYBYBB', '.BBBBB.', '..BBB..'], { B: '#b08840', Y: '#f0d070' }),
+  reliquia: mkIcon(['.......', '...?...', '..???..', '...?...', '.SSSSS.', '.SSSSS.'], { '?': '#4a4048', S: '#5e5650' }),
   hondo: mkIcon(['.......', '..DDD..', '.DDDDD.', '.D.D.D.', '.DDDDD.', '..D.D..'], { D: '#2a3a5a' }),
   invento: mkIcon(['..YYY..', '.YHYYY.', '.YHYYY.', '..YYY..', '..GGG..', '...G...'], { Y: '#f2c14e', H: '#fff3c0', G: '#8a8f9a' }),
 };

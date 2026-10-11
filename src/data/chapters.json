@@ -211,7 +211,7 @@
     ],
     "reward": {
       "stars": 8,
-      "text": "La entrada a la cueva del volcán (próxima versión) y +8 ★"
+      "text": "La linterna para la cueva y +8 ★"
     },
     "stages": [
       {
@@ -417,10 +417,59 @@
     ]
   },
   {
+    "id": "guardian",
+    "title": "El guardián",
+    "desc": "La caracola suena, pero la montaña no la presta así como así. En el río de lava algo despierta.",
+    "reward": {
+      "stars": 15,
+      "text": "El paso entre las olas y +15 ★"
+    },
+    "stages": [
+      {
+        "name": "La voz débil",
+        "n": 2
+      },
+      {
+        "name": "El guardián",
+        "n": 2
+      },
+      {
+        "name": "El paso",
+        "n": 2
+      }
+    ],
+    "goals": [
+      {
+        "id": "soplar",
+        "text": "Navega hasta las olas grandes y sopla la caracola"
+      },
+      {
+        "id": "volverCueva",
+        "text": "Vuelve al río de lava y habla con el gólem"
+      },
+      {
+        "id": "golem",
+        "text": "Calma al gólem: bájale el calor a cero"
+      },
+      {
+        "id": "afinar",
+        "text": "Afina la caracola con cuarzo en el taller ({qz}/6 cuarzo)"
+      },
+      {
+        "id": "abrir",
+        "text": "Sopla la caracola afinada frente a las olas"
+      },
+      {
+        "id": "cruzar",
+        "text": "Navega por el paso entre las olas"
+      }
+    ]
+  },
+  {
     "id": "faro",
     "title": "La isla del faro",
     "locked": true,
-    "desc": "Con la caracola, las olas grandes se calman. Al otro lado esperan Marea y otros como tú. (Próximamente.)",
+    "desc": "Detrás de las olas abiertas, la isla del faro. Allí esperan Marea y otros como tú. (Próximamente.)",
     "goals": []
   }
 ]

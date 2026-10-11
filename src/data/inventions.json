@@ -97,7 +97,7 @@
     "desc": "Para navegar hasta otras islas.",
     "cost": {},
     "tier": 4,
-    "locked": "Capítulo 5 · Mar adentro"
+    "locked": "Se arma en el muelle con el plano de Marea"
   },
   "engranaje": {
     "name": "Engranajes",
@@ -105,5 +105,18 @@
     "cost": {},
     "tier": 4,
     "locked": "Capítulo 6"
+  },
+  "caracola": {
+    "name": "Caracola afinada",
+    "desc": "Engarzas cristales de cuarzo en la boca de la caracola: ahora su voz llega hasta las olas grandes.",
+    "cost": {
+      "cuarzo": 6,
+      "cobre": 2,
+      "vidrio": 3
+    },
+    "seconds": 45,
+    "tier": 4,
+    "needsFlag": "golemCalmo",
+    "flagText": "Primero habla con el guardián de la cueva del volcán"
   }
 }

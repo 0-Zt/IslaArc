@@ -1,3 +1,4 @@
+import { RELICS } from '../game/cave';
 import { S } from '../game/state';
 import { CHAPTERS, GOALS, goalText, goalDone, currentChapter, stagesOf } from '../game/goals';
 import { LEVELS, ACHIEVEMENTS, TIER_NAMES, levelProgress, achProgress, boardSlots } from '../game/progress';
@@ -119,13 +120,14 @@ const TEAM = [
   { id: 'musgo', name: 'Musgo', color: '#7e9c58', skill: 'Pulgar verde', desc: 'Lo que planta nace un paso más crecido, al talar suelta el doble de semillas y en el bosque los tocones que deja rebrotan antes.', how: 'Duerme enterrado en el claro de los árboles antiguos.' },
   { id: 'brasa', name: 'Brasa', color: '#5c3d31', skill: 'Corazón de brasa', desc: 'Al picar roca, a veces funde el mineral ahí mismo y sale un lingote. Si lo mandas al horno, aviva el fuego: todo sale el doble de rápido. De noche da luz.', how: 'Una estatua en las ruinas, mar adentro.' },
   { id: 'marea', name: 'Marea', color: '#4a7ab8', skill: '???', desc: '', how: 'Una figura azul pintada en una vasija, pescando desde una balsa mar adentro.', when: () => (S.fish.vasija || 0) >= 4 },
+  { id: 'golem', name: 'El gólem', color: '#4a3a30', skill: 'Guardián de la montaña', desc: 'Se quedó cuidando el corazón del volcán. Gracias a él, la caracola grande ya calma las olas.', how: 'Duerme en el río de lava, junto al pedestal de la caracola.', when: () => !!S.cave?.caracola },
   { id: 'espectro', name: '???', color: '#6a7488', skill: '???', desc: 'Dicen que un barco aparece de noche cuando el faro está apagado.', how: 'Más adelante.' },
 ];
 function equipo() {
   let h = '<h3>Figuras</h3>';
   for (const f of TEAM as { id: string; name: string; color: string; skill: string; desc: string; how: string; when?: () => boolean }[]) {
     if (f.when && !f.when()) continue;
-    const has = S.crew.includes(f.id);
+    const has = f.id === 'golem' ? !!S.flags.golemCalmo : S.crew.includes(f.id);
     h += `<div class="row${has ? '' : ' dim'}"><div class="dmedal" style="background:${f.color};color:#fff">${has ? f.name[0] : '?'}</div><div class="info"><b>${has ? f.name : '???'} · ${has ? f.skill : 'habilidad oculta'}</b><small>${has ? f.desc : f.how}</small></div></div>`;
   }
   h += `<h3>Inventos (${Object.keys(S.inv).length}/${Object.values(INV).filter(d => !d.locked).length})</h3>`;
@@ -153,11 +155,17 @@ function mar() {
     }
     h += '</div>';
   }
+  if (S.flags.cuevaEntro) {
+    const got = RELICS.filter(r => S.cave?.relics?.includes(r.id));
+    h += `<div class="mtier"><b>Reliquias de la cueva</b><small>${got.length}/${RELICS.length} · tras paredes huecas</small></div><div class="mgrid">`;
+    for (const r of RELICS) { const c = S.cave?.relics?.includes(r.id); h += `<div class="mcell${c ? ' got' : ''}"><img class="pix${c ? '' : ' sil'}" src="${XICON[c ? r.id : 'reliquia']}" alt=""><b>${c ? r.name : '???'}</b><small>${c ? 'Cueva del volcán' : 'En algún piso'}</small></div>`; }
+    h += '</div>';
+  }
   return h;
 }
 
 export function diarioHTML() {
-  const tabs: [DiarioTab, string][] = [['ruta', 'Ruta'], ['encargos', 'Encargos'], ['logros', 'Logros'], ['equipo', 'Equipo'], ['mar', 'Mar']];
+  const tabs: [DiarioTab, string][] = [['ruta', 'Ruta'], ['encargos', 'Encargos'], ['logros', 'Logros'], ['equipo', 'Equipo'], ['mar', 'Hallazgos']];
   return `<h2>Diario de la isla</h2><div class="seg dtabs" role="tablist">${tabs.map(([k, n]) => `<button role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${n}</button>`).join('')}</div>`
     + (tab === 'ruta' ? ruta() : tab === 'encargos' ? encargos() : tab === 'logros' ? logros() : tab === 'mar' ? mar() : equipo());
 }

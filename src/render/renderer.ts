@@ -262,7 +262,7 @@ export function setCaveMode(on: boolean) {
   const fog = scene.fog as THREE.Fog;
   if (on) {
     scene.background = CAVE_BG; fog.color.copy(CAVE_BG); fog.near = 21; fog.far = 34;
-    hemi.color.set('#aaa0bc'); hemi.groundColor.set('#2a2018'); hemi.intensity = 0.95;
+    hemi.color.set('#aaa0bc'); hemi.groundColor.set('#2a2018'); hemi.intensity = 1.15;
     sun.color.set('#ffcf9a'); sun.intensity = 1.3; sunEl = 70; sunAz = 100;
     rim.intensity = 0; scene.environmentIntensity = 0.04; glowMul = 2.2;
     placeSun();

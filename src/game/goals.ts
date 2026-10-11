@@ -87,6 +87,12 @@ const CHECK: Record<string, () => boolean> = {
   cvCruzar: () => !!S.flags.lavaCruzada,
   cvCaracola: () => !!S.cave?.caracola,
   cvSalir: () => !!S.flags.caracolaIsla,
+  soplar: () => !!S.flags.caracolaDebil,
+  volverCueva: () => !!S.flags.golemDespierto,
+  golem: () => !!S.flags.golemCalmo,
+  afinar: () => !!S.inv.caracola,
+  abrir: () => !!S.flags.olasAbiertas,
+  cruzar: () => !!S.flags.cruzoOlas,
 };
 /** Guardians of the second cave floor already looking at the altar. */
 const statuesRight = () => { const f = S.cave?.f[1]; return f ? (CAVE.floors[1].statues || []).filter(s => f.dirs[`${s.x},${s.z}`] === s.want).length : 0; };
@@ -105,7 +111,7 @@ export const goalText = (g: { text: string }) => g.text
   .replace('{n}', String(S.ruins.lit.filter(Boolean).length)).replace('{b}', String(builtBraziers()))
   .replace('{t}', String(Math.min(15, S.stats.tablas || 0))).replace('{l}', String(Math.min(10, S.stats.ladrillo || 0))).replace('{v}', String(Math.min(6, S.stats.vidrio || 0)))
   .replace('{i}', String(Math.min(3, Object.keys(S.inv).length))).replace('{b2}', String(Math.min(2, S.lore.length))).replace('{c}', String(Math.min(8, S.stats.carbon || 0)))
-  .replace('{p}', String(Math.min(6, S.stats.pescados || 0))).replace('{va}', String(Math.min(4, S.fish.vasija || 0))).replace('{al}', String(Math.min(10, S.got.algas || 0))).replace('{cu}', String(Math.min(4, S.got.cobre || 0))).replace('{br}', String(S.cave?.f[0]?.lit.length || 0)).replace('{es}', String(statuesRight())).replace('{co}', String(Math.min(10, Object.keys(S.fish).filter(k => S.fish[k] > 0).length)));
+  .replace('{p}', String(Math.min(6, S.stats.pescados || 0))).replace('{va}', String(Math.min(4, S.fish.vasija || 0))).replace('{al}', String(Math.min(10, S.got.algas || 0))).replace('{cu}', String(Math.min(4, S.got.cobre || 0))).replace('{qz}', String(Math.min(6, S.res.cuarzo || 0))).replace('{br}', String(S.cave?.f[0]?.lit.length || 0)).replace('{es}', String(statuesRight())).replace('{co}', String(Math.min(10, Object.keys(S.fish).filter(k => S.fish[k] > 0).length)));
 export const goalDone = (i: number) => i < S.goal;
 
 export function checkGoals(quiet = false) {

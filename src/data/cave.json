@@ -21,7 +21,9 @@
     "L": "tablilla",
     "Q": "pedestal de la caracola",
     "g": "gólem dormido",
-    "*": "estalagmita"
+    "*": "estalagmita",
+    "X": "pared agrietada (se rompe con el pico)",
+    "Y": "reliquia escondida"
   },
   "floors": [
     {
@@ -39,8 +41,8 @@
         "##..,...########",
         "###..C.....K####",
         "####.....M.,####",
-        "#######R########",
-        "#######S########",
+        "#####X#R########",
+        "#####Y#S########",
         "################"
       ],
       "decor": {
@@ -76,6 +78,11 @@
           "vidrio": 2
         },
         "stars": 1
+      },
+      "relic": {
+        "id": "figurita",
+        "name": "Figurita sin cocer",
+        "text": "Una figurita de arcilla cruda, del tamaño de una mano, con la cara apenas marcada. Nunca pasó por el fuego.\n\nTiene una runa en la espalda: la misma que lleva Arci."
       }
     },
     {
@@ -95,8 +102,8 @@
         "###.........M.###",
         "###.B...P..,..###",
         "####K.L.......###",
-        "#######...#######",
-        "########S########",
+        "#######...##X####",
+        "########S###Y####",
         "#################"
       ],
       "statues": [
@@ -157,6 +164,11 @@
           "tablas": 6
         },
         "stars": 2
+      },
+      "relic": {
+        "id": "molde",
+        "name": "Molde de manos",
+        "text": "Un molde de piedra con la forma de dos manos chicas, gastado de tanto usarlo.\n\nAlguien hizo muchas figuras con este molde. Muchas más de las que hay en tu isla."
       }
     },
     {
@@ -172,10 +184,10 @@
         "####~~~~~~~~~~~####",
         "####~~~~~~~~~~~####",
         "####....B......####",
-        "####.....B.....####",
+        "##YX.....B.....####",
         "####.........M.####",
         "####~~~~~~~~~~~####",
-        "####......B....####",
+        "####......B...*####",
         "####.,.........####",
         "#####.L.....C.#####",
         "########S##########",
@@ -192,16 +204,8 @@
             12
           ]
         ],
-        "stalagmites": [
-          [
-            4,
-            8
-          ],
-          [
-            14,
-            11
-          ]
-        ]
+        "stalagmites": [],
+        "bats": []
       },
       "lore": "«Aquí estuvo Marea. Soplé la caracola una vez y el mar se calmó. La devolví a su lugar: es de la montaña. Quien la necesite, que la pida.» — grabado con una uña, junto a una M",
       "lore2": "«El gólem guarda el calor de la montaña. Duerme mientras nadie le quite lo que cuida.» — tablilla de los Alfareros",
@@ -211,6 +215,11 @@
           "cobre": 2
         },
         "stars": 3
+      },
+      "relic": {
+        "id": "sello",
+        "name": "Sello del horno",
+        "text": "Un sello de bronce con un faro grabado y una palabra en runas que Brasa sabe leer: «volver».\n\nLos Alfareros sellaban así lo que cocían en la montaña."
       }
     }
   ],
@@ -222,6 +231,22 @@
     "caracola": {
       "title": "La caracola grande",
       "text": "Pesada y tibia, con un brillo de nácar por dentro. Al levantarla, la montaña suspira.\n\nEn la oscuridad, a tu lado, los ojos del gólem se encienden un instante… y vuelven a apagarse.\n\nCon esta caracola, las olas grandes deberían calmarse. Al otro lado espera la isla del faro."
+    },
+    "caracolaDebil": {
+      "title": "La voz débil",
+      "text": "Soplas la caracola frente a las olas. Suena grave y largo… y las olas se agachan un momento, como si escucharan.\n\nDespués vuelven a levantarse, más altas.\n\nMuy lejos, bajo la isla, se oye un golpe sordo. Algo despertó en el río de lava. «Lo que miran no se puede robar: solo se puede pedir prestado.»"
+    },
+    "golemCalmo": {
+      "title": "El guardián",
+      "text": "El gólem habla despacio, con una voz de piedra caliente:\n\n«Hace mucho que nadie bajaba a pedir. La última fue una figura azul. Le presté la caracola y la devolvió, como prometió.\n\nLa caracola es tuya mientras la necesites. Pero su voz está dormida: los Alfareros la afinaban con cristal de la montaña. Lleva cuarzo a tu taller.»\n\nEl gólem cierra los ojos y se queda cuidando el calor."
+    },
+    "olasAbiertas": {
+      "title": "El paso entre las olas",
+      "text": "La caracola afinada suena clara, y esta vez el mar responde: las olas grandes se abren en dos y dejan un camino de agua tranquila.\n\nAl fondo, la luz del faro parpadea, como si contestara."
+    },
+    "cruzar": {
+      "title": "Tierra a la vista",
+      "text": "Más allá de las olas el agua es lisa y verde. La isla del faro está cerca: se ven escaleras talladas en la roca y, arriba, una figura que saluda.\n\nPor ahora la balsa no se atreve a más. (La isla del faro llega en la próxima versión.)"
     }
   }
 }

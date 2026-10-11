@@ -142,7 +142,7 @@ function render() {
           : st === 'locked' ? `<span class="done" style="color:var(--muted)">${LOCK}</span>`
           : st === 'needs' ? `<span class="done" style="color:var(--muted)">Necesita ${d.needs!.filter(n => !S.inv[n]).map(n => INV[n].name.toLowerCase()).join(', ')}</span>`
           : `<button class="btn${afford(d.cost) && !cur ? ' main' : ''}" data-invent="${id}" ${afford(d.cost) && !cur ? '' : 'disabled'}>Inventar</button>`;
-        h += `<div class="row${st === 'locked' ? ' dim' : ''}"><div class="thumb">${BULB}</div><div class="info"><b>${d.name}</b><small>${st === 'locked' ? d.locked : d.desc}${d.seconds && st !== 'done' && st !== 'locked' ? ` · ${d.seconds} s` : ''}</small>${st === 'ready' || st === 'needs' ? costHTML(d.cost) : ''}</div>${right}</div>`;
+        h += `<div class="row${st === 'locked' ? ' dim' : ''}"><div class="thumb">${BULB}</div><div class="info"><b>${d.name}</b><small>${st === 'locked' ? (d.locked || d.flagText) : d.desc}${d.seconds && st !== 'done' && st !== 'locked' ? ` · ${d.seconds} s` : ''}</small>${st === 'ready' || st === 'needs' ? costHTML(d.cost) : ''}</div>${right}</div>`;
       }
     }
   } else if (type === 'menu') {
@@ -191,8 +191,8 @@ function render() {
     h += diarioHTML();
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
-    h += `<h2>¡Tienes la caracola grande!</h2><p>De la primera rama a la cueva del volcán en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}: despertaste a Musgo y a Brasa, pescaste lo que guardaba el mar, cruzaste el agua oscura y bajaste hasta el río de lava.</p>`
-      + '<p>Aquí termina esta versión. Lo que viene: soplar la caracola frente a las olas grandes, el gólem que despierta y la isla del faro, donde espera Marea. Mientras, sigue haciendo crecer tu isla.</p>'
+    h += `<h2>¡Las olas se abrieron!</h2><p>De la primera rama al paso entre las olas en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}: despertaste a Musgo y a Brasa, pescaste lo que guardaba el mar, bajaste al río de lava y calmaste al guardián del volcán.</p>`
+      + '<p>Aquí termina esta versión. Lo que viene: la isla del faro, donde espera Marea. Mientras, sigue haciendo crecer tu isla y busca las reliquias escondidas de la cueva.</p>'
       + '<button class="btn main" data-act="close" style="width:100%">Seguir jugando</button>';
   }
   $('sheet').innerHTML = h;

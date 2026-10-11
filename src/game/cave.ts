@@ -14,6 +14,8 @@ import { STORY } from './fishing';
 import type { CharId, ToolKey } from '../assets/characters';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { MAT } from '../assets/voxel';
+import { startBattle, battleActive, battleFocus, tickBattle, golemPose } from './battle';
+import { lifeStart, lifeStop, tickLife, scareBats, type Light } from '../world/cavelife';
 
 /* The volcano cave, explored like the old handheld adventures: the figures walk in a line,
    one cell at a time, with the arrows (or by tapping the floor) and the A button looks, pushes,
@@ -29,6 +31,7 @@ interface FloorDef {
   statues?: { x: number; z: number; dir: string; want: string; link?: number[] }[];
   decor: { mushrooms: number[][]; stalagmites: number[][] };
   lore: string; lore2?: string; chest: { gives: Record<string, number>; stars: number };
+  relic?: { id: string; name: string; text: string };
 }
 const FLOORS = CAVE.floors as FloorDef[];
 const K = (x: number, z: number) => `${x},${z}`;
@@ -36,6 +39,9 @@ const cellsOf = (fi: number, c: string) => { const out: [number, number][] = [];
 
 /* stories: the two cave texts and the tablets */
 Object.assign(STORY, CAVE.story);
+/** The three hidden relics, one behind a hollow wall on each floor (the cave collection). */
+export const RELICS = FLOORS.map(f => f.relic!).filter(Boolean);
+for (const r of RELICS) STORY[`rel_${r.id}`] = { title: r.name, text: r.text };
 FLOORS.forEach((f, i) => {
   const L = cellsOf(i, 'L');
   L.forEach((_, k) => {
@@ -53,6 +59,7 @@ function freshFloor(i: number): CaveFloorSave {
 export function caveSave(): CaveSave {
   if (!S.cave) S.cave = { hits: 0, max: -1, f: [], caracola: false, chests: 0 };
   FLOORS.forEach((_, i) => { if (!S.cave!.f[i]) S.cave!.f[i] = freshFloor(i); });
+  if (!S.cave.relics) S.cave.relics = [];
   return S.cave;
 }
 
@@ -64,6 +71,7 @@ let facing: Dir = 'N', moving = false, stepT = 0, busyT = 0, onBusy: (() => void
 let held: Dir | null = null, path: [number, number][] = [], pendingAct: [number, number] | null = null;
 let boulderMeshes: (THREE.Group | null)[] = [];
 const slabs: THREE.Object3D[] = [];
+let glowSpots: (() => Light | null)[] = [], golemGlow = 1.3;
 let gateK = 0, doorK = 0, doorAt = 0, shakeT = 0, plateHint = false, golemFlick = 0, clock = 0, fading = false;
 const STEP = 0.21;
 const F = () => S.cave!.f[fi];
@@ -184,6 +192,7 @@ export function exitCave(immediate = false) {
 }
 
 function unloadFloor() {
+  lifeStop();
   if (!view) return;
   scene.remove(view.root);
   view.root.traverse(o => { const m = o as THREE.Mesh; if (m.geometry) m.geometry.dispose(); });
@@ -193,7 +202,7 @@ function loadFloor(n: number, how: 'down' | 'up' | 'reset') {
   unloadFloor();
   fi = n; map = FLOORS[n].map;
   const st = F();
-  view = buildFloor(map, st.dirs, FLOORS[n].decor);
+  view = buildFloor(map, st.dirs, FLOORS[n].decor, n);
   scene.add(view.root);
   // boulders where they were left; the ones that fell became floor
   const orig = cellsOf(n, 'B');
@@ -203,10 +212,12 @@ function loadFloor(n: number, how: 'down' | 'up' | 'reset') {
     m.position.copy(local(p[0], p[1])); return m;
   });
   for (const k of st.fill) { const [x, z] = k.split(',').map(Number); addSlab(x, z); }
-  for (const k of st.broken) view.rubble.get(k)?.removeFromParent();
+  for (const k of st.broken) { view.rubble.get(k)?.removeFromParent(); view.cracked.get(k)?.removeFromParent(); }
+  if (FLOORS[n].relic && S.cave!.relics!.includes(FLOORS[n].relic!.id) && view.relic) view.relic.visible = false;
   for (const k of st.mined) mineVisual(k);
   for (const k of st.opened) { const c = view.chests.get(k); if (c) c.lid.rotation.x = -1.9; }
   if (S.cave!.caracola && view.shell) view.shell.visible = false;
+  if (view.golem) golemPose(view.golem, S.flags.golemCalmo ? 'calm' : S.flags.caracolaDebil ? 'awake' : 'sleep');
   for (const [k, s] of view.statues) s.g.rotation.y = DIR_ANGLE[st.dirs[k] || 'S'];
   gateK = plateDown() ? 1 : 0; doorK = st.door ? 1 : 0; doorAt = 0;
   // party position
@@ -217,6 +228,23 @@ function loadFloor(n: number, how: 'down' | 'up' | 'reset') {
   moving = false; path = []; pendingAct = null; busyT = 0;
   if (n > S.cave!.max) { S.cave!.max = n; emit('changed'); }
   setupLights();
+  lifeStart(map, n, (x, z) => !solid(x, z));
+  setCaveAmbience(true, n === 2);
+  glowSpots = [];
+  map.forEach((row, z) => [...row].forEach((c, x) => {
+    const k2 = K(x, z), w2 = world(x, z);
+    if (c === 't') glowSpots.push(() => F().lit.includes(k2) ? { x: w2.x, z: w2.z, r: 3.6 } : null);
+    if (c === '~') glowSpots.push(() => F().fill.includes(k2) ? null : { x: w2.x, z: w2.z, r: 1.5 });
+    if (c === 'C') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: F().mined.includes(k2) ? 0.8 : 1.9 }));
+    if (c === 'S') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: 2.4 }));
+    if (c === '>') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: 1.2 }));
+    if (c === 'Q') glowSpots.push(() => S.cave!.caracola ? null : { x: w2.x, z: w2.z, r: 2.4 });
+    if (c === 'A') glowSpots.push(() => F().door ? { x: w2.x, z: w2.z, r: 2.8 } : { x: w2.x, z: w2.z, r: 0.9 });
+    if (c === 'D') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: F().door ? 1.6 : 0.9 }));
+    if (c === 'Y') glowSpots.push(() => F().broken.length && !S.cave!.relics!.includes(FLOORS[fi].relic?.id || '') ? { x: w2.x, z: w2.z, r: 1.2 } : null);
+    if (c === 'g') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: golemGlow }));
+  }));
+  for (const [x, z] of FLOORS[n].decor.mushrooms) { const w2 = world(x, z); glowSpots.push(() => ({ x: w2.x, z: w2.z, r: 1.1 })); }
   const p = world(at[0], at[1]);
   controls.target.copy(p); camera.zoom = caveZoom(); camera.updateProjectionMatrix(); camera.position.copy(p).add(OFF);
   $('cvName').textContent = `${n + 1}. ${FLOORS[n].name}`;
@@ -273,7 +301,7 @@ function solid(x: number, z: number) {
   const c = ch(x, z), st = F(), k = K(x, z);
   switch (c) {
     case '.': case ',': case 'S': case '>': case 'P': case 'B': return false;   // under a boulder there is floor
-    case 'R': return !st.broken.includes(k);
+    case 'R': case 'X': return !st.broken.includes(k);
     case 'O': case '~': return !st.fill.includes(k);
     case 'D': return !(st.door && doorK > 0.7);
     case 'G': return gateK < 0.7;
@@ -290,7 +318,7 @@ function tryStep(d: Dir): boolean {
   for (let k = party.length - 1; k >= 1; k--) { const m = party[k], f = party[k - 1]; m.fx = m.x; m.fz = m.z; m.x = f.x; m.z = f.z; }
   L.fx = L.x; L.fz = L.z; L.x = nx; L.z = nz;
   for (const m of party) if (m.x !== m.fx || m.z !== m.fz) { m.c.dir = Math.atan2(m.x - m.fx, m.z - m.fz); setFigureAnim(m.c, 'walk'); }
-  moving = true; stepT = 0;
+  moving = true; stepT = 0; sfx('step', 0.6);
   return true;
 }
 function bump() { if (bumpT > 0) return; bumpT = 0.35; sfx('tap', 0.25); }
@@ -318,6 +346,7 @@ function fall(mesh: THREE.Group, x: number, z: number, c: string) {
     puff(w.x, 0.1, w.z, '#e8e0d8', 14, 2.2, 1.2, 0); puff(w.x, 0.1, w.z, '#ffb040', 8, 2.6, 1.4, 0);
     for (let k = 0; k < 10; k++) spawnEmber(w.x + (Math.random() - 0.5) * 0.8, w.z + (Math.random() - 0.5) * 0.8, 1.6);
   } else { sfx('fall', 0.8); puff(w.x, 0.1, w.z, '#6a5c50', 12, 1.6, 1.4, 0); }
+  scareBats(w, 5);
   slides.push({ o: mesh, from: mesh.position.clone(), to: mesh.position.clone().setY(-0.75), t: 0, d: 0.32, done: () => { mesh.visible = false; addSlab(x, z); shakeT = 0.25; } });
 }
 /** The floor a boulder leaves when it fills a pit (a stone lid) or the lava (cooled black rock). */
@@ -350,6 +379,8 @@ function actionLabel(): string {
     case 'C': case 'M': return st.mined.includes(k) ? 'Mirar' : 'Picar';
     case 'K': return st.opened.includes(k) ? 'Mirar' : 'Abrir';
     case 'L': return 'Leer';
+    case 'X': return st.broken.includes(k) ? '' : 'Romper';
+    case 'Y': return S.cave!.relics!.includes(FLOORS[fi].relic?.id || '') ? 'Mirar' : 'Tomar';
     case 'Q': return S.cave!.caracola ? 'Mirar' : 'Tomar';
     case 'D': case 'G': case 'A': case 'g': case '*': return 'Mirar';
   }
@@ -362,7 +393,7 @@ const say = (t: string) => emit('toast', t);
 const lead = () => leader().c.def.name;
 
 export function caveAct() {
-  if (!active || moving || busyT > 0 || fading || !party.length) return;
+  if (!active || moving || busyT > 0 || fading || !party.length || battleActive()) return;
   const [x, z] = front(), k = K(x, z), st = F(), c = ch(x, z), w = world(x, z);
   if (boulderAt(x, z) >= 0) { tryStep(facing); return; }
   switch (c) {
@@ -403,6 +434,31 @@ export function caveAct() {
       work(1.2, 'pickM', () => {
         sfx('fall', 0.6); st.broken.push(k); view!.rubble.get(k)?.removeFromParent();
         puff(w.x, 0.3, w.z, '#8a7a6a', 16, 2, 1.6, 0); shakeT = 0.2; emit('caveChanged');
+      });
+      return;
+    }
+    case 'X': {
+      if (st.broken.includes(k)) return;
+      if (!S.tools.pico) { say('La pared suena hueca… pero hace falta el pico de metal'); return; }
+      sfx('pick');
+      work(1.5, 'pickM', () => {
+        sfx('crack'); st.broken.push(k); view!.cracked.get(k)?.removeFromParent(); scareBats(w, 6);
+        puff(w.x, 0.5, w.z, '#6a6070', 22, 2.2, 1.8, 0); shakeT = 0.35;
+        say('¡La pared estaba hueca! Hay un nicho escondido.'); emit('caveChanged');
+      });
+      return;
+    }
+    case 'Y': {
+      const r = FLOORS[fi].relic; if (!r) return;
+      if (S.cave!.relics!.includes(r.id)) { say('El nicho está vacío. Aquí estaba ' + r.name.toLowerCase() + '.'); return; }
+      work(0.7, '', () => {
+        S.cave!.relics!.push(r.id); sfx('catch');
+        if (view!.relic) { const it = view!.relic; slides.push({ o: it, from: it.position.clone(), to: it.position.clone().setY(1.6), t: 0, d: 0.7, done: () => { it.visible = false; } }); }
+        puff(w.x, 0.8, w.z, '#ffe0a0', 14, 1.8, 1, 0);
+        S.stats.cueva = (S.stats.cueva || 0) + 1;
+        addStars(2, `Reliquia: ${r.name}`);
+        setTimeout(() => emit('story', `rel_${r.id}`), 900);
+        emit('changed'); emit('caveChanged');
       });
       return;
     }
@@ -455,7 +511,11 @@ export function caveAct() {
     case 'D': say(st.door ? 'La puerta de runas está abierta.' : fi === 0 ? 'Una puerta de piedra con runas. Dos de ellas parecen llamas.' : 'Las runas dicen: «Cuando las cuatro miren al centro, se abrirá el paso».'); return;
     case 'G': say(gateK > 0.7 ? 'La reja está arriba.' : 'Una reja de hierro viejo. En el suelo hay una placa con la misma runa.'); return;
     case 'A': say(st.door ? 'El orbe del altar brilla: las cuatro guardianas lo miran.' : 'Un altar con un orbe apagado. Ninguna de las guardianas lo mira.'); return;
-    case 'g': say(S.cave!.caracola ? 'El gólem no se mueve… pero ahora sus ojos parecen seguirte.' : 'Un gólem de arcilla oscura, enorme, dormido sobre las rodillas. El calor le late en las grietas.'); return;
+    case 'g': {
+      if (S.flags.golemCalmo) { say('El gólem descansa, tibio y tranquilo. Te mira y asiente: la montaña te presta la caracola.'); return; }
+      if (S.flags.caracolaDebil) { golemFight(); return; }
+      say(S.cave!.caracola ? 'El gólem no se mueve… pero ahora sus ojos parecen seguirte.' : 'Un gólem de arcilla oscura, enorme, dormido sobre las rodillas. El calor le late en las grietas.'); return;
+    }
     case '*': say('Una estalagmita. Gotea.'); return;
   }
 }
@@ -475,6 +535,30 @@ function checkDoor() {
   setTimeout(() => { sfx('solve'); say(fi === 0 ? 'Las runas se encienden y la puerta de piedra se hunde en el suelo' : 'Las cuatro guardianas miran el altar. El orbe se enciende y la puerta se abre'); }, 500);
 }
 
+/* ---------- the guardian ---------- */
+function golemFight() {
+  const g = cellsOf(fi, 'g')[0]; if (!g || !view?.golem) return;
+  if (!S.flags.golemDespierto) { S.flags.golemDespierto = true; emit('changed'); }
+  fade(() => {
+    $('caveUI').classList.add('fight'); held = null; path = []; pendingAct = null;
+    // the team lines up in front of the guardian, the leader in the middle
+    const row = g[1] + 1, xs = [g[0], g[0] - 1, g[0] + 1].filter(x => !solid(x, row) || party.some(m => m.x === x && m.z === row));
+    const homes = party.map((_, k) => world(xs[k % xs.length], row, 0).add(new THREE.Vector3(0, 0, 0.35)));
+    for (const m of party) { m.x = m.fx = g[0]; m.z = m.fz = row; }
+    startBattle({ party: party.map(m => m.c), homes, golem: view!.golem!, onEnd: win => {
+      $('caveUI').classList.remove('fight');
+      if (win) {
+        S.flags.golemCalmo = true;
+        for (const m of party) { m.c.root.position.copy(world(g[0], row)); }
+        setTimeout(() => emit('story', 'golemCalmo'), 400);
+        emit('changed'); emit('caveChanged');
+      } else {
+        fade(() => { loadFloor(fi, 'reset'); say('Las figuras se recuperan junto a la escalera. El gólem sigue esperando.'); });
+      }
+    } });
+  });
+}
+
 /* ---------- taps on the cave ---------- */
 export function caveTap(ray: THREE.Raycaster) {
   if (!active || !view || fading) return;
@@ -491,11 +575,11 @@ export function caveTap(ray: THREE.Raycaster) {
   tapCell(x, z);
 }
 export function tapCell(x: number, z: number) {
-  if (!active || fading || busyT > 0) return;
+  if (!active || fading || busyT > 0 || battleActive()) return;
   const L = leader(); if (L.x === x && L.z === z) return;
   held = null; pendingAct = null;
   const adj = Math.abs(L.x - x) + Math.abs(L.z - z) === 1;
-  const interest = boulderAt(x, z) >= 0 || 'tsRCMKLQDGAg*'.includes(ch(x, z)) && solid(x, z);
+  const interest = boulderAt(x, z) >= 0 || 'tsRCMKLQDGAg*XY'.includes(ch(x, z)) && solid(x, z);
   if (adj && interest && !moving) {
     const d = (Object.keys(DV) as Dir[]).find(q => L.x + DV[q][0] === x && L.z + DV[q][1] === z)!;
     facing = d; L.c.dir = Math.atan2(DV[d][0], DV[d][1]); caveAct(); return;
@@ -547,15 +631,17 @@ export function tickCave(dt: number, T: number) {
   if (!active || !view || !party.length) return;
   clock += dt; bumpT -= dt;
   const st = F(), L = leader();
+  tickBattle(dt);
+  const fight = battleActive();
   // walking
-  if (moving) {
+  if (moving && !fight) {
     stepT += dt;
     const k = Math.min(1, stepT / STEP);
     for (const m of party) m.c.root.position.copy(world(m.fx, m.fz)).lerp(world(m.x, m.z), k);
     if (k >= 1) { moving = false; for (const m of party) { m.fx = m.x; m.fz = m.z; } arrived(); }
   }
   if (busyT > 0) { busyT -= dt; if (busyT <= 0) { setFigureAnim(L.c, 'idle'); const f = onBusy; onBusy = null; f?.(); } }
-  if (active && !moving && busyT <= 0 && !fading) {
+  if (active && !moving && busyT <= 0 && !fading && !fight) {
     if (held) { path = []; tryStep(held); }
     else if (path.length) {
       const [nx, nz] = path[0], d = (Object.keys(DV) as Dir[]).find(q => L.x + DV[q][0] === nx && L.z + DV[q][1] === nz);
@@ -601,7 +687,12 @@ export function tickCave(dt: number, T: number) {
   for (const s of FLOORS[fi].statues || []) { const v = view.statues.get(K(s.x, s.z)); if (v) for (const e of v.eyes) e.material = st.dirs[K(s.x, s.z)] === s.want ? GLOW.eyeOn : GLOW.eye; }
   if (view.altar) { view.altar.orb.material = st.door ? GLOW.orbOn : GLOW.orb; view.altar.orb.position.y = 0.65 + (st.door ? 0.12 + Math.sin(clock * 2) * 0.05 : 0); view.altar.orb.rotation.y += dt * (st.door ? 1.2 : 0.2); }
   if (view.shell && view.shell.visible && !S.cave!.caracola) { view.shell.position.y = 0.72 + Math.sin(clock * 1.6) * 0.04; view.shell.rotation.y = Math.sin(clock * 0.7) * 0.3; }
-  if (view.golem) { golemFlick -= dt; const on = golemFlick > 0 && Math.sin(clock * 22) > -0.2; for (const e of view.golem.eyes) e.material = on ? GLOW.eyeOn : GLOW.eye; view.golem.g.scale.y = 1.25 * (1 + Math.sin(clock * 0.9) * 0.012); }
+  if (view.golem) {
+    const asleep = !S.flags.caracolaDebil && !S.flags.golemCalmo && !fight;
+    golemGlow = S.flags.golemCalmo ? 1.8 : asleep ? 1.3 : 2.4;
+    if (asleep) { golemFlick -= dt; const on = golemFlick > 0 && Math.sin(clock * 22) > -0.2; for (const e of view.golem.eyes) e.material = on ? GLOW.eyeOn : GLOW.eye; }
+    view.golem.g.scale.y = 1.25 * (1 + Math.sin(clock * 0.9) * 0.012);
+  }
   for (const c of view.crystals.values()) { const d = (c as any).decal as THREE.Mesh; if (d.visible) (d.material as THREE.MeshBasicMaterial).opacity = 0.55 + 0.2 * Math.sin(clock * 1.7 + c.position.x); }
   // lava and embers
   lavaScroll(dt);
@@ -614,8 +705,14 @@ export function tickCave(dt: number, T: number) {
   // lights
   lights.forEach((l, k) => { const s = slots[k]; if (!s) return; const f = 1 + (Math.sin(clock * 13 + k * 2) * 0.12 + Math.sin(clock * 5.1 + k) * 0.1) * s.flick; l.intensity = s.base * s.on() * f; });
   if (partyLight) { const p = L.c.root.position; partyLight.position.set(p.x, 1.7, p.z + 0.4); partyLight.intensity = 5.5 * (1 + Math.sin(clock * 9) * 0.04); }
+  // bats, beetles, drips and the darkness that only opens around light
+  const ls: Light[] = []; for (const f of glowSpots) { const l = f(); if (l) ls.push(l); }
+  tickLife(dt, T, L.c.root.position, ls);
   // camera follows the leader
-  const tgt = L.c.root.position.clone().setY(0.4); tgt.z += 0.9;   // the controls cover the bottom of the screen: keep the party a little above the middle
+  const bf = battleFocus();
+  const tgt = bf ? bf.clone().setY(0.4).add(new THREE.Vector3(0, 0, -0.3)) : L.c.root.position.clone().setY(0.4).add(new THREE.Vector3(0, 0, 0.9));   // the controls cover the bottom of the screen: keep the party a little above the middle
+  const zWant = caveZoom() * (bf ? 1.6 : 1);
+  if (Math.abs(camera.zoom - zWant) > 0.002) { camera.zoom += (zWant - camera.zoom) * Math.min(1, dt * 3); camera.updateProjectionMatrix(); }
   controls.target.lerp(tgt, 1 - Math.exp(-dt * 7));
   camera.position.copy(controls.target).add(OFF);
   if (shakeT > 0) { shakeT -= dt; camera.position.x += (Math.random() - 0.5) * 0.12 * shakeT * 3; camera.position.y += (Math.random() - 0.5) * 0.08 * shakeT * 3; }
@@ -638,6 +735,7 @@ export function caveHint(goal: string): THREE.Vector3 | null {
   if ((goal === 'cvRio' || goal === 'cvCruzar') && fi === 1 && st.door) return over(cellsOf(1, '>')[0], 0.9);
   if (goal === 'cvCaracola' && fi === 2 && S.flags.lavaCruzada) return over(cellsOf(2, 'Q')[0], 1.9);
   if (goal === 'cvSalir' && fi === 0) return over(cellsOf(0, 'S')[0], 0.9);
+  if (goal === 'volverCueva' || goal === 'golem') { if (battleActive()) return null; if (fi === 2) return over(cellsOf(2, 'g')[0], 2.6); if (F().door) return over(cellsOf(fi, '>')[0], 0.9); }
   return null;
 }
 

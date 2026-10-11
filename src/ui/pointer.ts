@@ -56,11 +56,13 @@ const leader = () => crew.find(q => q.id === selected) || crew.find(q => q.id ==
 const idleAt = (b: Building | undefined) => b && !b.jobs?.length ? overBuilding(b) : null;
 
 const FISH_GOALS = new Set(['pescar1', 'pescar6', 'vasija', 'algas', 'llave', 'cofre', 'coleccion', 'hondo1', 'cobre', 'brujula', 'timon']);
-const CAVE_GOALS = new Set(['grieta', 'bajar', 'cvBraseros', 'cvSalon', 'cvEstatuas', 'cvRio', 'cvCruzar', 'cvCaracola']);
-const SEA_GOALS = new Set(['zarpar', 'hondo', 'hondo1', 'cobre', 'brujula', 'olas', 'timon']);
+const CAVE_GOALS = new Set(['grieta', 'bajar', 'cvBraseros', 'cvSalon', 'cvEstatuas', 'cvRio', 'cvCruzar', 'cvCaracola', 'volverCueva', 'golem']);
+const SEA_GOALS = new Set(['zarpar', 'hondo', 'hondo1', 'cobre', 'brujula', 'olas', 'timon', 'soplar', 'abrir', 'cruzar']);
 /** Out at sea: towards the nearest dark water, or the big waves. */
 function seaTarget(goal: string): THREE.Vector3 | null {
   const st = sailState(); if (!st || st.mode !== 'sailing' || st.moving) return null;
+  if (goal === 'soplar' || goal === 'abrir') return new THREE.Vector3(Math.cos(SURGE.angle) * (SURGE.r - 1.5), 0.9, Math.sin(SURGE.angle) * (SURGE.r - 1.5));
+  if (goal === 'cruzar') return new THREE.Vector3(Math.cos(SURGE.angle) * (SURGE.r + 7), 0.9, Math.sin(SURGE.angle) * (SURGE.r + 7));
   if (goal === 'olas') return new THREE.Vector3(Math.cos(SURGE.angle) * (SURGE.r - 1.5), 0.9, Math.sin(SURGE.angle) * (SURGE.r - 1.5));
   if (goal === 'zarpar' || st.deep) return null;   // in dark water the bar says what to do
   const d = [...DEEP].sort((a, b) => Math.hypot(a.x - st.x, a.z - st.z) - Math.hypot(b.x - st.x, b.z - st.z))[0];
@@ -112,6 +114,8 @@ export function pointerTarget(): THREE.Vector3 | null {
       const st = fishState(); if (!st || st.st !== 'ready') return null;
       const sh = bestShadow(); return sh ? new THREE.Vector3(sh.x, 0.9, sh.z) : null;
     }
+    case 'afinar': { const t = done('taller'); return t && !t.jobs?.some(j => j.startsWith('inv:')) ? overBuilding(t) : null; }
+    case 'soplar': case 'abrir': case 'cruzar':
     case 'balsa': case 'zarpar': case 'hondo': case 'hondo1': case 'cobre': case 'brujula': case 'olas': case 'timon': {
       if (fishingActive()) { const st = fishState(); if (!st || st.st !== 'ready') return null; const sh = bestShadow(); return sh ? new THREE.Vector3(sh.x, 0.9, sh.z) : null; }
       const m = buildings.find(b => b.type === 'muelle'); return m && !m.up && isDone(m) ? overBuilding(m) : null;
