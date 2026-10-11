@@ -87,10 +87,19 @@
   },
   "picoO": {
     "name": "Pico de obsidiana",
-    "desc": "Rompe los muros de la cueva.",
-    "cost": {},
+    "desc": "Filo negro que no se gasta: en la cueva todo lo que picas sale doble, y en la isla sale mineral más seguido.",
+    "cost": {
+      "obsidiana": 3,
+      "lingote": 2,
+      "tablas": 2
+    },
+    "seconds": 40,
     "tier": 3,
-    "locked": "Necesita obsidiana de la cueva del volcán (próximamente)"
+    "needs": [
+      "linterna"
+    ],
+    "needsFlag": "obsidianaVista",
+    "flagText": "Necesita obsidiana: Brasa sabe dónde hay, en la cueva del volcán"
   },
   "balsa": {
     "name": "Balsa",

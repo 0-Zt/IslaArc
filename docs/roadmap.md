@@ -199,11 +199,22 @@ Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates p
 - **Combate:** la barra del gólem es de **calor** y hay que bajarla a cero (no se rompe, se calma). Arci: golpe de pico y cubrir. Musgo: musgo húmedo (enfría más cuando el gólem está al rojo) y brotes (cura y levanta). Brasa: absorber calor y avivar (el siguiente ataque pega ×1,6). El gólem **anuncia lo que hará** un turno antes; a mitad de la pelea se pone al rojo y puede recalentarse una vez. Perder no cuesta nada: el equipo vuelve a la escalera.
 - El gólem calmado aparece en el Equipo como guardián de la montaña.
 
+## Cada figura cuenta (v0.17)
+
+- **Elegir quién va adelante:** en la cueva aparecen las caras del equipo a la derecha. La de adelante es la que actúa; si no puede pasar por algo, las demás esperan hasta que vuelva (como en Lost Vikings o Pikmin). Si el botón A necesita a otra figura, dice su nombre ("Musgo ▸") y al tocarlo esa figura pasa adelante y lo hace.
+- **Habilidades de campo:** Arci es la única que empuja las rocas y tiende **puentes de tablas** sobre las grietas (gasta 3 tablas de la isla). Musgo **aparta enredaderas** y **corta la hierba alta** (encuentra semillas, cuarzo, mineral o, a veces, un escarabajo dorado que da una estrella). Brasa **camina sobre el suelo de brasas**.
+- **Tres zonas nuevas en la cueva**, una por figura: el **jardín de musgo** detrás de las enredaderas (piso 1), la **galería del mural** detrás de una grieta (piso 2, con un cofre y el mural de los cuatro: tierra, planta, fuego y agua, cada una con su isla) y la **cámara de brasas** (piso 3, con obsidiana).
+- **Mejoras que se encuentran:** la **semilla antigua** (Musgo: puentes de raíces sin tablas; en la isla, lo que planta nace dos pasos más crecido) y el **corazón de magma** (Brasa: su luz llega mucho más lejos; en la isla funde mineral el doble de seguido). Se ven en el Diario, pestaña Equipo, junto con lo que cada figura hace en exploración.
+- **Volver a la cueva vale la pena:** la hierba alta vuelve a crecer a los pocos minutos, y los cristales, las vetas de cobre y la obsidiana después de un rato más largo.
+- **Obsidiana** (material nuevo) y el **pico de obsidiana** (taller): en la cueva todo lo que se pica sale doble; en la isla sale mineral más seguido.
+- **Capítulo 9 · Lo que sabe cada uno** (9 metas en 3 etapas, una por figura; premio +12 ★). El faro pasa a ser el capítulo 10.
+- Logro nuevo: **Jardinero de la cueva**.
+
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **Siguiente:** la isla del faro (v0.17). El orden completo está en docs/vision.md.
+- **Siguiente:** la isla del faro (v0.18) y después una isla para cada figura. El orden completo está en docs/vision.md y docs/plan-figuras.md.
 
 ## Decisiones tomadas
 

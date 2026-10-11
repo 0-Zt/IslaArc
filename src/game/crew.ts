@@ -221,9 +221,9 @@ function onWorkHit(c: Crew) {
       const m = j.tile.rock; if (m) m.userData.shake = 1;
       if (c.hits % B.stoneEveryHits === 0) {
         gain('piedra', 1, headPos(c));
-        if (Math.random() < (S.tools.pico ? B.mineralChanceMetal : B.mineralChance)) {
+        if (Math.random() < (S.tools.pico ? B.mineralChanceMetal : B.mineralChance) * (S.inv.picoO ? 1.5 : 1)) {
           // Brasa's heat melts some ore right in the rock
-          if (c.id === 'brasa' && Math.random() < 0.4) { gain('lingote', 1, headPos(c, 0.35)); S.made++; puff(p0(c).x, p0(c).y + 0.6, p0(c).z, '#ffb040', 6, 1.6, 1); }
+          if (c.id === 'brasa' && Math.random() < (S.flags.corazon ? 0.8 : 0.4)) { gain('lingote', 1, headPos(c, 0.35)); S.made++; puff(p0(c).x, p0(c).y + 0.6, p0(c).z, '#ffb040', 6, 1.6, 1); }
           else gain('mineral', 1, headPos(c, 0.35));
         }
       }

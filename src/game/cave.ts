@@ -32,6 +32,9 @@ interface FloorDef {
   decor: { mushrooms: number[][]; stalagmites: number[][] };
   lore: string; lore2?: string; chest: { gives: Record<string, number>; stars: number };
   relic?: { id: string; name: string; text: string };
+  upgrade?: { id: string; who: string; name: string; text: string };
+  chestAt?: Record<string, { gives: Record<string, number>; stars: number }>;
+  loreAt?: Record<string, string>;
 }
 const FLOORS = CAVE.floors as FloorDef[];
 const K = (x: number, z: number) => `${x},${z}`;
@@ -42,14 +45,25 @@ Object.assign(STORY, CAVE.story);
 /** The three hidden relics, one behind a hollow wall on each floor (the cave collection). */
 export const RELICS = FLOORS.map(f => f.relic!).filter(Boolean);
 for (const r of RELICS) STORY[`rel_${r.id}`] = { title: r.name, text: r.text };
+/** The text of a tablet: the ones added later are placed by cell, the first ones go in map order. */
+function loreKey(i: number, x: number, z: number) {
+  const f = FLOORS[i], k = K(x, z);
+  if (f.loreAt?.[k]) return `cv${i}_${x}_${z}`;
+  return `cv${i}_${cellsOf(i, 'L').filter(([a, b]) => !f.loreAt?.[K(a, b)]).findIndex(([a, b]) => a === x && b === z)}`;
+}
 FLOORS.forEach((f, i) => {
-  const L = cellsOf(i, 'L');
-  L.forEach((_, k) => {
+  cellsOf(i, 'L').filter(([a, b]) => !f.loreAt?.[K(a, b)]).forEach((_, k) => {
     const text = k === 0 ? f.lore : f.lore2 || f.lore;
     const marea = text.includes('Marea');
     STORY[`cv${i}_${k}`] = { title: marea ? 'El grabado de Marea' : 'Tablilla de los Alfareros', text: text.replace(/ — .*$/, '') };
   });
+  for (const [k, text] of Object.entries(f.loreAt || {})) { const [x, z] = k.split(',').map(Number); STORY[`cv${i}_${x}_${z}`] = { title: 'El mural de los cuatro', text: text.replace(/ — .*$/, '') }; }
+  if (f.upgrade) STORY[`up_${f.upgrade.id}`] = { title: f.upgrade.name, text: f.upgrade.text.replace(/\*\*/g, '') };
 });
+/* what each figure can do out here, and how they are called */
+const NAME: Record<string, string> = { arci: 'Arci', musgo: 'Musgo', brasa: 'Brasa' };
+const SKILL: Record<string, string> = { arci: 'empuja rocas y tiende puentes de tablas', musgo: 'aparta enredaderas y corta la hierba alta', brasa: 'camina sobre las brasas' };
+const COLOR: Record<string, string> = { arci: '#c98655', musgo: '#7e9c58', brasa: '#c8582a' };
 
 /* ---------- saved state ---------- */
 function freshFloor(i: number): CaveFloorSave {
@@ -73,7 +87,7 @@ let boulderMeshes: (THREE.Group | null)[] = [];
 const slabs: THREE.Object3D[] = [];
 let glowSpots: (() => Light | null)[] = [], golemGlow = 1.3;
 let gateK = 0, doorK = 0, doorAt = 0, shakeT = 0, plateHint = false, golemFlick = 0, clock = 0, fading = false;
-const STEP = 0.21;
+const STEP = 0.21, REGROW_FERN = 240, REGROW_ORE = 900;
 const F = () => S.cave!.f[fi];
 const ch = (x: number, z: number) => (map[z] && map[z][x]) || '#';
 const leader = () => party[0];
@@ -107,7 +121,7 @@ function ui() {
   d.innerHTML = `<div id="cvPad" aria-label="Flechas">${(['N', 'W', 'E', 'S'] as Dir[]).map(k => `<button data-d="${k}" class="d${k}" aria-label="${{ N: 'Arriba', W: 'Izquierda', E: 'Derecha', S: 'Abajo' }[k]}"><svg viewBox="0 0 16 16" width="22" height="22"><path d="M8 3l5 7H3z" fill="currentColor"/></svg></button>`).join('')}<i></i></div>`
     + '<button id="cvA"><b>A</b><small id="cvAL">Mirar</small></button>'
     + '<div id="cvBar"><span id="cvName"></span><button id="cvReset">Reiniciar sala</button><button id="cvExit">Salir</button></div>'
-    + '<div id="cvSign" hidden></div>';
+    + '<div id="cvWho" aria-label="Quién va adelante"></div><div id="cvSign" hidden></div>';
   document.body.appendChild(d);
   const fd = document.createElement('div'); fd.id = 'cvFade'; document.body.appendChild(fd);
   const pad = $('cvPad');
@@ -119,6 +133,7 @@ function ui() {
   });
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) pad.addEventListener(ev, release);
   $('cvA').addEventListener('click', () => caveAct());
+  $('cvWho').addEventListener('click', e => { const b = (e.target as HTMLElement).closest('[data-who]') as HTMLElement | null; if (b) switchLeader(b.dataset.who!); });
   $('cvExit').addEventListener('click', () => exitCave());
   $('cvReset').addEventListener('click', () => resetRoom());
   addEventListener('keydown', e => {
@@ -161,7 +176,8 @@ export function enterCave(immediate = false) {
     scene.add(embers);
     const ids: CharId[] = ['arci', ...(['musgo', 'brasa'] as CharId[]).filter(id => crew.some(c => c.id === id))];
     party = ids.map(id => { const c = makeFigure(id); c.lamp = 0.6; c.ring.visible = false; scene.add(c.root); return { c, x: 0, z: 0, fx: 0, fz: 0 }; });
-    loadFloor(0, 'down');
+    loadFloor(0, 'down'); refreshWho();
+    if (party.length > 1 && !S.flags.cvWhoHint) { S.flags.cvWhoHint = true; setTimeout(() => say('Toca una cara (a la derecha) para elegir quién va adelante: cada figura sabe hacer algo distinto.'), 4200); }
     if (!S.flags.cuevaEntro) { S.flags.cuevaEntro = true; emit('changed'); }
     emit('caveMode', true); emit('caveChanged');
   }, immediate);
@@ -212,6 +228,15 @@ function loadFloor(n: number, how: 'down' | 'up' | 'reset') {
     m.position.copy(local(p[0], p[1])); return m;
   });
   for (const k of st.fill) { const [x, z] = k.split(',').map(Number); addSlab(x, z); }
+  // what grows back: ferns in a few minutes, crystals and veins after a longer while (old saves: right away)
+  st.cut = st.cut || {}; st.minedAt = st.minedAt || {}; st.built = st.built || {};
+  for (const [k, t] of Object.entries(st.cut)) if (S.time - t > REGROW_FERN) delete st.cut[k];
+  st.mined = st.mined.filter(k => S.time - (st.minedAt![k] ?? -1e9) < REGROW_ORE);
+  for (const k of Object.keys(st.minedAt)) if (!st.mined.includes(k)) delete st.minedAt[k];
+  for (const k of st.broken) view.vines.get(k)?.removeFromParent();
+  for (const [k, f] of view.ferns) { const cut = k in st.cut!; f.tall.visible = !cut; f.stub.visible = cut; }
+  for (const [k, kind] of Object.entries(st.built)) { const c = view.chasms.get(k); if (c) (kind === 'raices' ? c.root : c.plank).visible = true; }
+  const up = FLOORS[n].upgrade; if (up && S.flags[up.id] && view.gift) view.gift.visible = false;
   for (const k of st.broken) { view.rubble.get(k)?.removeFromParent(); view.cracked.get(k)?.removeFromParent(); }
   if (FLOORS[n].relic && S.cave!.relics!.includes(FLOORS[n].relic!.id) && view.relic) view.relic.visible = false;
   for (const k of st.mined) mineVisual(k);
@@ -243,6 +268,10 @@ function loadFloor(n: number, how: 'down' | 'up' | 'reset') {
     if (c === 'D') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: F().door ? 1.6 : 0.9 }));
     if (c === 'Y') glowSpots.push(() => F().broken.length && !S.cave!.relics!.includes(FLOORS[fi].relic?.id || '') ? { x: w2.x, z: w2.z, r: 1.2 } : null);
     if (c === 'g') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: golemGlow }));
+    if (c === 'b') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: 1.0 }));
+    if (c === 'U') glowSpots.push(() => S.flags[FLOORS[fi].upgrade?.id || ''] ? null : { x: w2.x, z: w2.z, r: 1.8 });
+    if (c === 'V') glowSpots.push(() => F().broken.includes(k2) ? null : { x: w2.x, z: w2.z, r: 0.8 });
+    if (c === 'o') glowSpots.push(() => F().mined.includes(k2) ? null : { x: w2.x, z: w2.z, r: 0.7 });
   }));
   for (const [x, z] of FLOORS[n].decor.mushrooms) { const w2 = world(x, z); glowSpots.push(() => ({ x: w2.x, z: w2.z, r: 1.1 })); }
   const p = world(at[0], at[1]);
@@ -301,7 +330,10 @@ function solid(x: number, z: number) {
   const c = ch(x, z), st = F(), k = K(x, z);
   switch (c) {
     case '.': case ',': case 'S': case '>': case 'P': case 'B': return false;   // under a boulder there is floor
-    case 'R': case 'X': return !st.broken.includes(k);
+    case 'R': case 'X': case 'V': return !st.broken.includes(k);
+    case 'b': return false;                                     // burning ground: see blockedFor
+    case 'h': return !(st.cut && k in st.cut);
+    case '=': return !(st.built && st.built[k]);
     case 'O': case '~': return !st.fill.includes(k);
     case 'D': return !(st.door && doorK > 0.7);
     case 'G': return gateK < 0.7;
@@ -309,19 +341,88 @@ function solid(x: number, z: number) {
   }
 }
 
+/** Somewhere only one figure can go: the burning ground is for Brasa alone. */
+function blockedFor(id: string, x: number, z: number) {
+  if (solid(x, z)) return true;
+  return ch(x, z) === 'b' && id !== 'brasa';
+}
+/** Which figure is needed for what is in this cell (null: anyone). */
+function needs(x: number, z: number): string | null {
+  const c = ch(x, z), k = K(x, z), st = F();
+  if (boulderAt(x, z) >= 0) return 'arci';
+  if (c === 'V' && !st.broken.includes(k)) return 'musgo';
+  if (c === 'h' && solid(x, z)) return 'musgo';
+  if (c === '=' && solid(x, z)) return S.flags.semilla && leader().c.id === 'musgo' ? 'musgo' : 'arci';
+  if (c === 'b') return 'brasa';
+  return null;
+}
+let hintT = 0;
+function hint(t: string) { if (hintT > 0) return; hintT = 2.5; say(t); }
 function tryStep(d: Dir): boolean {
-  const L = leader(); facing = d; L.c.dir = Math.atan2(DV[d][0], DV[d][1]);
+  const L = leader(), id = L.c.id; facing = d; L.c.dir = Math.atan2(DV[d][0], DV[d][1]);
   const [dx, dz] = DV[d], nx = L.x + dx, nz = L.z + dz;
-  const bi = boulderAt(nx, nz);
-  if (bi >= 0) { if (!push(bi, dx, dz)) { bump(); return false; } }
-  else if (solid(nx, nz)) { bump(); return false; }
-  for (let k = party.length - 1; k >= 1; k--) { const m = party[k], f = party[k - 1]; m.fx = m.x; m.fz = m.z; m.x = f.x; m.z = f.z; }
+  const bi = boulderAt(nx, nz), c = ch(nx, nz);
+  if (bi >= 0) {
+    if (id !== 'arci') { bump(); hint(has('arci') ? 'Es muy pesada: solo Arci puede empujar las rocas (toca su cara arriba).' : 'Es muy pesada para moverla.'); return false; }
+    if (!push(bi, dx, dz)) { bump(); return false; }
+  } else if (c === 'h' && solid(nx, nz)) {
+    if (id !== 'musgo') { bump(); hint(has('musgo') ? 'Hierba muy tupida: Musgo la puede cortar (toca su cara arriba).' : 'Hierba muy tupida.'); return false; }
+    cutFern(nx, nz);
+  } else if (blockedFor(id, nx, nz)) {
+    bump();
+    if (c === 'b') hint(has('brasa') ? 'El suelo quema: solo Brasa camina sobre las brasas (toca su cara arriba).' : 'El suelo quema.');
+    return false;
+  }
+  // the others follow in line, but only where they can stand; if not, they wait
+  const old = party.map(m => [m.x, m.z]);
   L.fx = L.x; L.fz = L.z; L.x = nx; L.z = nz;
-  for (const m of party) if (m.x !== m.fx || m.z !== m.fz) { m.c.dir = Math.atan2(m.x - m.fx, m.z - m.fz); setFigureAnim(m.c, 'walk'); }
+  let aheadMoved = true;
+  for (let k = 1; k < party.length; k++) {
+    const m = party[k], [ax, az] = old[k - 1];
+    m.fx = m.x; m.fz = m.z;
+    const near = Math.abs(ax - m.x) + Math.abs(az - m.z) <= 1;
+    if (aheadMoved && near && !(ax === m.x && az === m.z && k > 1 && !aheadMoved) && !blockedFor(m.c.id, ax, az)) { m.x = ax; m.z = az; aheadMoved = true; }
+    else aheadMoved = false;
+  }
+  if (c === 'b' && id === 'brasa' && !S.flags.brasas) { S.flags.brasas = true; say('Brasa camina sobre las brasas como si nada. Las demás esperan.'); emit('changed'); }
+  for (const m of party) if (m.x !== m.fx || m.z !== m.fz) { m.c.dir = Math.atan2(m.x - m.fx, m.z - m.fz); setFigureAnim(m.c, 'walk'); } else if (m !== L) setFigureAnim(m.c, 'idle');
   moving = true; stepT = 0; sfx('step', 0.6);
   return true;
 }
 function bump() { if (bumpT > 0) return; bumpT = 0.35; sfx('tap', 0.25); }
+const has = (id: string) => party.some(m => m.c.id === id);
+/** Musgo walks into the tall grass and cuts it; sometimes there is something inside. */
+function cutFern(x: number, z: number) {
+  const st = F(), k = K(x, z), w = world(x, z);
+  (st.cut ||= {})[k] = S.time;
+  const f = view?.ferns.get(k); if (f) { f.tall.visible = false; f.stub.visible = true; }
+  sfx('chop', 0.6); puff(w.x, 0.4, w.z, '#6fb04a', 10, 1.6, 1.2, 0);
+  S.stats.hierba = (S.stats.hierba || 0) + 1;
+  const r = Math.random(), at = w.clone().setY(1);
+  if (r < 0.05) { addStars(1, 'Escarabajo dorado escondido en la hierba'); sfx('coin'); }
+  else if (r < 0.45) gain('semilla', 1, at);
+  else if (r < 0.6) gain('cuarzo', 1, at);
+  else if (r < 0.75) gain('mineral', 1, at);
+  else if (r < 0.82) { for (let q = 0; q < 3; q++) spawnEmber(w.x, w.z, 0.4); }
+  emit('caveChanged');
+}
+/** Puts another figure at the front of the line (it keeps its place; the camera goes to it). */
+export function switchLeader(id: string) {
+  const k = party.findIndex(m => m.c.id === id); if (k <= 0 || battleActive()) { refreshWho(); return; }
+  const m = party.splice(k, 1)[0]; party.unshift(m);
+  path = []; pendingAct = null; held = null;
+  const off = (d: Dir) => { let a = Math.atan2(DV[d][0], DV[d][1]) - m.c.dir; while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return Math.abs(a); };
+  facing = (Object.keys(DV) as Dir[]).reduce((b, d) => off(d) < off(b) ? d : b, 'N' as Dir);
+  sfx('tap'); m.c.cheer = 0.4;
+  if (!S.flags[`lider_${id}`]) { S.flags[`lider_${id}`] = true; say(`${NAME[id]} va adelante: ${SKILL[id]}.`); }
+  if (id === 'musgo' && !S.flags.liderMusgo) { S.flags.liderMusgo = true; emit('changed'); }
+  refreshWho();
+}
+function refreshWho() {
+  const el = document.getElementById('cvWho'); if (!el) return;
+  const h = party.map((m, k) => `<button data-who="${m.c.id}" class="${k === 0 ? 'on' : ''}" style="--c:${COLOR[m.c.id]}" aria-label="${NAME[m.c.id]}: ${SKILL[m.c.id]}"><b>${NAME[m.c.id][0]}</b></button>`).join('');
+  if (el.dataset.sig !== h) { el.dataset.sig = h; el.innerHTML = h; }
+}
 
 function push(bi: number, dx: number, dz: number) {
   const st = F(), [bx, bz] = st.b[bi]!, tx = bx + dx, tz = bz + dz, c = ch(tx, tz), k = K(tx, tz);
@@ -371,8 +472,15 @@ function front(): [number, number] { const L = leader(), [dx, dz] = DV[facing]; 
 function actionLabel(): string {
   if (!active || !party.length) return '';
   const [x, z] = front(), k = K(x, z), st = F(), c = ch(x, z);
+  const need = needs(x, z), lid = leader().c.id;
+  if (need && need !== lid && c !== 'b') return has(need) ? `${NAME[need]} ▸` : '';
   if (boulderAt(x, z) >= 0) return 'Empujar';
   switch (c) {
+    case 'V': return st.broken.includes(k) ? '' : 'Apartar';
+    case 'h': return solid(x, z) ? 'Cortar' : '';
+    case '=': return solid(x, z) ? (lid === 'musgo' ? 'Raíces' : 'Puente · 3 tablas') : '';
+    case 'o': return st.mined.includes(k) ? 'Mirar' : 'Picar';
+    case 'U': return S.flags[FLOORS[fi].upgrade?.id || ''] ? 'Mirar' : (FLOORS[fi].upgrade?.who === lid ? 'Tomar' : `${NAME[FLOORS[fi].upgrade?.who || 'arci']} ▸`);
     case 't': return st.lit.includes(k) ? 'Mirar' : 'Encender';
     case 's': return 'Girar';
     case 'R': return st.broken.includes(k) ? '' : 'Romper';
@@ -395,8 +503,69 @@ const lead = () => leader().c.def.name;
 export function caveAct() {
   if (!active || moving || busyT > 0 || fading || !party.length || battleActive()) return;
   const [x, z] = front(), k = K(x, z), st = F(), c = ch(x, z), w = world(x, z);
+  // something only another figure can do: that figure comes to the front and does it
+  const need = c === 'U' && !S.flags[FLOORS[fi].upgrade?.id || ''] ? FLOORS[fi].upgrade!.who : needs(x, z);
+  if (need && need !== leader().c.id && c !== 'b') {
+    if (!has(need)) { say('Eso no lo puede hacer nadie del equipo todavía.'); return; }
+    const L0 = leader(); switchLeader(need);
+    const r = route(L0.x, L0.z, false);
+    if (r) { path = r; pendingAct = [x, z]; } else say(`${NAME[need]} no llega hasta ahí.`);
+    return;
+  }
   if (boulderAt(x, z) >= 0) { tryStep(facing); return; }
   switch (c) {
+    case 'V': {
+      if (st.broken.includes(k)) return;
+      work(0.9, '', () => {
+        st.broken.push(k); view!.vines.get(k)?.removeFromParent(); sfx('chop'); puff(w.x, 0.9, w.z, '#6fb04a', 18, 1.8, 1.4, 0);
+        say('Musgo le habla a la enredadera y la enredadera se aparta.');
+        if (!S.flags.enredadera) { S.flags.enredadera = true; emit('changed'); }
+        emit('caveChanged');
+      });
+      return;
+    }
+    case 'h': { if (solid(x, z)) tryStep(facing); return; }
+    case '=': {
+      if (!solid(x, z)) return;
+      const roots = leader().c.id === 'musgo' && S.flags.semilla;
+      if (!roots && S.res.tablas < 3) { say('Para el puente hacen falta 3 tablas (del aserradero de la isla).'); return; }
+      work(1.4, roots ? '' : 'hammer', () => {
+        if (!roots) S.res.tablas -= 3;
+        (st.built ||= {})[k] = roots ? 'raices' : 'tablas';
+        const cz = view!.chasms.get(k); if (cz) (roots ? cz.root : cz.plank).visible = true;
+        sfx(roots ? 'heal' : 'hammer'); puff(w.x, 0.2, w.z, roots ? '#6fb04a' : '#c8a870', 14, 1.4, 1, 0);
+        say(roots ? 'Las raíces de Musgo cruzan la grieta y se trenzan en un puente.' : 'Arci clava las tablas y tiende un puente sobre la grieta.');
+        if (!S.flags.puenteGrieta) { S.flags.puenteGrieta = true; }
+        emit('changed'); emit('caveChanged');
+      });
+      return;
+    }
+    case 'o': {
+      if (st.mined.includes(k)) { say('La obsidiana volverá a asomar con el tiempo.'); return; }
+      if (!S.tools.pico) { say('Hace falta el pico de metal'); return; }
+      sfx('pick');
+      work(1.6, 'pickM', () => {
+        sfx('crack', 0.6); st.mined.push(k); (st.minedAt ||= {})[k] = S.time; view!.obsidian.get(k)?.scale.set(1, 0.4, 1);
+        gain('obsidiana', S.inv.picoO ? 4 : 2, leader().c.root.position.clone().setY(1.2)); puff(w.x, 0.5, w.z, '#4a3a5e', 12, 1.8, 1, 0);
+        if (!S.flags.obsidianaVista) { S.flags.obsidianaVista = true; say('Obsidiana: vidrio de volcán, negro y filoso. Con ella se puede hacer un pico mejor.'); }
+        S.stats.cueva = (S.stats.cueva || 0) + 1;
+        emit('changed'); emit('caveChanged');
+      });
+      return;
+    }
+    case 'U': {
+      const up = FLOORS[fi].upgrade; if (!up) return;
+      if (S.flags[up.id]) { say('El pedestal está vacío.'); return; }
+      work(0.9, '', () => {
+        S.flags[up.id] = true; sfx('level');
+        const it = view!.gift; if (it) slides.push({ o: it, from: it.position.clone(), to: it.position.clone().setY(1.8), t: 0, d: 0.8, done: () => { it.visible = false; } });
+        puff(w.x, 0.9, w.z, up.who === 'brasa' ? '#ffb040' : '#8ad96b', 22, 2, 1.2, 0);
+        leader().c.cheer = 2;
+        setTimeout(() => emit('story', `up_${up.id}`), 1000);
+        emit('changed'); emit('caveChanged');
+      });
+      return;
+    }
     case 't': {
       if (st.lit.includes(k)) { say('El brasero arde y calienta la piedra.'); return; }
       work(0.7, '', () => {
@@ -463,14 +632,14 @@ export function caveAct() {
       return;
     }
     case 'C': case 'M': {
-      if (st.mined.includes(k)) { say(c === 'C' ? 'Solo quedan astillas apagadas.' : 'La veta ya está vacía.'); return; }
+      if (st.mined.includes(k)) { say(c === 'C' ? 'Solo quedan astillas apagadas. Los cristales vuelven a crecer con el tiempo.' : 'La veta está vacía por ahora: el mineral vuelve a asomar con el tiempo.'); return; }
       sfx('pick');
       work(1.4, 'pickM', () => {
-        sfx('pick'); st.mined.push(k); mineVisual(k);
+        sfx('pick'); st.mined.push(k); (st.minedAt ||= {})[k] = S.time; mineVisual(k);
         S.stats.cueva = (S.stats.cueva || 0) + 1;
-        const at = leader().c.root.position.clone().setY(1.2);
-        if (c === 'C') { gain('cuarzo', 2, at); puff(w.x, 0.5, w.z, '#8fe8ff', 12, 1.8, 1, 0); say('Cristales de cuarzo: brillan solos, incluso en la oscuridad'); }
-        else { gain('cobre', 2, at); gain('mineral', 2, at.clone().setY(1.5)); puff(w.x, 0.5, w.z, '#e09050', 12, 1.8, 1, 0); }
+        const at = leader().c.root.position.clone().setY(1.2), x2 = S.inv.picoO ? 2 : 1;
+        if (c === 'C') { gain('cuarzo', 2 * x2, at); puff(w.x, 0.5, w.z, '#8fe8ff', 12, 1.8, 1, 0); say('Cristales de cuarzo: brillan solos, incluso en la oscuridad'); }
+        else { gain('cobre', 2 * x2, at); gain('mineral', 2 * x2, at.clone().setY(1.5)); puff(w.x, 0.5, w.z, '#e09050', 12, 1.8, 1, 0); }
         emit('caveChanged');
       });
       return;
@@ -480,7 +649,7 @@ export function caveAct() {
       work(0.6, '', () => {
         st.opened.push(k); sfx('coin'); const ch2 = view!.chests.get(k)!;
         slides.push({ o: ch2.lid, from: new THREE.Vector3(0, 0, 0), to: new THREE.Vector3(-1.9, 0, 0), t: 0, d: 0.5, spin: -98 });
-        const gv = FLOORS[fi].chest, at = w.clone().setY(1);
+        const gv = FLOORS[fi].chestAt?.[k] || FLOORS[fi].chest, at = w.clone().setY(1);
         Object.entries(gv.gives).forEach(([r, n], i) => gain(r as ResKey, n, at.clone().setY(1 + i * 0.35)));
         puff(w.x, 0.5, w.z, '#f2c14e', 14, 2.2, 1, 0);
         S.cave!.chests++; S.stats.cueva = (S.stats.cueva || 0) + 1;
@@ -490,9 +659,9 @@ export function caveAct() {
       return;
     }
     case 'L': {
-      const idx = cellsOf(fi, 'L').findIndex(p => p[0] === x && p[1] === z);
       if (!st.read.includes(k)) { st.read.push(k); emit('caveChanged'); }
-      emit('story', `cv${fi}_${idx}`);
+      if (FLOORS[fi].loreAt?.[k] && !S.flags.mural) { S.flags.mural = true; emit('changed'); }
+      emit('story', loreKey(fi, x, z));
       return;
     }
     case 'Q': {
@@ -579,22 +748,23 @@ export function tapCell(x: number, z: number) {
   const L = leader(); if (L.x === x && L.z === z) return;
   held = null; pendingAct = null;
   const adj = Math.abs(L.x - x) + Math.abs(L.z - z) === 1;
-  const interest = boulderAt(x, z) >= 0 || 'tsRCMKLQDGAg*XY'.includes(ch(x, z)) && solid(x, z);
+  const interest = boulderAt(x, z) >= 0 || 'tsRCMKLQDGAg*XYVh=oU'.includes(ch(x, z)) && solid(x, z);
   if (adj && interest && !moving) {
     const d = (Object.keys(DV) as Dir[]).find(q => L.x + DV[q][0] === x && L.z + DV[q][1] === z)!;
     facing = d; L.c.dir = Math.atan2(DV[d][0], DV[d][1]); caveAct(); return;
   }
-  if (!interest && !solid(x, z)) { path = route(x, z, true) || []; return; }
+  if (!interest && !blockedFor(L.c.id, x, z)) { path = route(x, z, true) || []; if (!path.length && ch(x, z) === 'b') hint('Solo Brasa camina sobre las brasas.'); return; }
+  if (!interest && ch(x, z) === 'b') { if (has('brasa')) { switchLeader('brasa'); path = route(x, z, true) || []; } return; }
   if (!interest) return;
   // walk next to it, turn to it, and use it (boulders only get faced)
   let best: [number, number][] | null = null;
   for (const d of Object.values(DV)) {
-    const ax = x - d[0], az = z - d[1]; if (solid(ax, az)) continue;
+    const ax = x - d[0], az = z - d[1]; if (blockedFor(L.c.id, ax, az)) continue;
     const r = route(ax, az, false); if (r && (!best || r.length < best.length)) best = r;
   }
   if (!best) { say('No hay camino hasta ahí'); return; }
   path = best; pendingAct = [x, z];
-  if (boulderAt(x, z) >= 0) (pendingAct as any).faceOnly = true;
+  if (boulderAt(x, z) >= 0 && leader().c.id !== 'arci') (pendingAct as any).faceOnly = true;
 }
 /** Breadth-first route over free cells; stairs only as the destination (so walking never changes floor by accident). */
 function route(tx: number, tz: number, stairsOk: boolean): [number, number][] | null {
@@ -604,7 +774,7 @@ function route(tx: number, tz: number, stairsOk: boolean): [number, number][] | 
     if (x === tx && z === tz) { const out: [number, number][] = []; let k: string | null = K(x, z); while (k && k !== start) { const [a, b] = k.split(',').map(Number); out.unshift([a, b]); k = prev.get(k)!; } return out; }
     for (const [dx, dz] of Object.values(DV)) {
       const nx = x + dx, nz = z + dz, nk = K(nx, nz);
-      if (prev.has(nk) || solid(nx, nz)) continue;
+      if (prev.has(nk) || blockedFor(L.c.id, nx, nz)) continue;
       const c = ch(nx, nz); if ((c === 'S' || c === '>') && !(stairsOk && nx === tx && nz === tz)) continue;
       prev.set(nk, K(x, z)); q.push([nx, nz]);
     }
@@ -629,7 +799,7 @@ function spawnEmber(x: number, z: number, up = 1) {
 let emberAcc = 0, lastLabel = '';
 export function tickCave(dt: number, T: number) {
   if (!active || !view || !party.length) return;
-  clock += dt; bumpT -= dt;
+  clock += dt; bumpT -= dt; hintT -= dt;
   const st = F(), L = leader();
   tickBattle(dt);
   const fight = battleActive();
@@ -707,7 +877,7 @@ export function tickCave(dt: number, T: number) {
   if (partyLight) { const p = L.c.root.position; partyLight.position.set(p.x, 1.7, p.z + 0.4); partyLight.intensity = 5.5 * (1 + Math.sin(clock * 9) * 0.04); }
   // bats, beetles, drips and the darkness that only opens around light
   const ls: Light[] = []; for (const f of glowSpots) { const l = f(); if (l) ls.push(l); }
-  tickLife(dt, T, L.c.root.position, ls);
+  tickLife(dt, T, L.c.root.position, ls, L.c.id === 'brasa' && S.flags.corazon ? 7 : 4.6);
   // camera follows the leader
   const bf = battleFocus();
   const tgt = bf ? bf.clone().setY(0.4).add(new THREE.Vector3(0, 0, -0.3)) : L.c.root.position.clone().setY(0.4).add(new THREE.Vector3(0, 0, 0.9));   // the controls cover the bottom of the screen: keep the party a little above the middle
@@ -735,6 +905,15 @@ export function caveHint(goal: string): THREE.Vector3 | null {
   if ((goal === 'cvRio' || goal === 'cvCruzar') && fi === 1 && st.door) return over(cellsOf(1, '>')[0], 0.9);
   if (goal === 'cvCaracola' && fi === 2 && S.flags.lavaCruzada) return over(cellsOf(2, 'Q')[0], 1.9);
   if (goal === 'cvSalir' && fi === 0) return over(cellsOf(0, 'S')[0], 0.9);
+  const FG: Record<string, [number, string]> = { fEnredadera: [0, 'V'], fSemilla: [0, 'U'], fPuente: [1, '='], fMural: [1, 'L2'], fBrasas: [2, 'b'], fCorazon: [2, 'U'], fObsidiana: [2, 'o'] };
+  if (FG[goal]) {
+    const [gf, c] = FG[goal];
+    if (gf > fi) return F().door ? over(cellsOf(fi, '>')[0], 0.9) : null;
+    if (gf < fi) return over(cellsOf(fi, 'S')[0], 0.9);
+    const cells = c === 'L2' ? Object.keys(FLOORS[fi].loreAt || {}).map(k => k.split(',').map(Number) as [number, number]) : cellsOf(fi, c);
+    const p = c === 'o' ? cells.find(q => !st.mined.includes(K(...q))) : cells[0];
+    return over(p, c === 'b' ? 0.9 : 1.6);
+  }
   if (goal === 'volverCueva' || goal === 'golem') { if (battleActive()) return null; if (fi === 2) return over(cellsOf(2, 'g')[0], 2.6); if (F().door) return over(cellsOf(fi, '>')[0], 0.9); }
   return null;
 }

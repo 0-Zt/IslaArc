@@ -56,7 +56,7 @@ const leader = () => crew.find(q => q.id === selected) || crew.find(q => q.id ==
 const idleAt = (b: Building | undefined) => b && !b.jobs?.length ? overBuilding(b) : null;
 
 const FISH_GOALS = new Set(['pescar1', 'pescar6', 'vasija', 'algas', 'llave', 'cofre', 'coleccion', 'hondo1', 'cobre', 'brujula', 'timon']);
-const CAVE_GOALS = new Set(['grieta', 'bajar', 'cvBraseros', 'cvSalon', 'cvEstatuas', 'cvRio', 'cvCruzar', 'cvCaracola', 'volverCueva', 'golem']);
+const CAVE_GOALS = new Set(['grieta', 'bajar', 'cvBraseros', 'cvSalon', 'cvEstatuas', 'cvRio', 'cvCruzar', 'cvCaracola', 'volverCueva', 'golem', 'fLider', 'fEnredadera', 'fSemilla', 'fPuente', 'fMural', 'fBrasas', 'fCorazon', 'fObsidiana']);
 const SEA_GOALS = new Set(['zarpar', 'hondo', 'hondo1', 'cobre', 'brujula', 'olas', 'timon', 'soplar', 'abrir', 'cruzar']);
 /** Out at sea: towards the nearest dark water, or the big waves. */
 function seaTarget(goal: string): THREE.Vector3 | null {
@@ -114,6 +114,7 @@ export function pointerTarget(): THREE.Vector3 | null {
       const st = fishState(); if (!st || st.st !== 'ready') return null;
       const sh = bestShadow(); return sh ? new THREE.Vector3(sh.x, 0.9, sh.z) : null;
     }
+    case 'fPicoO':
     case 'afinar': { const t = done('taller'); return t && !t.jobs?.some(j => j.startsWith('inv:')) ? overBuilding(t) : null; }
     case 'soplar': case 'abrir': case 'cruzar':
     case 'balsa': case 'zarpar': case 'hondo': case 'hondo1': case 'cobre': case 'brujula': case 'olas': case 'timon': {

@@ -123,12 +123,19 @@ const TEAM = [
   { id: 'golem', name: 'El gólem', color: '#4a3a30', skill: 'Guardián de la montaña', desc: 'Se quedó cuidando el corazón del volcán. Gracias a él, la caracola grande ya calma las olas.', how: 'Duerme en el río de lava, junto al pedestal de la caracola.', when: () => !!S.cave?.caracola },
   { id: 'espectro', name: '???', color: '#6a7488', skill: '???', desc: 'Dicen que un barco aparece de noche cuando el faro está apagado.', how: 'Más adelante.' },
 ];
+const FIELD: Record<string, string> = { arci: 'empuja rocas, tiende puentes de tablas.', musgo: 'aparta enredaderas, corta la hierba alta.', brasa: 'camina sobre las brasas.' };
+const UPS: Record<string, { flag: string; text: string }> = {
+  musgo: { flag: 'semilla', text: 'Semilla antigua: puentes de raíces sobre las grietas, y lo que planta nace dos pasos más crecido.' },
+  brasa: { flag: 'corazon', text: 'Corazón de magma: su luz llega lejos en la oscuridad, y funde mineral el doble de seguido.' },
+};
 function equipo() {
   let h = '<h3>Figuras</h3>';
   for (const f of TEAM as { id: string; name: string; color: string; skill: string; desc: string; how: string; when?: () => boolean }[]) {
     if (f.when && !f.when()) continue;
     const has = f.id === 'golem' ? !!S.flags.golemCalmo : S.crew.includes(f.id);
-    h += `<div class="row${has ? '' : ' dim'}"><div class="dmedal" style="background:${f.color};color:#fff">${has ? f.name[0] : '?'}</div><div class="info"><b>${has ? f.name : '???'} · ${has ? f.skill : 'habilidad oculta'}</b><small>${has ? f.desc : f.how}</small></div></div>`;
+    const up = has && UPS[f.id]?.flag && S.flags[UPS[f.id].flag] ? `<br><span style="color:var(--good)">${UPS[f.id].text}</span>` : '';
+    const field = has && FIELD[f.id] ? `<br>En exploración: ${FIELD[f.id]}` : '';
+    h += `<div class="row${has ? '' : ' dim'}"><div class="dmedal" style="background:${f.color};color:#fff">${has ? f.name[0] : '?'}</div><div class="info"><b>${has ? f.name : '???'} · ${has ? f.skill : 'habilidad oculta'}</b><small>${has ? f.desc : f.how}${field}${up}</small></div></div>`;
   }
   h += `<h3>Inventos (${Object.keys(S.inv).length}/${Object.values(INV).filter(d => !d.locked).length})</h3>`;
   const made = Object.keys(S.inv).filter(k => S.inv[k]);

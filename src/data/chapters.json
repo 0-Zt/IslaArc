@@ -466,6 +466,67 @@
     ]
   },
   {
+    "id": "figuras",
+    "title": "Lo que sabe cada uno",
+    "desc": "El gólem dejó algo dicho: en la montaña hay un regalo para cada figura. Cada una abre caminos que las otras no pueden.",
+    "reward": {
+      "stars": 12,
+      "text": "Tres figuras más fuertes y +12 ★"
+    },
+    "stages": [
+      {
+        "name": "Musgo",
+        "n": 3
+      },
+      {
+        "name": "Arci",
+        "n": 2
+      },
+      {
+        "name": "Brasa",
+        "n": 4
+      }
+    ],
+    "goals": [
+      {
+        "id": "fLider",
+        "text": "En la cueva, toca la cara de Musgo para que vaya adelante"
+      },
+      {
+        "id": "fEnredadera",
+        "text": "Con Musgo, aparta las enredaderas del primer piso"
+      },
+      {
+        "id": "fSemilla",
+        "text": "Encuentra el regalo del jardín de musgo"
+      },
+      {
+        "id": "fPuente",
+        "text": "Con Arci, tiende un puente sobre la grieta del segundo piso"
+      },
+      {
+        "id": "fMural",
+        "text": "Lee el mural del otro lado de la grieta"
+      },
+      {
+        "id": "fBrasas",
+        "text": "Con Brasa, cruza el suelo de brasas del tercer piso"
+      },
+      {
+        "id": "fCorazon",
+        "text": "Encuentra el regalo de la cámara de brasas"
+      },
+      {
+        "id": "fObsidiana",
+        "text": "Pica obsidiana ({ob}/3)"
+      },
+      {
+        "id": "fPicoO",
+        "text": "Inventa el pico de obsidiana en el taller"
+      }
+    ]
+  },
+  {
     "id": "faro",
     "title": "La isla del faro",
     "locked": true,

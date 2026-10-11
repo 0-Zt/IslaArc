@@ -26,6 +26,7 @@ export const ICON: Record<ResKey, string> = {
   lingote: mkIcon(['.......', '.......', '..MMMMM', '.MHMMMD', 'MMMMMD.', 'MDDDD..'], { M: '#b8c0cc', H: '#ffffff', D: '#6a7280' }),
   algas: mkIcon(['.G...G.', '.GL.GL.', '..GLG..', '..LGL..', '.GLG.G.', 'GG..GG.'], { G: '#3f8a4a', L: '#7fc955' }),
   cobre: mkIcon(['.......', '..CCC..', '.CHCCC.', 'CCCCCDC', 'CCHCCDC', '.CCDDD.'], { C: '#c8763a', H: '#f0b070', D: '#8a4a22' }),
+  obsidiana: mkIcon(['.......', '...K...', '..KHK..', '.KKPKK.', 'KKPKKKK', '.KKKKK.'], { K: '#1e1826', H: '#6a5a8a', P: '#3c3050' }),
   cuarzo: mkIcon(['...Q...', '..QHQ..', '.Q.QH.Q', '.QH.QQH', 'QQHQQQ.', '.DDDDD.'], { Q: '#7ad8f0', H: '#e8fbff', D: '#4a5a6a' }),
   carbon: mkIcon(['.......', '..KK...', '.KHKK.K', '.KKKKKH', 'KKHKKKK', '.KKKDK.'], { K: '#3a3632', H: '#6a625a', D: '#e0602a' }),
 };

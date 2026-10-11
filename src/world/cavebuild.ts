@@ -28,6 +28,7 @@ const glow = (r: number, g: number, b: number) => new THREE.MeshBasicMaterial({ 
 export const GLOW = {
   crystal: glow(0.5, 2.2, 2.6), crystalDim: glow(0.15, 0.5, 0.6), mush: glow(0.4, 1.8, 1.4), mush2: glow(1.6, 0.6, 1.9),
   flame: glow(3.2, 1.4, 0.3), flameCore: glow(3.6, 2.8, 1.2), rune: glow(0.2, 0.25, 0.3), runeOn: glow(2.6, 1.3, 0.35),
+  ember: glow(1.7, 0.55, 0.12), obsGlint: glow(1.2, 0.6, 2.2),
   eye: glow(0.25, 0.08, 0.05), eyeOn: glow(3, 1.2, 0.3), orb: glow(0.3, 0.3, 0.35), orbOn: glow(2.6, 2.2, 1.2), shell: glow(2.2, 1.7, 1.6),
 };
 const lavaTex = new THREE.CanvasTexture(makeCanvas(64, 64, x => {
@@ -72,6 +73,8 @@ export interface FloorView {
   rubble: Map<string, THREE.Group>; pits: Map<string, THREE.Group>; lava: Map<string, THREE.Mesh>;
   altar: { orb: THREE.Mesh } | null; shell: THREE.Group | null; golem: Golem | null;
   cracked: Map<string, THREE.Group>; relic: THREE.Group | null;
+  vines: Map<string, THREE.Group>; ferns: Map<string, { tall: THREE.Group; stub: THREE.Group }>;
+  chasms: Map<string, { plank: THREE.Group; root: THREE.Group }>; obsidian: Map<string, THREE.Group>; gift: THREE.Group | null;
   embers: THREE.Vector3[]; lavaLights: THREE.PointLight[];
 }
 
@@ -81,7 +84,7 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
   const W = map[0].length, Hh = map.length;
   const at = (x: number, z: number) => (map[z] && map[z][x]) || '#';
   const root = new THREE.Group(); root.position.set(CAVE_X, 0, CAVE_Z);
-  const v: FloorView = { root, boulders: new Map(), braziers: new Map(), statues: new Map(), doors: new Map(), gates: new Map(), plates: new Map(), crystals: new Map(), veins: new Map(), chests: new Map(), rubble: new Map(), pits: new Map(), lava: new Map(), altar: null, shell: null, golem: null, embers: [], lavaLights: [], cracked: new Map(), relic: null };
+  const v: FloorView = { root, boulders: new Map(), braziers: new Map(), statues: new Map(), doors: new Map(), gates: new Map(), plates: new Map(), crystals: new Map(), veins: new Map(), chests: new Map(), rubble: new Map(), pits: new Map(), lava: new Map(), altar: null, shell: null, golem: null, embers: [], lavaLights: [], cracked: new Map(), relic: null, vines: new Map(), ferns: new Map(), chasms: new Map(), obsidian: new Map(), gift: null };
   const S = P(); const glowParts: Record<string, L> = {};
   const addGlow = (k: keyof typeof GLOW, g: THREE.BufferGeometry) => { (glowParts[k] = glowParts[k] || []).push(g); };
   const box = (w: number, h: number, d: number, x: number, y: number, z: number) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); return g; };
@@ -118,6 +121,31 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
       const m = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 1), LAVA_MAT); m.position.set(cx, -0.22, cz); root.add(m); v.lava.set(`${x},${z}`, m);
       vbox(S.stone, cx, -0.45, cz, 1, 0.3, 1, '#2a1a12');
       if (H(x, z, 50) < 0.25) v.embers.push(new THREE.Vector3(CAVE_X + cx, -0.1, CAVE_Z + cz));
+      continue;
+    }
+    if (c === '=') {
+      // a crack in the floor that goes down forever, with broken edges; a bridge appears once built
+      const g = new THREE.Group(); g.position.set(cx, 0, cz);
+      const pp = P(); vbox(pp.stone, 0, -1.2, 0, 1, 2, 1, '#050404');
+      const alongX = !isWall(at(x - 1, z)) || !isWall(at(x + 1, z));
+      for (let k = 0; k < 5; k++) { const t = -0.4 + k * 0.2; for (const sd of [-1, 1]) { const w2 = 0.18 + H(x, z, k + sd * 7 + 120) * 0.14; if (alongX) vbox(pp.stone, t, -0.08, sd * (0.5 - w2 / 2), 0.2, 0.16, w2, '#3a302a'); else vbox(pp.stone, sd * (0.5 - w2 / 2), -0.08, t, w2, 0.16, 0.2, '#3a302a'); } }
+      merge(pp, g, false);
+      const plank = new THREE.Group(), pk = P();
+      for (let k = 0; k < 6; k++) { const t = -0.42 + k * 0.17; if (alongX) vbox(pk.plank, t, 0.03, 0, 0.14, 0.06, 0.78, k % 2 ? '#a8763a' : '#9a6a32'); else vbox(pk.plank, 0, 0.03, t, 0.78, 0.06, 0.14, k % 2 ? '#a8763a' : '#9a6a32'); }
+      for (const sd of [-1, 1]) { if (alongX) vbox(pk.bark, 0, 0.12, sd * 0.4, 1.1, 0.03, 0.03, '#c8a870'); else vbox(pk.bark, sd * 0.4, 0.12, 0, 0.03, 0.03, 1.1, '#c8a870'); }
+      merge(pk, plank); plank.visible = false; g.add(plank);
+      const rootB = new THREE.Group(), rk = P();
+      for (let k = 0; k < 5; k++) { const o = (k - 2) * 0.15, y = 0.02 + (k % 2) * 0.04; if (alongX) vbox(rk.bark, 0, y, o, 1.15, 0.08, 0.1, k % 2 ? '#6a4a2a' : '#5a3e24'); else vbox(rk.bark, o, y, 0, 0.1, 0.08, 1.15, k % 2 ? '#6a4a2a' : '#5a3e24'); }
+      for (let k = 0; k < 4; k++) vbox(rk.thatch, (H(x, z, k + 130) - 0.5) * 0.7, 0.09, (H(x, z, k + 133) - 0.5) * 0.7, 0.12, 0.04, 0.1, '#6fb04a');
+      merge(rk, rootB); rootB.visible = false; g.add(rootB);
+      root.add(g); v.chasms.set(`${x},${z}`, { plank, root: rootB });
+      continue;
+    }
+    if (c === 'b') {
+      // ground that is still burning: black crust and orange cracks; only Brasa walks here
+      vbox(S.stone, cx, -0.15, cz, 1, 0.3, 1, pick(['#2a2220', '#30251f', '#261e1a'], x, z));
+      for (let k = 0; k < 3; k++) { const a = H(x, z, k + 140) < 0.5; addGlow('ember', box(a ? 0.4 + H(x, z, k) * 0.4 : 0.05, 0.012, a ? 0.05 : 0.4 + H(x, z, k + 3) * 0.4, cx + (H(x, z, k + 143) - 0.5) * 0.6, 0.006, cz + (H(x, z, k + 146) - 0.5) * 0.6)); }
+      if (H(x, z, 150) < 0.5) v.embers.push(new THREE.Vector3(CAVE_X + cx, 0.02, CAVE_Z + cz));
       continue;
     }
     if (c === 'O') {
@@ -283,6 +311,56 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
         for (const [a, b, w2, h2] of [[-0.12, 0.6, 0.05, 0.4], [0.05, 0.42, 0.34, 0.04]]) for (const f of [1, -1]) vbox(pp.stone, f * 0.495, b, a, 0.01, h2, w2, '#1e1a22');
         for (let k = 0; k < 4; k++) vbox(pp.stone, (H(x, z, k + 100) - 0.5) * 0.8, 0.04, (H(x, z, k + 103) - 0.5) * 0.8, 0.1, 0.08, 0.1, '#6a6070');
         merge(pp, G); root.add(G); v.cracked.set(key, G); break;
+      }
+      case 'V': {
+        // a curtain of vines from the ceiling, thick enough that nobody passes but Musgo
+        for (let k = 0; k < 9; k++) {
+          const ox = -0.42 + k * 0.105, len = 1.1 + H(x, z, k + 160) * 0.7, top = 1.9;
+          vbox(pp.thatch, ox, top - len / 2, (H(x, z, k + 163) - 0.5) * 0.2, 0.05, len, 0.05, k % 3 ? '#3f7a3a' : '#4e8a44');
+          for (let j = 0; j < 3; j++) vbox(pp.thatch, ox + (j % 2 ? 0.04 : -0.04), top - len * (0.25 + j * 0.25), (H(x, z, k + j + 166) - 0.5) * 0.25, 0.09, 0.05, 0.07, '#6fb04a');
+        }
+        vbox(pp.stone, 0, 1.95, 0, 1, 0.12, 0.4, '#3e3a44');
+        merge(pp, G);
+        for (let k = 0; k < 3; k++) { const f = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), GLOW.mush2); f.position.set(-0.3 + k * 0.3, 0.6 + H(x, z, k + 170) * 0.8, 0.08); G.add(f); }
+        root.add(G); v.vines.set(key, G); break;
+      }
+      case 'h': {
+        // tall grass of the cave: ferns that grow back; Musgo cuts them and finds things inside
+        const tall = new THREE.Group(), tp = P();
+        for (let k = 0; k < 9; k++) {
+          const a = (k / 9) * Math.PI * 2 + H(x, z, k + 180), r = 0.12 + H(x, z, k + 183) * 0.26, hgt = 0.45 + H(x, z, k + 186) * 0.45;
+          vbox(tp.thatch, Math.cos(a) * r, hgt / 2, Math.sin(a) * r, 0.07, hgt, 0.07, k % 3 ? '#4f8a3e' : '#3e7232');
+          vbox(tp.thatch, Math.cos(a) * (r + 0.05), hgt * 0.85, Math.sin(a) * (r + 0.05), 0.14, 0.04, 0.06, '#6fb04a');
+        }
+        merge(tp, tall); G.add(tall);
+        const stub = new THREE.Group(), sp2 = P();
+        for (let k = 0; k < 6; k++) vbox(sp2.thatch, (H(x, z, k + 190) - 0.5) * 0.6, 0.04, (H(x, z, k + 193) - 0.5) * 0.6, 0.06, 0.08, 0.06, '#4f8a3e');
+        merge(sp2, stub); stub.visible = false; G.add(stub);
+        root.add(G); v.ferns.set(key, { tall, stub }); break;
+      }
+      case 'o': {
+        vbox(pp.stone, 0, 0.32, 0, 0.78, 0.64, 0.72, '#26202c'); vbox(pp.stone, -0.1, 0.66, 0.05, 0.5, 0.14, 0.45, '#1a1620');
+        for (let k = 0; k < 3; k++) vbox(pp.stone, (H(x, z, k + 200) - 0.5) * 0.5, 0.25 + H(x, z, k + 203) * 0.35, 0.365, 0.16, 0.1, 0.02, '#4a3a5e');
+        merge(pp, G);
+        for (let k = 0; k < 4; k++) { const gl = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.02), GLOW.obsGlint); gl.position.set((H(x, z, k + 206) - 0.5) * 0.6, 0.2 + H(x, z, k + 209) * 0.45, 0.37); G.add(gl); }
+        root.add(G); v.obsidian.set(key, G); break;
+      }
+      case 'U': {
+        // a gift of the Alfareros for one figure: a seed for Musgo, a heart of magma for Brasa
+        vbox(pp.stone, 0, 0.16, 0, 0.62, 0.32, 0.62, '#5e5650'); vbox(pp.stone, 0, 0.35, 0, 0.72, 0.06, 0.72, '#6a625a');
+        for (const [a, b] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) vbox(pp.stone, a, 0.42, b, 0.08, 0.1, 0.08, '#7a7068');
+        merge(pp, G);
+        const item = new THREE.Group(); item.position.y = 0.55; G.add(item);
+        if (relicKind === 0) {
+          const ip = P(); vbox(ip.bark, 0, 0.1, 0, 0.22, 0.2, 0.2, '#7a5a30'); vbox(ip.bark, 0, 0.22, 0, 0.14, 0.06, 0.14, '#8a6a3a'); merge(ip, item);
+          const sprout = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.05), GLOW.mush); sprout.position.y = 0.32; item.add(sprout);
+          const d = lightDecal(1.6, '#90ff90'); d.position.y = 0.02; G.add(d);
+        } else {
+          const heart = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.24), GLOW.flame); heart.position.y = 0.12; heart.rotation.set(0.6, 0.6, 0); item.add(heart);
+          const core = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), GLOW.flameCore); core.position.y = 0.12; item.add(core);
+          const d = lightDecal(2.2, '#ff9040'); d.position.y = 0.02; G.add(d);
+        }
+        root.add(G); v.gift = item; break;
       }
       case 'Y': {
         vbox(pp.stone, 0, 0.18, 0, 0.5, 0.36, 0.5, '#5e5650'); vbox(pp.stone, 0, 0.38, 0, 0.6, 0.06, 0.6, '#6a625a');

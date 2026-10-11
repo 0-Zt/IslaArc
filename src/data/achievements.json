@@ -185,5 +185,16 @@
       5,
       9
     ]
+  },
+  {
+    "id": "hierba",
+    "name": "Jardinero de la cueva",
+    "desc": "Hierba alta cortada por Musgo",
+    "stat": "hierba",
+    "tiers": [
+      10,
+      40,
+      120
+    ]
   }
 ]

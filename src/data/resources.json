@@ -54,5 +54,10 @@
     "name": "Cuarzo",
     "hidden": true,
     "nohud": true
+  },
+  "obsidiana": {
+    "name": "Obsidiana",
+    "hidden": true,
+    "nohud": true
   }
 }

@@ -433,3 +433,11 @@ body.incave #labels,body.incave #bottom{display:none}
 .bNum{position:fixed;z-index:7;transform:translate(-50%,-50%);font-family:var(--display);font-size:22px;font-weight:700;pointer-events:none;animation:bnum 1.1s ease-out forwards;text-shadow:0 2px 0 #000,0 0 6px #000}
 .bNum.dmg{color:#ff7a5a}.bNum.heal{color:#9ae87a}.bNum.cool{color:#9ad8ff}
 @keyframes bnum{0%{opacity:0;margin-top:8px}15%{opacity:1}100%{opacity:0;margin-top:-46px}}
+/* who goes first in the cave (v0.17) */
+#cvWho{position:fixed;right:24px;bottom:calc(128px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;z-index:5}
+#cvWho:empty{display:none}
+#cvWho button{width:46px;height:46px;border-radius:50% 50% 44% 44%;background:var(--c);border:2.5px solid #0006;color:#2a1a10;display:grid;place-items:center;box-shadow:inset -5px -6px 0 #0003,inset 4px 4px 0 #fff4,0 3px 0 #0006;opacity:.75;transition:transform .15s,opacity .15s}
+#cvWho button b{font-family:var(--display);font-size:18px}
+#cvWho button.on{opacity:1;border-color:var(--sun);transform:scale(1.12);box-shadow:inset -5px -6px 0 #0003,inset 4px 4px 0 #fff4,0 0 0 3px #f2c14e66}
+#caveUI.fight #cvWho{display:none}
+@media (max-width:520px){#cvBar{right:84px;max-width:none}#cvBar span{min-width:0}}

@@ -54,7 +54,7 @@ export function completeMark(m: Mark, by?: string) {
   const t = m.tile;
   removeMark(m);
   // Musgo's green thumb: his seedlings start a stage ahead
-  if (m.kind === 'plant') { startGrowth(t, m.type || 'roble', by === 'musgo' ? 1 : 0); emit('planted'); emit('forestChanged'); }
+  if (m.kind === 'plant') { startGrowth(t, m.type || 'roble', by === 'musgo' ? (S.flags.semilla ? 2 : 1) : 0); emit('planted'); emit('forestChanged'); }
   else { setPath(t); emit('pathsChanged', t); }
 }
 

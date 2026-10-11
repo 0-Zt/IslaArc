@@ -125,7 +125,7 @@ export function scareBats(p: THREE.Vector3, radius = 3.2) {
 }
 
 let darkAcc = 0, idleBat = 8;
-export function tickLife(dt: number, T: number, lead: THREE.Vector3, lights: Light[]) {
+export function tickLife(dt: number, T: number, lead: THREE.Vector3, lights: Light[], leadR = 4.6) {
   if (!on) return;
   // ---- bats
   idleBat -= dt;
@@ -226,7 +226,7 @@ export function tickLife(dt: number, T: number, lead: THREE.Vector3, lights: Lig
     x.fillStyle = gr; x.beginPath(); x.arc(px, pz, pr, 0, Math.PI * 2); x.fill();
   };
   const flick = 1 + Math.sin(T * 9) * 0.03 + Math.sin(T * 23) * 0.02;
-  hole(lead.x, lead.z, 4.6 * flick);
+  hole(lead.x, lead.z, leadR * flick);
   for (const l of lights) hole(l.x, l.z, l.r, 0.9);
   for (const u of bugs) hole(u.x, u.z, 0.55, 0.5);
   darkTex.needsUpdate = true;

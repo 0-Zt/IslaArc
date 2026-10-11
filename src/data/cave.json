@@ -23,7 +23,13 @@
     "g": "gólem dormido",
     "*": "estalagmita",
     "X": "pared agrietada (se rompe con el pico)",
-    "Y": "reliquia escondida"
+    "Y": "reliquia escondida",
+    "V": "enredadera (solo Musgo la aparta)",
+    "h": "hierba alta (solo Musgo la corta; vuelve a crecer)",
+    "b": "suelo de brasas (solo Brasa camina encima)",
+    "=": "grieta (Arci tiende un puente de tablas; Musgo, de raíces)",
+    "o": "veta de obsidiana",
+    "U": "regalo de los Alfareros (mejora de una figura)"
   },
   "floors": [
     {
@@ -31,19 +37,19 @@
       "intro": "Aire tibio y olor a piedra quemada. En la penumbra se ven dos braseros apagados y una puerta con runas.",
       "door": "braseros",
       "map": [
-        "################",
-        "#######>########",
-        "#######.########",
-        "#######D########",
-        "###.....,..L####",
-        "##t.....########",
-        "##......BO.t####",
-        "##..,...########",
-        "###..C.....K####",
-        "####.....M.,####",
-        "#####X#R########",
-        "#####Y#S########",
-        "################"
+        "########################",
+        "#######>################",
+        "#######.################",
+        "#######D################",
+        "###.....,..L############",
+        "##t.....################",
+        "##......BO.t######,hh###",
+        "##..,...#########hh,,h##",
+        "###..C.....K####h,,C,hh#",
+        "####.....M.,V..,,,,U,h##",
+        "#####X#R#########hh,,h##",
+        "#####Y#S##########hhh###",
+        "########################"
       ],
       "decor": {
         "mushrooms": [
@@ -58,6 +64,26 @@
           [
             4,
             4
+          ],
+          [
+            20,
+            7
+          ],
+          [
+            17,
+            8
+          ],
+          [
+            21,
+            9
+          ],
+          [
+            18,
+            10
+          ],
+          [
+            19,
+            6
           ]
         ],
         "stalagmites": [
@@ -83,6 +109,12 @@
         "id": "figurita",
         "name": "Figurita sin cocer",
         "text": "Una figurita de arcilla cruda, del tamaño de una mano, con la cara apenas marcada. Nunca pasó por el fuego.\n\nTiene una runa en la espalda: la misma que lleva Arci."
+      },
+      "upgrade": {
+        "id": "semilla",
+        "who": "musgo",
+        "name": "Semilla antigua",
+        "text": "Una semilla del tamaño de un puño, dura como piedra y tibia por dentro. Musgo la sostiene y la semilla late.\n\nMusgo aprende **Raíces**: puede hacer crecer un puente de raíces sobre las grietas, sin gastar tablas. En la isla, lo que planta nace dos pasos más crecido."
       }
     },
     {
@@ -90,21 +122,21 @@
       "intro": "Cuatro guardianas rodean un altar. Ninguna lo mira. Algunas parecen tomadas de la mano con la del frente.",
       "door": "estatuas",
       "map": [
-        "#################",
-        "########>########",
-        "########D########",
-        "####C........####",
-        "###.....s.....###",
-        "###..........####",
-        "###.s...A...Gs###",
-        "###..........####",
-        "###.....s.....###",
-        "###.........M.###",
-        "###.B...P..,..###",
-        "####K.L.......###",
-        "#######...##X####",
-        "########S###Y####",
-        "#################"
+        "##########################",
+        "########>#################",
+        "########D#################",
+        "####C........#############",
+        "###.....s.....############",
+        "###..........#############",
+        "###.s...A...Gs############",
+        "###..........###.*..,..###",
+        "###.....s.....##......K###",
+        "###.........M..=..,....###",
+        "###.B...P..,..##...*..L###",
+        "####K.L.......###..,...###",
+        "#######...##X#############",
+        "########S###Y#############",
+        "##########################"
       ],
       "statues": [
         {
@@ -169,6 +201,19 @@
         "id": "molde",
         "name": "Molde de manos",
         "text": "Un molde de piedra con la forma de dos manos chicas, gastado de tanto usarlo.\n\nAlguien hizo muchas figuras con este molde. Muchas más de las que hay en tu isla."
+      },
+      "chestAt": {
+        "22,8": {
+          "gives": {
+            "lingote": 5,
+            "vidrio": 4,
+            "ladrillo": 6
+          },
+          "stars": 2
+        }
+      },
+      "loreAt": {
+        "22,10": "«Hicimos cuatro, y a cada uno le dimos una isla: a la de tierra, la cantera; a la de planta, la selva; al de fuego, la montaña que arde; a la de agua, el faro. Juntas pueden ir a donde ninguna llega sola.» — mural de los Alfareros"
       }
     },
     {
@@ -176,22 +221,22 @@
       "intro": "El calor aprieta. La lava corre de lado a lado; las rocas sueltas tal vez sirvan de puente.",
       "door": "",
       "map": [
-        "###################",
-        "########Q##########",
-        "######....L########",
-        "#####g......,######",
-        "####..........K####",
-        "####~~~~~~~~~~~####",
-        "####~~~~~~~~~~~####",
-        "####....B......####",
-        "##YX.....B.....####",
-        "####.........M.####",
-        "####~~~~~~~~~~~####",
-        "####......B...*####",
-        "####.,.........####",
-        "#####.L.....C.#####",
-        "########S##########",
-        "###################"
+        "############################",
+        "########Q###################",
+        "######....L#################",
+        "#####g......,###############",
+        "####..........K#############",
+        "####~~~~~~~~~~~#############",
+        "####~~~~~~~~~~~#############",
+        "####....B......#############",
+        "##YX.....B.....#############",
+        "####.........M.#############",
+        "####~~~~~~~~~~~####bo~~bb###",
+        "####......B...*####bb~~bU###",
+        "####.,.........bbbbbbbbbb###",
+        "#####.L.....C.#####obb~bb###",
+        "########S###################",
+        "############################"
       ],
       "decor": {
         "mushrooms": [
@@ -220,6 +265,12 @@
         "id": "sello",
         "name": "Sello del horno",
         "text": "Un sello de bronce con un faro grabado y una palabra en runas que Brasa sabe leer: «volver».\n\nLos Alfareros sellaban así lo que cocían en la montaña."
+      },
+      "upgrade": {
+        "id": "corazon",
+        "who": "brasa",
+        "name": "Corazón de magma",
+        "text": "Un corazón de roca fundida que no se enfría nunca. Brasa lo toma con las dos manos y se lo guarda en el pecho: sus grietas brillan más fuerte.\n\nAhora la luz de Brasa llega mucho más lejos en la oscuridad. En la isla, al picar roca funde mineral el doble de seguido. Y quizás abra algo que antes no se abría…"
       }
     }
   ],
