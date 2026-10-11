@@ -18,6 +18,7 @@ import { runeSVG } from '../assets/ruins';
 import { LORE_TEXT } from '../game/beach';
 import { STORY, startFishing } from '../game/fishing';
 import { startSailing, hasRaft } from '../game/raft';
+import { enterZone } from '../game/cave';
 import { assignIdleBuilder } from '../game/crew';
 import { ICONS } from '../assets/buildings';
 import { $, img, toast } from './hud';
@@ -125,6 +126,7 @@ function render() {
     h += `<h2>Muelle</h2><p>Desde la punta se pesca lo que el mar devuelve.${raft ? ' La balsa de Marea espera amarrada al final.' : ''}</p>`
       + `<div class="row"><div class="thumb">${ICONS.anzuelo}</div><div class="info"><b>Pescar desde el muelle</b><small>Orilla y aguas medias. Lanza cerca de una sombra y toca cuando el corcho se hunda.</small></div><button class="btn main" data-act="fish">Pescar</button></div>`
       + (raft ? `<div class="row"><div class="thumb"><img class="pix" src="${(XICON as any).balsa}" alt=""></div><div class="info"><b>Zarpar en la balsa</b><small>Toca el mar para navegar. En las manchas oscuras está lo más raro.</small></div><button class="btn main" data-act="sail">Zarpar</button></div>` : '')
+      + (S.flags.faroVisitado ? `<div class="row"><div class="thumb"><img class="pix" src="${(XICON as any).faro || (XICON as any).balsa}" alt=""></div><div class="info"><b>Ir a la isla del faro</b><small>La balsa ya conoce el paso entre las olas.</small></div><button class="btn main" data-act="faro">Viajar</button></div>` : '')
       + `<div class="row"><div class="info"><b>Colección del mar</b><small>Lo que ya sacaste y lo que falta.</small></div><button class="btn" data-act="coleccion">Ver</button></div>`
       + upgradeHTML(arg);
   } else if (type === 'taller' && arg) {
@@ -232,6 +234,7 @@ export function initSheetEvents() {
     if (b.dataset.recipe && arg) { if (!smelt(arg, b.dataset.recipe)) toast('No se puede ahora'); render(); return; }
     if (b.dataset.invent && arg) { const r = startInvention(b.dataset.invent, arg.jobs); if (r) toast(r); render(); return; }
     if (b.dataset.act === 'fish' && arg) { const m = arg; closeSheet(); const r = startFishing(m); if (r) toast(r); return; }
+    if (b.dataset.act === 'faro') { closeSheet(); enterZone('faro'); return; }
     if (b.dataset.act === 'sail' && arg) { const m = arg; closeSheet(); const r = startSailing(m); if (r) toast(r); return; }
     if (b.dataset.act === 'coleccion') { openDiario('mar'); return; }
     if (b.dataset.act === 'gfx') { openSheet('gfx'); return; }

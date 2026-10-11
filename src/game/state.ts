@@ -55,6 +55,7 @@ export interface State {
   lore: number[];                      // messages in bottles already read
   fish: Record<string, number>;        // what came out of the sea: item id → how many (the Sea collection)
   cave?: CaveSave;                     // the volcano cave (v0.15): entrance, floors, puzzles
+  faro?: CaveSave;                     // the lighthouse island (v0.18)
   done: boolean;
 }
 

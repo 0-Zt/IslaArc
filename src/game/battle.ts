@@ -20,9 +20,9 @@ const MOVES: Record<MoveId, { name: string; desc: string }> = {
   absorber: { name: 'Absorber calor', desc: 'Se traga 9 de calor y recupera 5 de vida' },
   avivar: { name: 'Avivar', desc: 'El próximo ataque de otra figura pega ×1,6' },
 };
-const KIT: Record<string, MoveId[]> = { arci: ['pico', 'cubrir'], musgo: ['musgo', 'brotes'], brasa: ['absorber', 'avivar'] };
-const HP: Record<string, number> = { arci: 40, musgo: 34, brasa: 38 };
-const NAME: Record<string, string> = { arci: 'Arci', musgo: 'Musgo', brasa: 'Brasa' };
+const KIT: Record<string, MoveId[]> = { arci: ['pico', 'cubrir'], musgo: ['musgo', 'brotes'], brasa: ['absorber', 'avivar'], marea: ['musgo', 'brotes'] };
+const HP: Record<string, number> = { arci: 40, musgo: 34, brasa: 38, marea: 34 };
+const NAME: Record<string, string> = { arci: 'Arci', musgo: 'Musgo', brasa: 'Brasa', marea: 'Marea' };
 const MAX_HEAT = 100;
 
 type IntentId = 'puno' | 'pisoton' | 'ola' | 'puno2' | 'recalentar';

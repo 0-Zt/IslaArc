@@ -40,6 +40,8 @@ import './game/economy';
 import { capOf } from './game/state';
 import { tickCave, caveActive, enterCave, exitCave, caveAct, caveState, caveDebugFloor, switchLeader, tapCell, caveStepDir, caveFace, caveHold } from './game/cave';
 import { placeCaveMouth, tickCaveMouth, mouth, mouthTap } from './game/cavemouth';
+import { tickIslandLife } from './world/zonelife';
+import { setExitPoint, enterZone, zoneId } from './game/cave';
 import { GOALS } from './game/goals';
 
 const SEED = 4242;
@@ -82,6 +84,7 @@ function newGame(state: typeof S | null) {
   spawnCrew('arci', start);
   if (S.flags.musgoFree && grove) spawnCrew('musgo', grove.center);
   if (S.ruins.awake && brasaSpot()) spawnCrew('brasa', brasaSpot()!);
+  if (S.crew.includes('marea')) { const p = pierTile(); if (p) spawnCrew('marea', p); }
   checkReach(start, bfs, true);
   controls.target.set(start.wx, 0.5, start.wz);
   camera.position.set(start.wx + 18, 18, start.wz + 18);
@@ -125,6 +128,20 @@ on('marksChanged', () => persist());
 on('pathsChanged', () => { buildTerrain(); rebuildDeco(); buildForestEdge(); persist(); });
 on('goalAdvanced', () => persist());
 on('caveChanged', () => persist());
+/* Marea arrives home with the team: she waits by the pier */
+function pierTile(): Tile | null {
+  const m = buildings.find(b => b.type === 'muelle'); if (!m) return null;
+  for (const t of m.tiles) for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const q = tileAt(t.i + a, t.j + b); if (q && walkable(q) && !m.tiles.includes(q)) return q; }
+  return null;
+}
+setExitPoint(() => { const p = pierTile(); return p ? new THREE.Vector3(p.wx, 0.5, p.wz) : null; }, 'faro');
+on('mareaJoins', () => {
+  if (crew.some(c => c.id === 'marea')) return;
+  const p = pierTile() || tileUnder(crew[0].root.position.x, crew[0].root.position.z); if (!p) return;
+  const m = spawnCrew('marea', p); m.anim = 'wave'; m.t = 0;
+  setTimeout(() => { if (!m.job) m.anim = 'idle'; }, 2600);
+  toast('Marea pisa tu isla por primera vez. Se queda mirando el muelle.'); persist();
+});
 
 $('clock').addEventListener('click', () => {
   const m = Math.max(1, Math.round(minutesToNight()));
@@ -200,6 +217,7 @@ function frame(now: number) {
   tickSea(dt, T);
   tickCaveMouth(dt, T);
   tickCave(dt, T);
+  tickIslandLife(dt, T, controls.target, !!zoneId() || sailingActive());
   tickPointer(dt, T, sheetOpen());
   uiAcc += dt; if (uiAcc > 0.25) { refreshHUD(uiAcc); refreshSheet(); uiAcc = 0; }
   tickWater(T);
@@ -225,6 +243,6 @@ if (location.hash === '#debug') {
     step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickRaft(0.05, T); tickCaveMouth(0.05, T); tickCave(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
     scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, cancelFly, startSailing, fishHere, goBack, sailState, DEEP, sailTo: (x: number, z: number) => { const r = new THREE.Raycaster(); r.ray.origin.set(x, 5, z); r.ray.direction.set(0, -1, 0); return sailTap(r); }, startFishing, stopFishing, castAt, fishState, useBait, fishShadows, bestShadow, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
-    enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold, caveActive, mouthTap, blowShell, switchLeader, battleState, battleChoose, mouth: () => mouth && { i: mouth.tile.i, j: mouth.tile.j, open: mouth.open, x: mouth.tile.wx, z: mouth.tile.wz },
+    enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold, caveActive, mouthTap, blowShell, switchLeader, enterZone, zoneId, battleState, battleChoose, mouth: () => mouth && { i: mouth.tile.i, j: mouth.tile.j, open: mouth.open, x: mouth.tile.wx, z: mouth.tile.wz },
   };
 }

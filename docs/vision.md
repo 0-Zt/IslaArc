@@ -54,7 +54,7 @@ Cada figura nueva llega con una zona, una habilidad en la isla y un papel en com
 | Arci | Despierta sola (cap. 1) | Construye más rápido · afuera: empuja rocas, tiende puentes | Tierra: golpes y cubrir | Hecho |
 | Musgo | Enterrado en el claro (cap. 2) | Planta, cuida el bosque · afuera: enredaderas, hierba alta, raíces (semilla antigua) | Planta: curar y enfriar | Hecho |
 | Brasa | Santuario del islote (cap. 3) | Funde mineral, aviva el horno · afuera: suelo de brasas, luz (corazón de magma) | Fuego: absorber calor, potenciar | Hecho |
-| Marea | La isla del faro (cap. 9) | Pesca mejor, lee el mar | Agua | Próximo |
+| Marea | La isla del faro (cap. 10) | Pesca mejor · afuera: camina por el agua | Agua | Hecho |
 | El gólem | Guardián de la cueva | Se queda cuidando la montaña; más adelante quizá ayude a mover rocas grandes | Roca | Calmado en v0.16 |
 | Espectro | Barco fantasma (de noche) | Trabaja de noche | Noche: esquivar | Idea |
 
@@ -136,8 +136,8 @@ Antes de agregar algo, cuatro preguntas. Si responde que sí a dos o más, entra
 | v0.15 | La cueva del volcán | Cap. 7 |
 | v0.16 · hecho | **El guardián:** cueva con vida, reliquias, combate con el gólem, la caracola abre las olas | Cap. 8 |
 | v0.17 · hecho | **Cada figura cuenta:** elegir quién va adelante, habilidades de campo, zonas nuevas de la cueva por figura, hierba alta, recursos que vuelven a crecer, semilla antigua, corazón de magma, obsidiana | Cap. 9 |
-| **v0.18** | **La isla del faro:** Marea, el mapa del mar, el archipiélago se abre | Cap. 10 |
-| v0.19 | **La Isla Ardiente:** la puerta de lava del islote, la isla de Brasa | Cap. 11 |
+| v0.18 · hecho | **La isla del faro:** primera isla exterior, Marea se une (agua), lente en tres trozos (uno por figura), pasto que se mece, luciérnagas, gaviotas y cangrejos | Cap. 10 |
+| **v0.19** | **La Isla Ardiente:** la puerta de lava del islote, la isla de Brasa | Cap. 11 |
 | v0.20 | **La Selva Enredada:** la isla de Musgo | Cap. 12 |
 | v0.21 | **Las Profundidades y economía 2:** pisos que cambian, figuras asignadas a edificios, trueques | — |
 | Después | **El origen:** la ciudad de los Alfareros, el Espectro, el final | — |

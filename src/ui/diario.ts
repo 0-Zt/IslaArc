@@ -119,11 +119,11 @@ const TEAM = [
   { id: 'arci', name: 'Arci', color: '#c98655', skill: 'Manos de alfarera', desc: 'Construye un 50 % más rápido que las demás.', how: 'Está desde el principio.' },
   { id: 'musgo', name: 'Musgo', color: '#7e9c58', skill: 'Pulgar verde', desc: 'Lo que planta nace un paso más crecido, al talar suelta el doble de semillas y en el bosque los tocones que deja rebrotan antes.', how: 'Duerme enterrado en el claro de los árboles antiguos.' },
   { id: 'brasa', name: 'Brasa', color: '#5c3d31', skill: 'Corazón de brasa', desc: 'Al picar roca, a veces funde el mineral ahí mismo y sale un lingote. Si lo mandas al horno, aviva el fuego: todo sale el doble de rápido. De noche da luz.', how: 'Una estatua en las ruinas, mar adentro.' },
-  { id: 'marea', name: 'Marea', color: '#4a7ab8', skill: '???', desc: '', how: 'Una figura azul pintada en una vasija, pescando desde una balsa mar adentro.', when: () => (S.fish.vasija || 0) >= 4 },
+  { id: 'marea', name: 'Marea', color: '#4a86c0', skill: 'Ojo de agua', desc: 'Lo que vive en el agua se acerca antes a su anzuelo, y desde más lejos.', how: 'Una figura azul pintada en una vasija, pescando desde una balsa mar adentro.', when: () => (S.fish.vasija || 0) >= 4 },
   { id: 'golem', name: 'El gólem', color: '#4a3a30', skill: 'Guardián de la montaña', desc: 'Se quedó cuidando el corazón del volcán. Gracias a él, la caracola grande ya calma las olas.', how: 'Duerme en el río de lava, junto al pedestal de la caracola.', when: () => !!S.cave?.caracola },
   { id: 'espectro', name: '???', color: '#6a7488', skill: '???', desc: 'Dicen que un barco aparece de noche cuando el faro está apagado.', how: 'Más adelante.' },
 ];
-const FIELD: Record<string, string> = { arci: 'empuja rocas, tiende puentes de tablas.', musgo: 'aparta enredaderas, corta la hierba alta.', brasa: 'camina sobre las brasas.' };
+const FIELD: Record<string, string> = { arci: 'empuja rocas, tiende puentes de tablas.', musgo: 'aparta enredaderas, corta la hierba alta.', brasa: 'camina sobre las brasas.', marea: 'camina por el agua baja.' };
 const UPS: Record<string, { flag: string; text: string }> = {
   musgo: { flag: 'semilla', text: 'Semilla antigua: puentes de raíces sobre las grietas, y lo que planta nace dos pasos más crecido.' },
   brasa: { flag: 'corazon', text: 'Corazón de magma: su luz llega lejos en la oscuridad, y funde mineral el doble de seguido.' },

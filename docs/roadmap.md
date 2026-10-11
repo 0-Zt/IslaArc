@@ -210,11 +210,24 @@ Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates p
 - **Capítulo 9 · Lo que sabe cada uno** (9 metas en 3 etapas, una por figura; premio +12 ★). El faro pasa a ser el capítulo 10.
 - Logro nuevo: **Jardinero de la cueva**.
 
+## La isla del faro (v0.18)
+
+- **Desembarcar:** por el paso entre las olas, cerca de la isla del faro aparece "Desembarcar". Después de la primera visita, el panel del muelle ofrece "Ir a la isla del faro" directo.
+- **Primera isla exterior** con el mismo modo de exploración de la cueva, pero de día y al aire libre: arena, pasto, palmeras, rocas en la costa, un muelle de madera, mar alrededor y un faro rojo y blanco.
+- **Marea espera junto al faro.** La lente se rompió en tres y cada trozo pide a una figura: uno en el **pasto alto** (Musgo), otro entre las **fumarolas** con vapor (Brasa) y el tercero en una roca al otro lado del agua, a la que se llega empujando una **roca al mar** para hacer un paso (Arci).
+- **Encender el faro:** arriba, en la linterna, se ponen los tres trozos. La luz gira y desde la isla principal se ve su haz de noche.
+- **Marea se une** como cuarta figura: en exploración **camina por el agua**; en la isla, **pesca mejor** (lo que vive en el agua se acerca antes y desde más lejos) y prefiere ser ella la que pesca.
+- **El islote de las conchas:** solo Marea llega por el agua; tiene un cofre y la primera vista de las otras islas.
+- **Más vida:** pasto que se mece con el viento (en el vértice, sin costo), mariposas de día, **luciérnagas de noche** (pocas, también en la isla principal), gaviotas que dan vueltas, cangrejos que arrancan de lado, vapor de las fumarolas, olas y espuma en la orilla.
+- **Mejor guía al tocar:** si tocas un lugar al que solo llega otra figura (detrás del agua, entre fumarolas o en el pasto), esa figura pasa adelante sola.
+- **Capítulo 10 · La isla del faro** (8 metas, 3 etapas; premio +15 ★). El capítulo 11, **La Isla Ardiente**, queda anunciado.
+- **GitHub:** el proyecto vive en github.com/0-Zt/IslaArc, con un flujo que publica el juego en GitHub Pages en cada versión.
+
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **Siguiente:** la isla del faro (v0.18) y después una isla para cada figura. El orden completo está en docs/vision.md y docs/plan-figuras.md.
+- **Siguiente:** la Isla Ardiente (v0.19) y la Selva Enredada (v0.20). El orden completo está en docs/vision.md y docs/plan-figuras.md.
 
 ## Decisiones tomadas
 

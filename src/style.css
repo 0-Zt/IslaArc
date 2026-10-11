@@ -441,3 +441,4 @@ body.incave #labels,body.incave #bottom{display:none}
 #cvWho button.on{opacity:1;border-color:var(--sun);transform:scale(1.12);box-shadow:inset -5px -6px 0 #0003,inset 4px 4px 0 #fff4,0 0 0 3px #f2c14e66}
 #caveUI.fight #cvWho{display:none}
 @media (max-width:520px){#cvBar{right:84px;max-width:none}#cvBar span{min-width:0}}
+body.incave #sheet{z-index:7}

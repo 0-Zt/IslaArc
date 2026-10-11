@@ -170,7 +170,7 @@ export function startFishing(b: Building): string | null {
   if (!isDone(b)) return 'El muelle todavía está en obra';
   const sel = selected ? crew.find(c => c.id === selected) : null;
   const tip = pierTip(b);
-  const who = sel || [...crew].sort((p, q) => (p.job ? 1 : 0) - (q.job ? 1 : 0) || p.root.position.distanceTo(tip) - q.root.position.distanceTo(tip))[0];
+  const who = sel || crew.find(c => c.id === 'marea' && !c.job) || [...crew].sort((p, q) => (p.job ? 1 : 0) - (q.job ? 1 : 0) || p.root.position.distanceTo(tip) - q.root.position.distanceTo(tip))[0];
   if (!who) return 'No hay nadie para pescar';
   // the session exists before the order: a figure already next to the pier arrives at once
   ses = { c: who, b, sp: () => pierSpot(b), onEnd: null, st: 'walking', t: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), target: null, nibbles: 0, next: 0, dip: 0, look: 0, item: null, story: [], cam: { target: controls.target.clone(), zoom: camera.zoom, off: cameraOffset() } };
@@ -305,6 +305,7 @@ function hook() {
   land();
 }
 function land() {
+  if (ses?.c.id === 'marea' && !S.flags.pescaMarea) { S.flags.pescaMarea = true; emit('changed'); }
   const s = ses!; const sh = s.target; const id = s.item!;
   if (sh) { puff(sh.x, WATER_Y + 0.1, sh.z, '#bfe6ff', 12, 2.2, 1.4); removeShadow(sh); }
   s.target = null; bobber.visible = line.visible = false; s.c.swing = 0;
@@ -404,15 +405,17 @@ export function tickFishing(dt: number, T: number) {
       s.look -= dt;
       if (s.look <= 0) {
         s.look = 0.5;
-        const near = shadows.filter(sh => sh.mode === 'wander' && Math.hypot(sh.x - s.to.x, sh.z - s.to.z) < (sh.special ? 3.5 : 2.4)).sort((a, b) => Math.hypot(a.x - s.to.x, a.z - s.to.z) - Math.hypot(b.x - s.to.x, b.z - s.to.z))[0];
-        if (near && Math.random() < 0.6) { s.target = near; near.mode = 'approach'; s.st = 'approach'; bar(); }
+        // Marea reads the water: things come to her line from farther and sooner
+        const mk = s.c.id === 'marea' ? 1.6 : 1;
+        const near = shadows.filter(sh => sh.mode === 'wander' && Math.hypot(sh.x - s.to.x, sh.z - s.to.z) < (sh.special ? 3.5 : 2.4) * mk).sort((a, b) => Math.hypot(a.x - s.to.x, a.z - s.to.z) - Math.hypot(b.x - s.to.x, b.z - s.to.z))[0];
+        if (near && Math.random() < (mk > 1 ? 0.95 : 0.6)) { s.target = near; near.mode = 'approach'; s.st = 'approach'; bar(); }
       }
       break;
     }
     case 'approach': {
       const sh = s.target; if (!sh) { s.st = 'wait'; break; }
       bobber.position.set(s.to.x, WATER_Y + Math.sin(T * 3) * 0.01, s.to.z);
-      moveTo(sh, s.to.x, s.to.z, 0.45 * dt);
+      moveTo(sh, s.to.x, s.to.z, (s.c.id === 'marea' ? 0.75 : 0.45) * dt);
       if (Math.hypot(sh.x - s.to.x, sh.z - s.to.z) < 0.25) { s.st = 'nibble'; s.nibbles = 1 + Math.floor(Math.random() * (sh.size === 'l' ? 4 : 3)); s.next = 0.9 + Math.random() * 0.9; bar(); }
       break;
     }

@@ -5,7 +5,8 @@ import { S } from './state';
 import { buildings, isDone, type Building } from './buildings';
 import { crew, order, select, selected, finishTask, type Crew } from './crew';
 import { tileAt, tileUnder, walkable, topY, DIRS, N } from '../world/island';
-import { deepAt, surgeAt, outOfSea, nearWaves, pastWaves, calmWaves } from '../world/sea';
+import { deepAt, surgeAt, outOfSea, nearWaves, pastWaves, calmWaves, nearFaro } from '../world/sea';
+import { enterZone } from './cave';
 import { startSpotFishing, setRaftSpot, fishingActive, stopFishing, pierTip, type Spot } from './fishing';
 import { modelBalsa } from '../assets/buildings';
 import { puff } from '../world/particles';
@@ -224,7 +225,7 @@ export function tickRaft(dt: number, T: number) {
   { const off = s.pos.clone().sub(controls.target).setY(0); if (off.length() > 0.3) { const delta = off.multiplyScalar(Math.min(1, dt * 2.2)); controls.target.add(delta); camera.position.add(delta); } }
   // through the open lane: land in sight
   if (!S.flags.cruzoOlas && pastWaves(s.pos.x, s.pos.z)) { S.flags.cruzoOlas = true; sfx('level'); setTimeout(() => emit('story', 'cruzar'), 600); emit('changed'); }
-  if (nearWaves(s.pos.x, s.pos.z) !== s.nearW) { s.nearW = nearWaves(s.pos.x, s.pos.z); bar(); }
+  { const nw = nearWaves(s.pos.x, s.pos.z) || nearFaro(s.pos.x, s.pos.z); if (nw !== s.nearW) { s.nearW = nw; bar(); } }
   // dark water: the first time is worth a note
   const dz = deepAt(s.pos.x, s.pos.z), name = dz?.name || '';
   if (name !== s.deep) { s.deep = name; if (name && !S.flags.hondo) { S.flags.hondo = true; emit('toast', 'El agua aquí es oscura y fría. Lo que hay abajo nunca vio la luz.'); emit('changed'); } bar(); }
@@ -239,9 +240,10 @@ function el() {
   let e = document.getElementById('sailBar');
   if (e) return e;
   e = document.createElement('div'); e.id = 'sailBar'; e.hidden = true; document.body.appendChild(e);
-  e.innerHTML = '<span></span><div class="fbtns"><button id="sShell" hidden>Soplar la caracola</button><button id="sFish">Pescar aquí</button><button id="sBack">Volver</button></div>';
+  e.innerHTML = '<span></span><div class="fbtns"><button id="sLand" hidden>Desembarcar</button><button id="sShell" hidden>Soplar la caracola</button><button id="sFish">Pescar aquí</button><button id="sBack">Volver</button></div>';
   e.querySelector('#sFish')!.addEventListener('click', ev => { ev.stopPropagation(); fishHere(); });
   e.querySelector('#sShell')!.addEventListener('click', ev => { ev.stopPropagation(); blowShell(); });
+  e.querySelector('#sLand')!.addEventListener('click', ev => { ev.stopPropagation(); landAtFaro(); });
   e.querySelector('#sBack')!.addEventListener('click', ev => { ev.stopPropagation(); goBack(); });
   return e;
 }
@@ -259,7 +261,16 @@ function bar() {
   shell.hidden = !(S.cave?.caracola && s.mode === 'sailing' && !s.target && nearWaves(s.pos.x, s.pos.z) && !S.flags.olasAbiertas);
   (e.querySelector('#sFish') as HTMLButtonElement).hidden = !shell.hidden;
   if (!shell.hidden) e.querySelector('span')!.textContent = 'Las olas grandes rugen.';
+  const land = e.querySelector('#sLand') as HTMLButtonElement;
+  land.hidden = !(s.mode === 'sailing' && !s.target && nearFaro(s.pos.x, s.pos.z));
+  if (!land.hidden) { e.querySelector('span')!.textContent = 'La isla del faro, al alcance.'; (e.querySelector('#sFish') as HTMLButtonElement).hidden = true; }
   e.classList.toggle('deep', !!s.deep);
+}
+/** Steps ashore on the lighthouse island: the raft is tied there and the team goes exploring. */
+export function landAtFaro() {
+  const s = sail; if (!s) return;
+  disembark();
+  enterZone('faro');
 }
 /** The big shell, blown at the waves from the raft. */
 export function blowShell() {

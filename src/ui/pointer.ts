@@ -57,6 +57,7 @@ const idleAt = (b: Building | undefined) => b && !b.jobs?.length ? overBuilding(
 
 const FISH_GOALS = new Set(['pescar1', 'pescar6', 'vasija', 'algas', 'llave', 'cofre', 'coleccion', 'hondo1', 'cobre', 'brujula', 'timon']);
 const CAVE_GOALS = new Set(['grieta', 'bajar', 'cvBraseros', 'cvSalon', 'cvEstatuas', 'cvRio', 'cvCruzar', 'cvCaracola', 'volverCueva', 'golem', 'fLider', 'fEnredadera', 'fSemilla', 'fPuente', 'fMural', 'fBrasas', 'fCorazon', 'fObsidiana']);
+const FARO_GOALS = new Set(['faroMarea', 'faroPasto', 'faroVapor', 'faroRoca', 'faroLuz', 'faroAgua']);
 const SEA_GOALS = new Set(['zarpar', 'hondo', 'hondo1', 'cobre', 'brujula', 'olas', 'timon', 'soplar', 'abrir', 'cruzar']);
 /** Out at sea: towards the nearest dark water, or the big waves. */
 function seaTarget(goal: string): THREE.Vector3 | null {
@@ -71,6 +72,11 @@ function seaTarget(goal: string): THREE.Vector3 | null {
 export function pointerTarget(): THREE.Vector3 | null {
   const g = currentGoal(); if (!g) return null;
   if (caveActive()) return caveHint(g.id);
+  if (FARO_GOALS.has(g.id) || g.id === 'faroLlegar') {
+    if (sailingActive()) return g.id === 'faroLlegar' ? new THREE.Vector3(Math.cos(SURGE.angle) * 38, 0.9, Math.sin(SURGE.angle) * 38) : null;
+    const m = done('muelle'); return m ? overBuilding(m) : null;
+  }
+  if (g.id === 'faroPesca') { if (fishingActive()) return null; const m = done('muelle'); return m ? overBuilding(m) : null; }
   if (CAVE_GOALS.has(g.id)) {
     if (g.id === 'grieta' && !S.tools.pico) return done('casa') ? overBuilding(done('casa')!) : null;
     if (g.id === 'grieta' && busy('cueva')) return null;

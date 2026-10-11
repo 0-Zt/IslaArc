@@ -1,0 +1,113 @@
+{
+  "floors": [
+    {
+      "name": "La isla del faro",
+      "theme": "isla",
+      "intro": "Arena blanca, pasto alto y un faro apagado. Cerca de la puerta, una figura azul te mira como si te esperara hace mucho.",
+      "door": "",
+      "map": [
+        "wwwwwwwwwwwwwwwwwwwwwwww",
+        "wwwwwwwww###wwwwwwwwwwww",
+        "wwwww#...#F#...#wwwwwwww",
+        "wwwww.T...>....T.wwww#ww",
+        "wwwww.,,L...n.,..#ww::#w",
+        "wwww.........,....ww:K#w",
+        "wwwwhhhhh,...bbbbbwwwwww",
+        "www#hhhhh....bbbbb#wwwww",
+        "wwwwhphhh..,.bbbpbwwwwww",
+        "wwwwhhhhh....bbbbbwwwwww",
+        "wwwwhhhhh.,.......wwwwww",
+        "wwww:::..T......T##w##ww",
+        "wwww#:::::::::::::Bw:p#w",
+        "wwwww::::::::::::##w##ww",
+        "wwwwwww#::::::ww#wwwwwww",
+        "wwwwwwwwwwdwww#wwwwwwwww",
+        "wwwwwwwwwwSwwwwwwwwwwwww",
+        "wwwwwwwwwwwwwwwwwwwwwwww"
+      ],
+      "decor": {
+        "mushrooms": [],
+        "stalagmites": []
+      },
+      "lore": "«Faro de los Alfareros. Su luz guía a los que vuelven.» — letrero de madera",
+      "chest": {
+        "gives": {
+          "algas": 10,
+          "vidrio": 4
+        },
+        "stars": 1
+      },
+      "chestAt": {
+        "21,5": {
+          "gives": {
+            "algas": 12,
+            "cobre": 3,
+            "cuarzo": 3
+          },
+          "stars": 3,
+          "flag": "islaConchas"
+        }
+      },
+      "npc": [
+        12,
+        4
+      ],
+      "pieces": {
+        "5,8": {
+          "id": "piezaPasto",
+          "name": "Un trozo de la lente",
+          "text": "Entre la hierba, algo brilla: un trozo curvo de vidrio grueso, con el borde de bronce."
+        },
+        "16,8": {
+          "id": "piezaVapor",
+          "name": "Un trozo de la lente",
+          "text": "Entre el vapor de las fumarolas, un trozo de lente se mantiene tibio. Brasa lo levanta sin quemarse."
+        },
+        "21,12": {
+          "id": "piezaRoca",
+          "name": "Un trozo de la lente",
+          "text": "En la roca, encajado en una grieta, el último trozo de la lente. Brilla con el sol."
+        }
+      }
+    },
+    {
+      "name": "La linterna del faro",
+      "theme": "torre",
+      "intro": "Arriba, el viento silba. Un marco de bronce espera su lente.",
+      "door": "",
+      "map": [
+        "#########",
+        "###...###",
+        "##.....##",
+        "#...A...#",
+        "#.......#",
+        "##.....##",
+        "###.S.###",
+        "#########"
+      ],
+      "decor": {
+        "mushrooms": [],
+        "stalagmites": []
+      },
+      "lore": "",
+      "chest": {
+        "gives": {},
+        "stars": 0
+      }
+    }
+  ],
+  "story": {
+    "mareaHola": {
+      "title": "Marea",
+      "text": "«¡Por fin! Vi la luz de tu balsa entre las olas y supe que eras tú. Soy Marea.\n\nLlevo mucho esperando aquí: el faro se apagó en una tormenta y su lente se rompió en tres. Sin la luz, los que andan en el mar no encuentran el camino de vuelta.\n\nUn trozo cayó en el pasto alto, otro entre las fumarolas y el tercero en la roca del este, al otro lado del agua. Yo sola no llego a ninguno… pero ustedes son tres, y cada uno sabe algo distinto.»"
+    },
+    "faroLuz": {
+      "title": "La luz del faro",
+      "text": "Los tres trozos encajan en el marco y la lente se cierra con un clic. Marea gira la manivela: la luz se enciende y empieza a dar vueltas sobre el mar.\n\n«Desde tu isla se va a ver de noche», dice Marea. «Ahora sí puedo irme con ustedes. Sé moverme en el agua baja: donde ustedes se hunden, yo camino.»\n\nMarea se une al equipo."
+    },
+    "conchas": {
+      "title": "El islote de las conchas",
+      "text": "Marea camina por el agua como si fuera pasto y llega al islote. Entre las conchas hay un cofre viejo, con el sello de los Alfareros.\n\n«Desde aquí se ven las otras islas», dice. «La que humea es la Isla Ardiente. La verde, la Selva Enredada. Algún día iremos.»"
+    }
+  }
+}

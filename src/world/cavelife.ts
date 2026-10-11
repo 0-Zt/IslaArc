@@ -61,14 +61,16 @@ const group = new THREE.Group();
 group.add(sheet, batBody, batWing, batEye, bugBody, bugGlow, dust);
 let on = false, walk: Walk = () => false, lavaCells: [number, number][] = [], floor = 0, bubbleT = 1;
 const _o = new THREE.Object3D(), _m = new THREE.Matrix4(), _m2 = new THREE.Matrix4();
-const W = (x: number, z: number, y = 0) => new THREE.Vector3(CAVE_X + x, y, CAVE_Z + z);
+let OX = CAVE_X, OZ = CAVE_Z;
+const W = (x: number, z: number, y = 0) => new THREE.Vector3(OX + x, y, OZ + z);
 
 /** Sets up the life of a floor: where bats sleep, where beetles crawl, where water drips. */
-export function lifeStart(map: string[], fi: number, walkable: Walk) {
+export function lifeStart(map: string[], fi: number, walkable: Walk, ox = CAVE_X, oz = CAVE_Z) {
+  OX = ox; OZ = oz;
   lifeStop();
   on = true; walk = walkable; floor = fi;
   const Wd = map[0].length, Hd = map.length;
-  box = { x0: CAVE_X - 4, z0: CAVE_Z - 4, w: Wd + 8, h: Hd + 8 };
+  box = { x0: OX - 4, z0: OZ - 4, w: Wd + 8, h: Hd + 8 };
   sheet.scale.set(box.w, box.h, 1); sheet.position.set(box.x0 + box.w / 2, SHEET_Y, box.z0 + box.h / 2);
   const open = (x: number, z: number) => { const c = map[z]?.[x]; return !!c && c !== '#'; };
   const floorCells: [number, number][] = [];
@@ -88,7 +90,7 @@ export function lifeStart(map: string[], fi: number, walkable: Walk) {
   bugs = [];
   for (let k = 0; k < NG && floorCells.length; k++) {
     const [x, z] = floorCells[Math.floor(hash(k * 13, fi * 7, 5) * floorCells.length)];
-    bugs.push({ x: CAVE_X + x + 0.5, z: CAVE_Z + z + 0.5, a: Math.random() * 6.28, sp: 0.25 + Math.random() * 0.15, turn: 0, ph: Math.random() * 6 });
+    bugs.push({ x: OX + x + 0.5, z: OZ + z + 0.5, a: Math.random() * 6.28, sp: 0.25 + Math.random() * 0.15, turn: 0, ph: Math.random() * 6 });
   }
   const gc = fi === 2 ? [2.6, 1.1, 0.25] : fi === 1 ? [0.5, 1.6, 2.6] : [0.4, 2.2, 1.6]; bugGlowMat.color.setRGB(gc[0], gc[1], gc[2]);
   // water drips (not on the lava floor) into small puddles
@@ -99,7 +101,7 @@ export function lifeStart(map: string[], fi: number, walkable: Walk) {
       const pud = new THREE.Mesh(new THREE.CircleGeometry(0.22 + hash(x, z, 9) * 0.12, 14), new THREE.MeshBasicMaterial({ color: '#2a4050', transparent: true, opacity: 0.55, depthWrite: false }));
       pud.rotation.x = -Math.PI / 2; pud.position.copy(W(px, pz, 0.012)); group.add(pud);
       const m = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, 0.035), dropMat); m.renderOrder = 60; group.add(m);
-      drops.push({ m, x: CAVE_X + px, z: CAVE_Z + pz, y: 2.4, v: 0, wait: 0.5 + Math.random() * 3 });
+      drops.push({ m, x: OX + px, z: OZ + pz, y: 2.4, v: 0, wait: 0.5 + Math.random() * 3 });
     }
   }
   scene.add(group);
@@ -173,7 +175,7 @@ export function tickLife(dt: number, T: number, lead: THREE.Vector3, lights: Lig
     if (d < 1.7) { u.a = Math.atan2(dz, dx) + Math.sin(T * 9 + u.ph) * 0.3; sp = 1.1; }
     else { u.turn -= dt; if (u.turn <= 0) { u.turn = 0.6 + Math.random() * 1.6; u.a += (Math.random() - 0.5) * 2; } }
     const nx = u.x + Math.cos(u.a) * sp * dt, nz = u.z + Math.sin(u.a) * sp * dt;
-    if (walk(Math.floor(nx - CAVE_X), Math.floor(nz - CAVE_Z))) { u.x = nx; u.z = nz; } else u.a += Math.PI * (0.6 + Math.random() * 0.8);
+    if (walk(Math.floor(nx - OX), Math.floor(nz - OZ))) { u.x = nx; u.z = nz; } else u.a += Math.PI * (0.6 + Math.random() * 0.8);
     _o.position.set(u.x, 0.03, u.z); _o.rotation.set(0, -u.a + Math.PI / 2, 0); _o.scale.setScalar(1); _o.updateMatrix();
     bugBody.setMatrixAt(g, _o.matrix);
     const pulse = 0.8 + 0.4 * Math.sin(T * 3 + u.ph);

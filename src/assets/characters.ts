@@ -29,11 +29,12 @@ const clay = (hex: THREE.ColorRepresentation, extra?: ColorFn | null): ColorFn =
   return e == null ? shade(hex, k) : e;
 };
 
-export type CharId = 'arci' | 'musgo' | 'brasa';
+export type CharId = 'arci' | 'musgo' | 'brasa' | 'marea';
 export const CHAR_DEFS: Record<CharId, { name: string; color: string; glow?: boolean }> = {
   arci: { name: 'Arci', color: '#c98655' },
   musgo: { name: 'Musgo', color: '#7e9c58' },
   brasa: { name: 'Brasa', color: '#5c3d31', glow: true },
+  marea: { name: 'Marea', color: '#4a86c0' },
 };
 
 export function part(list: THREE.BufferGeometry[], mat: THREE.Material = MAT.clay) {
@@ -92,6 +93,7 @@ export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
   const T: THREE.BufferGeometry[] = [], TG: THREE.BufferGeometry[] = [];
   const bodyCrack = crackPaths(71, 6, 10), headCrack = crackPaths(59, 8, 12);
   const torsoExtra: ColorFn | null = id === 'musgo' ? (_nx, ny, _nz, rr) => (ny > 0.45 && rr() < 0.55 ? shade('#5f8a3a', 1 + (rr() - 0.5) * 0.2) : undefined)
+    : id === 'marea' ? (_nx, ny, _nz, rr) => { const w = Math.sin(ny * 22 + rr() * 0.6); return w > 0.82 ? shade('#d8f0ff', 1 + (rr() - 0.5) * 0.1) : rr() < 0.1 ? shade('#3a6ea8', 1) : undefined; }
     : id === 'brasa' ? (nx, ny, nz, rr, wx, wy, wz) => { if (bodyCrack(nx, ny, nz, 0.02)) { cbox(TG, wx, wy, wz, QC * 1.08, QC * 1.08, QC * 1.08, '#fff'); return shade('#2a1410', 1); } return rr() < 0.12 ? shade('#4a3028', 1 + (rr() - 0.5) * 0.2) : undefined; } : null;
   vsphere(T, 0, 0.36, 0, 0.19, 0.2, 0.16, clay(base, torsoExtra), r);
   vsphere(T, 0, 0.29, 0.03, 0.16, 0.12, 0.14, clay(base), r);
@@ -111,7 +113,8 @@ export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
   // head
   const head = new THREE.Group(); head.position.set(0, 0.66, 0); body.add(head);
   const H: THREE.BufferGeometry[] = [], G: THREE.BufferGeometry[] = [];
-  const headExtra: ColorFn | null = id === 'musgo' ? (_nx, ny, _nz, rr) => { const edge = ny + (rr() - 0.5) * 0.22; return edge > 0.3 ? shade(rr() < 0.2 ? '#79a84a' : '#5f8a3a', 1 + (rr() - 0.5) * 0.18) : undefined; }
+  const headExtra: ColorFn | null = id === 'marea' ? (_nx, ny, _nz, rr) => (ny > 0.55 + (rr() - 0.5) * 0.1 ? shade(rr() < 0.3 ? '#d8f0ff' : '#2f6aa8', 1) : undefined)
+    : id === 'musgo' ? (_nx, ny, _nz, rr) => { const edge = ny + (rr() - 0.5) * 0.22; return edge > 0.3 ? shade(rr() < 0.2 ? '#79a84a' : '#5f8a3a', 1 + (rr() - 0.5) * 0.18) : undefined; }
     : id === 'brasa' ? (nx, ny, nz, rr, wx, wy, wz) => {
       const face = nz > 0.55 && Math.abs(nx) < 0.6 && ny > -0.55 && ny < 0.45;
       if (!face && headCrack(nx, ny, nz, 0.016)) { cbox(G, wx, wy, wz, QC * 1.08, QC * 1.08, QC * 1.08, '#fff'); return shade('#2a1410', 1); }
@@ -129,6 +132,7 @@ export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
   }
   if (id === 'arci') { cbox(F, 0, -0.085, 0.25, 0.09, 0.028, 0.02, INK); cbox(F, -0.045, -0.07, 0.245, 0.025, 0.025, 0.02, INK); cbox(F, 0.045, -0.07, 0.245, 0.025, 0.025, 0.02, INK); for (const s of [1, -1]) cbox(F, 0.165 * s, -0.045, 0.19, 0.05, 0.03, 0.03, '#e39a7a'); }
   if (id === 'brasa') { cbox(F, 0, -0.095, 0.25, 0.06, 0.025, 0.02, '#1a0c08'); cbox(F, -0.04, -0.08, 0.248, 0.025, 0.025, 0.02, '#1a0c08'); cbox(F, 0.04, -0.08, 0.248, 0.025, 0.025, 0.02, '#1a0c08'); }
+  if (id === 'marea') { cbox(F, 0, -0.085, 0.25, 0.07, 0.025, 0.02, INK); cbox(F, -0.035, -0.072, 0.247, 0.02, 0.02, 0.02, INK); cbox(F, 0.035, -0.072, 0.247, 0.02, 0.02, 0.02, INK); for (const s of [1, -1]) cbox(F, 0.165 * s, -0.045, 0.19, 0.05, 0.03, 0.03, '#9ac8f0'); }
   if (id === 'musgo') { cbox(F, 0, -0.09, 0.25, 0.05, 0.025, 0.02, INK); for (const s of [1, -1]) cbox(F, 0.165 * s, -0.05, 0.19, 0.05, 0.03, 0.03, '#a8b86a'); }
   head.add(part(F));
   // accessories
@@ -155,6 +159,13 @@ export function buildFigure(id: CharId, blob: THREE.Texture): Figure {
     cbox(X, 0, 0.3, 0, 0.03, 0.1, 0.03, '#4f7a34'); cbox(X, 0.07, 0.36, 0, 0.1, 0.03, 0.05, '#8ccf5a'); cbox(X, -0.07, 0.36, 0, 0.1, 0.03, 0.05, '#8ccf5a'); cbox(X, 0, 0.39, 0, 0.03, 0.03, 0.03, '#a8e070');
     cbox(X, -0.21, 0.13, 0.08, 0.04, 0.07, 0.04, '#f0e6d0'); cbox(X, -0.21, 0.185, 0.08, 0.1, 0.045, 0.1, '#d9463c'); cbox(X, -0.23, 0.21, 0.1, 0.025, 0.02, 0.025, '#fff'); cbox(X, -0.19, 0.205, 0.05, 0.02, 0.02, 0.02, '#fff');
     cbox(X, 0.2, 0.17, -0.04, 0.03, 0.05, 0.03, '#f0e6d0'); cbox(X, 0.2, 0.205, -0.04, 0.07, 0.035, 0.07, '#e8a040'); cbox(X, 0.21, 0.225, -0.03, 0.02, 0.02, 0.02, '#fff');
+  }
+  if (id === 'marea') {
+    // a curl of wave on top and a small shell tucked over the ear
+    cbox(X, 0.02, 0.27, -0.02, 0.16, 0.06, 0.12, '#e8f6ff'); cbox(X, 0.09, 0.31, 0, 0.08, 0.06, 0.08, '#cfeaff'); cbox(X, 0.12, 0.27, 0.05, 0.05, 0.04, 0.05, '#e8f6ff');
+    cbox(X, -0.24, 0.1, 0.04, 0.07, 0.08, 0.05, '#f0d8c8'); cbox(X, -0.255, 0.13, 0.05, 0.05, 0.04, 0.04, '#e8c0b0');
+    // a scarf in the colour of foam
+    cbox(X, 0, -0.24, 0.02, 0.36, 0.05, 0.3, '#e8f6ff'); cbox(X, 0.1, -0.31, 0.16, 0.06, 0.12, 0.03, '#e8f6ff');
   }
   if (X.length) head.add(part(X));
   if (G.length) head.add(part(G, glowMat));

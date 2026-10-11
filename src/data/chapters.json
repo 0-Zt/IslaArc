@@ -529,8 +529,65 @@
   {
     "id": "faro",
     "title": "La isla del faro",
+    "desc": "Detrás de las olas abiertas, un faro apagado y una figura azul que espera. La lente se rompió en tres.",
+    "reward": {
+      "stars": 15,
+      "text": "Marea se une al equipo y +15 ★"
+    },
+    "stages": [
+      {
+        "name": "Tierra",
+        "n": 2
+      },
+      {
+        "name": "La lente",
+        "n": 4
+      },
+      {
+        "name": "Marea",
+        "n": 2
+      }
+    ],
+    "goals": [
+      {
+        "id": "faroLlegar",
+        "text": "Navega por el paso entre las olas y desembarca en la isla del faro"
+      },
+      {
+        "id": "faroMarea",
+        "text": "Habla con la figura azul que espera junto al faro"
+      },
+      {
+        "id": "faroPasto",
+        "text": "Con Musgo, busca el trozo de lente en el pasto alto"
+      },
+      {
+        "id": "faroVapor",
+        "text": "Con Brasa, busca el trozo de lente entre las fumarolas"
+      },
+      {
+        "id": "faroRoca",
+        "text": "Con Arci, empuja la roca al agua y llega al trozo del este"
+      },
+      {
+        "id": "faroLuz",
+        "text": "Sube al faro y pon los tres trozos en el marco ({pz}/3)"
+      },
+      {
+        "id": "faroAgua",
+        "text": "Con Marea, cruza el agua hasta el islote de las conchas"
+      },
+      {
+        "id": "faroPesca",
+        "text": "De vuelta en tu isla, pesca con Marea en el muelle"
+      }
+    ]
+  },
+  {
+    "id": "ardiente",
+    "title": "La Isla Ardiente",
     "locked": true,
-    "desc": "Detrás de las olas abiertas, la isla del faro. Allí esperan Marea y otros como tú. (Próximamente.)",
+    "desc": "Al norte del faro, una isla que humea. El santuario del islote guarda una puerta de lava que solo Brasa sabe abrir. (Próximamente.)",
     "goals": []
   }
 ]
