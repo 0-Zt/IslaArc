@@ -8,6 +8,7 @@ import { LORE_TEXT } from '../game/beach';
 import { INV } from '../game/production';
 import { ITEMS, sizeLabel } from '../game/fishing';
 import { XICON } from './hud';
+import { portrait } from './portraits';
 
 /* The island's diary: the route by chapters, the notice board requests and the achievements. */
 
@@ -119,7 +120,7 @@ const TEAM = [
   { id: 'arci', name: 'Arci', color: '#c98655', skill: 'Manos de alfarera', desc: 'Construye un 50 % más rápido que las demás.', how: 'Está desde el principio.' },
   { id: 'musgo', name: 'Musgo', color: '#7e9c58', skill: 'Pulgar verde', desc: 'Lo que planta nace un paso más crecido, al talar suelta el doble de semillas y en el bosque los tocones que deja rebrotan antes.', how: 'Duerme enterrado en el claro de los árboles antiguos.' },
   { id: 'brasa', name: 'Brasa', color: '#5c3d31', skill: 'Corazón de brasa', desc: 'Al picar roca, a veces funde el mineral ahí mismo y sale un lingote. Si lo mandas al horno, aviva el fuego: todo sale el doble de rápido. De noche da luz.', how: 'Una estatua en las ruinas, mar adentro.' },
-  { id: 'marea', name: 'Marea', color: '#4a86c0', skill: 'Ojo de agua', desc: 'Lo que vive en el agua se acerca antes a su anzuelo, y desde más lejos.', how: 'Una figura azul pintada en una vasija, pescando desde una balsa mar adentro.', when: () => (S.fish.vasija || 0) >= 4 },
+  { id: 'marea', name: 'Marea', color: '#4a86c0', skill: 'Ojo de agua', desc: 'Lo que vive en el agua se acerca antes a su anzuelo, y desde más lejos.', how: 'Una figura azul pintada en una vasija, pescando desde una balsa mar adentro.', when: () => (S.fish.vasija || 0) >= 4 || S.crew.includes('marea') },
   { id: 'golem', name: 'El gólem', color: '#4a3a30', skill: 'Guardián de la montaña', desc: 'Se quedó cuidando el corazón del volcán. Gracias a él, la caracola grande ya calma las olas.', how: 'Duerme en el río de lava, junto al pedestal de la caracola.', when: () => !!S.cave?.caracola },
   { id: 'espectro', name: '???', color: '#6a7488', skill: '???', desc: 'Dicen que un barco aparece de noche cuando el faro está apagado.', how: 'Más adelante.' },
 ];
@@ -135,7 +136,8 @@ function equipo() {
     const has = f.id === 'golem' ? !!S.flags.golemCalmo : S.crew.includes(f.id);
     const up = has && UPS[f.id]?.flag && S.flags[UPS[f.id].flag] ? `<br><span style="color:var(--good)">${UPS[f.id].text}</span>` : '';
     const field = has && FIELD[f.id] ? `<br>En exploración: ${FIELD[f.id]}` : '';
-    h += `<div class="row${has ? '' : ' dim'}"><div class="dmedal" style="background:${f.color};color:#fff">${has ? f.name[0] : '?'}</div><div class="info"><b>${has ? f.name : '???'} · ${has ? f.skill : 'habilidad oculta'}</b><small>${has ? f.desc : f.how}${field}${up}</small></div></div>`;
+    const face = has && ['arci', 'musgo', 'brasa', 'marea'].includes(f.id) ? portrait(f.id as any) : '';
+    h += `<div class="row${has ? '' : ' dim'}"><div class="dmedal" style="background:${face ? `radial-gradient(circle at 50% 30%,#fff8ea,${f.color} 140%)` : f.color};color:#fff">${face ? `<img src="${face}" alt="">` : has ? f.name[0] : '?'}</div><div class="info"><b>${has ? f.name : '???'} · ${has ? f.skill : 'habilidad oculta'}</b><small>${has ? f.desc : f.how}${field}${up}</small></div></div>`;
   }
   h += `<h3>Inventos (${Object.keys(S.inv).length}/${Object.values(INV).filter(d => !d.locked).length})</h3>`;
   const made = Object.keys(S.inv).filter(k => S.inv[k]);
@@ -172,8 +174,8 @@ function mar() {
 }
 
 export function diarioHTML() {
-  const tabs: [DiarioTab, string][] = [['ruta', 'Ruta'], ['encargos', 'Encargos'], ['logros', 'Logros'], ['equipo', 'Equipo'], ['mar', 'Hallazgos']];
-  return `<h2>Diario de la isla</h2><div class="seg dtabs" role="tablist">${tabs.map(([k, n]) => `<button role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${n}</button>`).join('')}</div>`
+  const tabs: [DiarioTab, string, string][] = [['ruta', 'Ruta', 'brujula'], ['encargos', 'Encargos', 'encargo'], ['logros', 'Logros', 'estrella'], ['equipo', 'Equipo', 'figurita'], ['mar', 'Hallazgos', 'concha']];
+  return `<h2>Diario de la isla</h2><div class="seg dtabs" role="tablist">${tabs.map(([k, n, i]) => `<button role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}"><img src="${XICON[i]}" alt="">${n}</button>`).join('')}</div>`
     + (tab === 'ruta' ? ruta() : tab === 'encargos' ? encargos() : tab === 'logros' ? logros() : tab === 'mar' ? mar() : equipo());
 }
 

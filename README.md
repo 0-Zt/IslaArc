@@ -2,7 +2,7 @@
 
 Juego de progresión y descubrimiento inspirado en la serie GROW. Guías a figuras de arcilla que transforman una isla: talan, pican, construyen, funden metal y, poco a poco, despiertan sus secretos. Desde la isla se sale a pescar, a navegar en balsa y a explorar la cueva del volcán, con puzles al estilo de Pokémon de GBA, un combate por turnos y una habilidad distinta para cada figura.
 
-**Estado:** v0.18 · 10 capítulos jugables (unas 3 horas y media). Se juega en el navegador: [0-zt.github.io/IslaArc](https://0-zt.github.io/IslaArc/) (cuando GitHub Pages está activado). Lo que viene está en `docs/vision.md`.
+**Estado:** v0.19 · interfaz de arcilla nueva · 10 capítulos jugables (unas 3 horas y media). Se juega en el navegador: [0-zt.github.io/IslaArc](https://0-zt.github.io/IslaArc/) (cuando GitHub Pages está activado). Lo que viene está en `docs/vision.md`.
 
 Hecho con [Three.js](https://threejs.org/) y TypeScript, pensado primero para celular.
 
@@ -29,7 +29,9 @@ src/
   assets/            modelos voxel: texturas de detalle, personajes, edificios, decoración, el claro secreto, las ruinas
   game/              lógica: progreso (capítulos, estrellas, logros), tablón de encargos, estado, figuras y trabajos, edificios, bosque (zonas, tocones, retoños), marcas de plantar y senderos, expansión, ruinas de Brasa, claro de Musgo, objetivos, producción e inventos, la playa, la pesca, la balsa, la cueva (exploración por casillas, habilidades de cada figura) y el combate por turnos
   audio/             sonido generado con Web Audio (golpes, ambiente, avisos)
-  ui/                interfaz: HUD, paneles, acertijos de las llamas, burbujas de estado, entrada táctil
+  ui/                interfaz: HUD (bandeja de recursos, retratos), paneles, bolsa, acertijos de las llamas, burbujas de estado, entrada táctil
+  style.css          la interfaz de arcilla: un solo material para paneles, botones y avisos
+  assets/fonts/      Fredoka y Nunito (licencia SIL Open Font), incluidas para que funcione sin internet
   data/              balance y contenido en JSON (recursos, edificios, herramientas, recetas, inventos, capítulos, logros, mensajes)
 legacy/              prototipos anteriores (2D, taller de assets, corte vertical en un archivo)
 docs/vision.md       el mapa del juego: los tres círculos, las llaves del mundo, la historia en cinco actos y el orden de trabajo

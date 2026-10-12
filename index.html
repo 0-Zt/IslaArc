@@ -3,34 +3,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#5e3b22">
 <title>Isla Arcilla</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 <div id="scene"></div>
 <div id="top">
-  <div id="topRow"><div id="res" aria-label="Recursos"></div><div id="topBtns"><button id="menuBtn">Menú</button><div class="tbrow"><button id="diarioBtn" aria-label="Diario de la isla"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="4" y="3" width="15" height="18" rx="2" fill="#c98655"/><rect x="6" y="3" width="2" height="18" fill="#8a5a2e"/><rect x="10" y="7" width="7" height="2" fill="#fff0d0"/><rect x="10" y="11" width="5" height="2" fill="#fff0d0"/></svg><i id="diarioBadge" hidden></i></button><button id="clock" aria-label="Hora del día"></button></div></div></div>
-  <div id="goal"><span class="n" id="goalN">1/8</span><span class="t" id="goalT"></span></div>
+  <div id="hudL">
+    <div id="tray" class="clay"><div id="res"></div><button id="bagBtn" aria-label="Bolsa: todos los materiales"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7V5.5a4 4 0 0 1 8 0V7" stroke="#5e3b22" stroke-width="2.2" fill="none"/><path d="M4.5 8h15l-1.3 11.2a2 2 0 0 1-2 1.8H7.8a2 2 0 0 1-2-1.8z" fill="#c98655" stroke="#5e3b22" stroke-width="2"/><path d="M7 11h10" stroke="#f7d6a8" stroke-width="2" stroke-linecap="round"/></svg><i id="bagBadge" hidden></i></button></div>
+    <div id="goal" class="clay"><span class="n" id="goalN">1/8</span><span class="t" id="goalT"></span></div>
+  </div>
+  <div id="topBtns">
+    <button id="menuBtn" class="ib" aria-label="Menú y opciones"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l1.6 2.3 2.7-.7.6 2.7 2.7.8-.7 2.7 2.3 1.7-2.3 1.7.7 2.7-2.7.8-.6 2.7-2.7-.7L12 21.5l-1.6-2.3-2.7.7-.6-2.7-2.7-.8.7-2.7L2.8 12l2.3-1.7-.7-2.7 2.7-.8.6-2.7 2.7.7z" fill="#c98655" stroke="#5e3b22" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.4" fill="#f7ecd6" stroke="#5e3b22" stroke-width="1.6"/></svg></button>
+    <button id="diarioBtn" class="ib" aria-label="Diario de la isla"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="3" width="15" height="18" rx="2.5" fill="#c98655" stroke="#5e3b22" stroke-width="1.8"/><rect x="7" y="3" width="2.2" height="18" fill="#8a5a2e"/><rect x="11" y="7" width="6" height="2" rx="1" fill="#fff0d0"/><rect x="11" y="11" width="4.5" height="2" rx="1" fill="#fff0d0"/></svg><i id="diarioBadge" hidden></i></button>
+    <button id="clock" class="ib" aria-label="Hora del día"></button>
+  </div>
 </div>
 <div id="toast" aria-live="polite"></div>
 <div id="fps" hidden></div>
 <div id="bottom">
-  <div id="crew"></div>
-  <button class="bigbtn" id="buildBtn" aria-label="Construir"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="11" height="6" rx="1.5" fill="#6a4226"/><rect x="3" y="4" width="11" height="2.5" rx="1" fill="#8a5a2e"/><rect x="11" y="9" width="3" height="12" rx="1" fill="#8a5a2e" transform="rotate(-8 12 15)"/></svg>Construir</button>
+  <div id="crew"><div id="crewRow"></div></div>
+  <button class="bigbtn" id="buildBtn" aria-label="Construir"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="11" height="6" rx="1.5" fill="#6a4226" stroke="#3a2006" stroke-width="1"/><rect x="3" y="4" width="11" height="2.5" rx="1" fill="#8a5a2e"/><rect x="11" y="9" width="3" height="12" rx="1" fill="#8a5a2e" stroke="#3a2006" stroke-width="1" transform="rotate(-8 12 15)"/></svg>Construir</button>
 </div>
 <div id="placeHint" hidden>Toca una casilla para mover · amarillo = cabe</div>
 <div id="placeBar" hidden><button id="pCancel">Cancelar</button><button id="pRot">Rotar</button><button id="pOk" class="ok">Colocar</button></div>
 <div id="expandBar" hidden><span></span><div id="xKinds" class="seg" role="group" aria-label="Tipo de parcela"></div><button id="xExit">Listo</button></div>
-<div id="sheet" hidden role="dialog"></div>
+<div id="scrim"></div>
+<div id="sheet" class="sheet" hidden role="dialog"></div>
 <div id="title">
-  <div class="box">
-    <h1>ISLA<br>ARCILLA</h1>
-    <p class="sub">Guía a tus figuras de barro y despierta la isla.</p>
-    <button class="btn main" id="tContinue">Continuar</button>
+  <div class="logo" aria-label="Isla Arcilla"><span class="l1">ISLA</span><span class="l2">ARCILLA</span><p class="sub">Guía a tus figuras de barro y despierta la isla.</p></div>
+  <div id="tFigs" aria-hidden="true"></div>
+  <div class="box clay">
+    <button class="btn main" id="tContinue">Continuar<small id="tSum"></small></button>
     <button class="btn" id="tNew">Nueva partida</button>
-    <div class="ver">Versión 0.14 · se guarda en este navegador</div>
+    <div class="ver" id="tVer"></div>
   </div>
 </div>
 <script type="module" src="/src/main.ts"></script>

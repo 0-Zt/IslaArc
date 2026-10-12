@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { portrait } from '../ui/portraits';
 import CAVE from '../data/cave.json';
 import FARO from '../data/faro.json';
 import { scene, camera, controls, cancelFly, setCaveMode, FR } from '../render/renderer';
@@ -463,7 +464,7 @@ export function switchLeader(id: string) {
 }
 function refreshWho() {
   const el = document.getElementById('cvWho'); if (!el) return;
-  const h = party.map((m, k) => `<button data-who="${m.c.id}" class="${k === 0 ? 'on' : ''}" style="--c:${COLOR[m.c.id]}" aria-label="${NAME[m.c.id]}: ${SKILL[m.c.id]}"><b>${NAME[m.c.id][0]}</b></button>`).join('');
+  const h = party.map((m, k) => `<button data-who="${m.c.id}" class="${k === 0 ? 'on' : ''}" style="--c:${COLOR[m.c.id]}" aria-label="${NAME[m.c.id]}: ${SKILL[m.c.id]}">${portrait(m.c.id) ? `<img src="${portrait(m.c.id)}" alt="">` : `<b>${NAME[m.c.id][0]}</b>`}</button>`).join('');
   if (el.dataset.sig !== h) { el.dataset.sig = h; el.innerHTML = h; }
 }
 

@@ -27,7 +27,7 @@ import { checkGoals } from './game/goals';
 import { initProgress, checkAchievements } from './game/progress';
 import { fillBoard } from './game/board';
 import { restoreBeach, clearBeach, tickBeach } from './game/beach';
-import { $, initHUD, refreshHUD, toast } from './ui/hud';
+import { $, initHUD, refreshHUD, toast, chapterCard, banner } from './ui/hud';
 import { initSheets, initSheetEvents, refreshSheet, closeSheet, openMessage, sheetOpen, openStory } from './ui/sheets';
 import { tickRaft, clearRaft, sailingActive, startSailing, fishHere, goBack, sailState, sailTap, blowShell } from './game/raft';
 import { battleState, battleChoose } from './game/battle';
@@ -42,7 +42,12 @@ import { tickCave, caveActive, enterCave, exitCave, caveAct, caveState, caveDebu
 import { placeCaveMouth, tickCaveMouth, mouth, mouthTap } from './game/cavemouth';
 import { tickIslandLife } from './world/zonelife';
 import { setExitPoint, enterZone, zoneId } from './game/cave';
-import { GOALS } from './game/goals';
+import { GOALS, CHAPTERS, currentChapter } from './game/goals';
+import { portrait } from './ui/portraits';
+import { setVolumes } from './audio/sfx';
+import { CHAR_DEFS, type CharId } from './assets/characters';
+
+declare const __VERSION__: string;
 
 const SEED = 4242;
 let T = 0; // game clock in seconds (declared early: newGame uses it)
@@ -97,12 +102,13 @@ function newGame(state: typeof S | null) {
 
 let running = false;
 function startGame(state: typeof S | null) {
+  controls.autoRotate = false; document.body.classList.remove('titled');
   newGame(state); $('title').hidden = true; running = true; persist();
 }
 const persist = () => save(saved());
 
 initHUD(); initSheetEvents(); initInput(); initProgress();
-initSheets({ centreTile, onReset: () => { clearSave(); newGame(null); persist(); } });
+initSheets({ centreTile, onReset: () => { clearSave(); newGame(null); persist(); }, onPersist: () => persist(), onLoaded: () => { newGame(loadSave()); persist(); } });
 on('built', () => persist());
 on('placed', () => persist());
 on('expanded', () => { updateWater(); checkReach(crew[0] ? tileUnder(crew[0].root.position.x, crew[0].root.position.z) : null, bfs); persist(); });
@@ -147,9 +153,33 @@ $('clock').addEventListener('click', () => {
   const m = Math.max(1, Math.round(minutesToNight()));
   toast(isNight() ? `${phaseName()}: algunas cosas solo pasan de noche` : `${phaseName()} · la noche llega en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}`);
 });
-$('tContinue').hidden = !hasSave();
+/* the title: the island turns slowly behind the logo; the figures you have wave from below */
+function fillTitle() {
+  const saved = hasSave();
+  $('tContinue').hidden = !saved;
+  $('tVer').textContent = `Versión ${__VERSION__} · se guarda en este navegador`;
+  const ids = (saved ? S.crew : ['arci']).filter(id => id in CHAR_DEFS) as CharId[];
+  $('tFigs').innerHTML = ids.map(id => { const u = portrait(id); return u ? `<span class="face" style="--c:${CHAR_DEFS[id].color}"><img src="${u}" alt=""></span>` : ''; }).join('');
+  if (saved) {
+    const m = Math.max(1, Math.round(S.time / 60)), ch = currentChapter(), c = CHAPTERS[ch];
+    $('tSum').textContent = `Cap. ${ch + 1}${c ? ` · ${c.title}` : ''} · ${m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`}`;
+  }
+  controls.autoRotate = true; controls.autoRotateSpeed = 0.35;
+  document.body.classList.add('titled');
+}
 $('tContinue').addEventListener('click', () => startGame(loadSave()));
-$('tNew').addEventListener('click', () => { clearSave(); startGame(null); });
+let newArmed = 0;
+$('tNew').addEventListener('click', () => {
+  // with a saved island, starting over asks twice
+  if (hasSave() && performance.now() - newArmed > 4000) {
+    newArmed = performance.now(); const b = $('tNew'); b.classList.add('warn'); b.innerHTML = '¿Borrar tu isla?<small>Toca otra vez para empezar de cero</small>';
+    setTimeout(() => { if (performance.now() - newArmed >= 3900) { b.classList.remove('warn'); b.textContent = 'Nueva partida'; } }, 4000);
+    return;
+  }
+  clearSave(); startGame(null);
+});
+document.documentElement.classList.toggle('bigtext', !!gfx.bigtext);
+setVolumes((gfx.vfx ?? 80) / 100, (gfx.vamb ?? 80) / 100);
 
 resize(); addEventListener('resize', resize);
 /* sound: browsers only allow it after the first tap */
@@ -168,6 +198,7 @@ on('boardChanged', () => sfx('tap'));
 on('invented', () => sfx('solve'));
 on('beachChanged', () => sfx('tap'));
 newGame(loadSave());
+fillTitle();
 
 /* the sharp band of the miniature effect follows what matters: the ghost, the selected figure, or the figure nearest the view */
 const _f = new THREE.Vector3();
@@ -243,6 +274,6 @@ if (location.hash === '#debug') {
     step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickRaft(0.05, T); tickCaveMouth(0.05, T); tickCave(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
     scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, cancelFly, startSailing, fishHere, goBack, sailState, DEEP, sailTo: (x: number, z: number) => { const r = new THREE.Raycaster(); r.ray.origin.set(x, 5, z); r.ray.direction.set(0, -1, 0); return sailTap(r); }, startFishing, stopFishing, castAt, fishState, useBait, fishShadows, bestShadow, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
-    enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold, caveActive, mouthTap, blowShell, switchLeader, enterZone, zoneId, battleState, battleChoose, mouth: () => mouth && { i: mouth.tile.i, j: mouth.tile.j, open: mouth.open, x: mouth.tile.wx, z: mouth.tile.wz },
+    enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold, caveActive, mouthTap, blowShell, switchLeader, enterZone, zoneId, battleState, battleChoose, chapterCard, banner, toast, mouth: () => mouth && { i: mouth.tile.i, j: mouth.tile.j, open: mouth.open, x: mouth.tile.wx, z: mouth.tile.wz },
   };
 }

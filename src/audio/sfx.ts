@@ -7,6 +7,12 @@ let master: GainNode, fxBus: GainNode, ambBus: GainNode;
 let enabled = true;
 let noiseBuf: AudioBuffer;
 
+let volFx = 0.55, volAmb = 0.35;
+/** Volume of the effects and of the ambience, 0..1 each. */
+export function setVolumes(fx: number, amb: number) {
+  volFx = 0.55 * fx * 1.25; volAmb = 0.35 * amb * 1.25;
+  if (ctx) { fxBus.gain.setTargetAtTime(volFx, ctx.currentTime, 0.05); ambBus.gain.setTargetAtTime(volAmb, ctx.currentTime, 0.05); }
+}
 export function setSound(on: boolean) { enabled = on; if (master) master.gain.setTargetAtTime(on ? 0.9 : 0, ctx!.currentTime, 0.1); }
 
 /** Audio can only start after a tap, so this is called from the first user gesture. */
@@ -15,8 +21,8 @@ export function unlockAudio() {
   const AC = (window as any).AudioContext || (window as any).webkitAudioContext; if (!AC) return;
   ctx = new AC() as AudioContext;
   master = ctx.createGain(); master.gain.value = enabled ? 0.9 : 0; master.connect(ctx.destination);
-  fxBus = ctx.createGain(); fxBus.gain.value = 0.55; fxBus.connect(master);
-  ambBus = ctx.createGain(); ambBus.gain.value = 0.35; ambBus.connect(master);
+  fxBus = ctx.createGain(); fxBus.gain.value = volFx; fxBus.connect(master);
+  ambBus = ctx.createGain(); ambBus.gain.value = volAmb; ambBus.connect(master);
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
   const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   startWaves();

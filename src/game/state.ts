@@ -91,6 +91,35 @@ function migrateGrid(s: any, OFF: number) {
 export function clearSave() { try { localStorage.removeItem(KEY); } catch { /* ignore */ } }
 export function hasSave() { try { return !!localStorage.getItem(KEY); } catch { return false; } }
 
+/* Backup codes: the save as text the player can keep anywhere and paste back later.
+   Compressed when the browser can (IA2:), plain otherwise (IA1:). */
+const b64 = (u: Uint8Array) => { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = (t: string) => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+async function pipe(data: Uint8Array, stream: CompressionStream | DecompressionStream) {
+  const out = new Response(new Blob([data as BlobPart]).stream().pipeThrough(stream)); return new Uint8Array(await out.arrayBuffer());
+}
+export async function exportSave(): Promise<string> {
+  let raw = ''; try { raw = localStorage.getItem(KEY) || ''; } catch { /* blocked */ }
+  if (!raw) raw = JSON.stringify(S);
+  const bytes = new TextEncoder().encode(raw);
+  if (typeof CompressionStream !== 'undefined') { try { return 'IA2:' + b64(await pipe(bytes, new CompressionStream('gzip'))); } catch { /* fall back */ } }
+  return 'IA1:' + b64(bytes);
+}
+/** Checks a backup code and stores it as the save. Returns an error message, or null if it worked. */
+export async function importSave(code: string): Promise<string | null> {
+  code = code.trim().replace(/\s+/g, '');
+  try {
+    let bytes: Uint8Array;
+    if (code.startsWith('IA2:')) bytes = await pipe(unb64(code.slice(4)), new DecompressionStream('gzip'));
+    else if (code.startsWith('IA1:')) bytes = unb64(code.slice(4));
+    else return 'Ese código no es de Isla Arcilla';
+    const json = new TextDecoder().decode(bytes), s = JSON.parse(json);
+    if (!s || typeof s !== 'object' || !s.res || !s.flags) return 'El código está incompleto';
+    localStorage.setItem(KEY, json);
+    return null;
+  } catch { return 'No se pudo leer el código: revisa que esté completo'; }
+}
+
 export const afford = (c: Cost) => Object.entries(c).every(([k, v]) => S.res[k as ResKey] >= (v as number));
 export function pay(c: Cost) { for (const [k, v] of Object.entries(c)) S.res[k as ResKey] -= v as number; emit('changed'); }
 

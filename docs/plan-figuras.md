@@ -65,10 +65,11 @@ Puentes de tablas (Arci), puentes de raíces (Musgo), y más adelante antorchas,
 | Versión | Qué trae |
 | --- | --- |
 | **v0.17 · Cada figura cuenta** (hecho) | Elegir quién va adelante, habilidades de campo, las tres zonas nuevas de la cueva, hierba alta, recursos que vuelven a crecer, semilla antigua y corazón de magma, obsidiana y pico de obsidiana. Capítulo 9. |
-| v0.18 · La isla del faro | Marea, el mapa del mar, el archipiélago se abre. |
-| v0.19 · La Isla Ardiente | La puerta de lava del islote, la isla de Brasa. |
-| v0.20 · La Selva Enredada | La isla de Musgo. |
-| v0.21 · Las Profundidades y economía 2 | Pisos que cambian, figuras asignadas a edificios, trueques. |
+| v0.18 · La isla del faro (hecho) | Marea, el mapa del mar, el archipiélago se abre. |
+| v0.19 · UI de arcilla (hecho) | La interfaz completa rehecha con un solo estilo de juego. |
+| v0.20 · La Isla Ardiente | La puerta de lava del islote, la isla de Brasa. |
+| v0.21 · La Selva Enredada | La isla de Musgo. |
+| v0.22 · Las Profundidades y economía 2 | Pisos que cambian, figuras asignadas a edificios, trueques. |
 | Después | La ciudad de los Alfareros y el final. |
 
 **Sobre el islote de Brasa:** moverlo más lejos rompería las partidas guardadas (los braseros están construidos encima). Mejor darle un futuro: la puerta de lava que lleva a la Isla Ardiente.

@@ -1,4 +1,7 @@
 import { on } from '../core/events';
+import { sfx, setVolumes } from '../audio/sfx';
+import { exportSave, importSave } from '../game/state';
+import { capOf } from '../game/state';
 import { gfx, setGfx, resetGfx } from '../render/renderer';
 import { S, DATA, afford, pay, type Cost, type ResKey } from '../game/state';
 import { buildings, has, smelt, startPlace, buildingDef, isDone, nextLevel, startUpgrade, levelLock, type Building } from '../game/buildings';
@@ -21,20 +24,42 @@ import { startSailing, hasRaft } from '../game/raft';
 import { enterZone } from '../game/cave';
 import { assignIdleBuilder } from '../game/crew';
 import { ICONS } from '../assets/buildings';
-import { $, img, toast } from './hud';
+import { $, img, toast, visibleRes } from './hud';
 import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'build' | 'casa' | 'prod' | 'taller' | 'almacen' | 'historia' | 'muelle' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
+type SheetType = 'bolsa' | 'respaldo' | 'build' | 'casa' | 'prod' | 'taller' | 'almacen' | 'historia' | 'muelle' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
 let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
-let onReset: () => void = () => {};
-export function initSheets(opts: { centreTile: () => Tile | null; onReset: () => void }) { centreTile = opts.centreTile; onReset = opts.onReset; }
+let onReset: () => void = () => {}, onPersist: () => void = () => {}, onLoaded: () => void = () => {};
+export function initSheets(opts: { centreTile: () => Tile | null; onReset: () => void; onPersist: () => void; onLoaded: () => void }) { centreTile = opts.centreTile; onReset = opts.onReset; onPersist = opts.onPersist; onLoaded = opts.onLoaded; }
+let openKey = '', bkCode = '';
 
 export const sheetOpen = () => type !== null;
-export function openSheet(t: SheetType, b: Building | null = null, c: [number, number] | null = null) { if (type === 'puzzle' && t !== 'puzzle') closePuzzle(); type = t; arg = b; cell = c; confirmReset = false; render(); $('sheet').hidden = false; $('sheet').classList.toggle('tall', t === 'puzzle' || t === 'diario'); }
-export function closeSheet() { if (type === 'puzzle') closePuzzle(); type = null; $('sheet').hidden = true; }
+export function openSheet(t: SheetType, b: Building | null = null, c: [number, number] | null = null) {
+  if (type === 'puzzle' && t !== 'puzzle') closePuzzle();
+  const fresh = type === null;
+  type = t; arg = b; cell = c; confirmReset = false; openKey = '';
+  if (t === 'respaldo') { bkCode = ''; onPersist(); exportSave().then(code => { bkCode = code; if (type === 'respaldo') render(); }); }
+  render(); const el = $('sheet'); el.hidden = false; el.classList.toggle('tall', t === 'puzzle' || t === 'diario' || t === 'menu' || t === 'gfx');
+  if (!fresh) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; el.scrollTop = 0; }
+  $('scrim').classList.add('on');
+  if (fresh) sfx('tap', 0.8);
+}
+/** Closing slides a copy of the sheet away, so the real one is hidden at once (state stays simple). */
+export function closeSheet() {
+  if (type === 'puzzle') closePuzzle();
+  const el = $('sheet');
+  if (!el.hidden && type) {
+    const g = el.cloneNode(true) as HTMLElement;
+    g.removeAttribute('id'); g.removeAttribute('role'); g.setAttribute('aria-hidden', 'true'); g.classList.add('ghost');
+    g.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+    el.after(g); g.scrollTop = el.scrollTop;
+    const kill = () => g.remove(); g.addEventListener('animationend', kill); setTimeout(kill, 400);
+  }
+  type = null; el.hidden = true; $('scrim').classList.remove('on');
+}
 /** A ruined brazier: what it is and what rebuilding it costs. */
 let ruinK = -1;
 const BULB = '<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="17" r="10" fill="#ffd24a"/><rect x="15" y="26" width="10" height="7" fill="#b9c2cc"/><rect x="17" y="13" width="6" height="2" fill="#fff6c0"/></svg>';
@@ -48,9 +73,13 @@ let storyK = '';
 export function openStory(k: string) { storyK = k; openSheet('historia'); }
 export function openDiario(t: DiarioTab = 'ruta') { setTab(t); openSheet('diario'); }
 
-const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => `<span class="${S.res[k as ResKey] >= (v as number) ? '' : 'no'}">${img(k as ResKey)}${S.res[k as ResKey]}/${v}</span>`).join('')}</div>`;
+/** What something costs: just the amount when you have it, "have/need" in red when you don't. */
+const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]) => { const have = S.res[k as ResKey], ok = have >= (v as number); return `<span class="${ok ? '' : 'no'}" title="${(DATA.RESOURCES as any)[k]?.name || k}: tienes ${have}">${img(k as ResKey)}${ok ? v : `${have}<small>/${v}</small>`}</span>`; }).join('')}</div>`;
+/** A compact row: icon, name, cost and action. The description opens with a tap on the row. */
+const fold = (key: string, thumb: string, name: string, desc: string, meta: string, costs: string, right: string, cls = '') =>
+  `<div class="row fold${openKey === key ? ' open' : ''}${cls}" data-fold="${key}"><div class="thumb">${thumb}</div><div class="info"><b>${name}</b><span class="more" aria-hidden="true">i</span>${meta ? `<span class="meta">${meta}</span>` : ''}<small class="desc">${desc}</small>${costs}</div>${right}</div>`;
 // the settings sheet never re-renders by itself, so sliders keep working while dragged
-const signature = () => type === 'gfx' ? 'gfx' : type === 'historia' ? 'historia' + storyK : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.jobs?.length, arg?.jobs?.[0], arg?.lvl, arg?.up, arg && Math.floor(arg.work), S.inv, S.expanded.length]);
+const signature = () => type === 'gfx' ? 'gfx' : type === 'menu' ? 'menu' + confirmReset : type === 'respaldo' ? 'respaldo' + bkCode.length : type === 'historia' ? 'historia' + storyK : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.jobs?.length, arg?.jobs?.[0], arg?.lvl, arg?.up, arg && Math.floor(arg.work), S.inv, S.expanded.length]);
 
 /** The level block shown in a building's sheet: what the next level does, its cost, or the upgrade in progress. */
 function upgradeHTML(b: Building) {
@@ -75,11 +104,11 @@ function render() {
     const row = (k: string, d: any) => {
       const count = buildings.filter(b => b.type === k).length, working = buildings.some(b => b.type === k && !isDone(b));
       const unique = !d.deco, built = unique && count > 0, locked = d.requires && !has(d.requires), lowLevel = !unlocked(k);
-      const size = d.size[0] * d.size[1] > 1 ? ` · ocupa ${d.size[0]}×${d.size[1]}` : '';
-      const extra = d.deco && count ? ` · tienes ${count}` : built && d.levels ? ' · tócalo en la isla para mejorarlo' : '';
-      return `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${d.name}</b><small>${d.desc}${size}${extra}</small>${built ? '' : costHTML(d.cost)}</div>`
-        + (built ? `<span class="done">${working ? 'En obra' : d.levels ? `Nivel ${Math.max(...buildings.filter(b => b.type === k).map(b => b.lvl))}` : 'Construida'}</span>` : lowLevel ? `<span class="done" style="color:var(--muted)">Nivel de isla ${d.level}</span>` : locked ? `<span class="done" style="color:var(--muted)">Necesita ${buildingDef(d.requires).name.toLowerCase()}</span>`
-          : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-place="${k}" ${afford(d.cost) ? '' : 'disabled'}>Ubicar</button>`) + '</div>';
+      const size = d.size[0] * d.size[1] > 1 ? `ocupa ${d.size[0]}×${d.size[1]}` : '';
+      const extra = d.deco && count ? `tienes ${count}` : built && d.levels ? 'tócalo en la isla para mejorarlo' : '';
+      const right = built ? `<span class="done">${working ? 'En obra' : d.levels ? `Nivel ${Math.max(...buildings.filter(b => b.type === k).map(b => b.lvl))}` : 'Construida'}</span>` : lowLevel ? `<span class="done off">Nivel de isla ${d.level}</span>` : locked ? `<span class="done off">Necesita ${buildingDef(d.requires).name.toLowerCase()}</span>`
+        : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-place="${k}" ${afford(d.cost) ? '' : 'disabled'}>Ubicar</button>`;
+      return fold('b:' + k, ICONS[k], d.name, d.desc, [size, extra].filter(Boolean).join(' · '), built ? '' : costHTML(d.cost), right, lowLevel || locked ? ' dim' : '');
     };
     const all = Object.entries(DATA.BUILDINGS) as [string, any][];
     for (const [k, d] of all) if (!d.deco && !d.hidden) h += row(k, d);
@@ -95,8 +124,7 @@ function render() {
     h += '<h2>Casa · Herramientas</h2><p>Con lingotes del horno se fabrican herramientas de metal. Cambian lo que rinde cada figura. Los inventos más grandes se hacen en el taller.</p>';
     for (const [k, d] of Object.entries(DATA.TOOLS) as [string, any][]) {
       const ok = S.tools[k];
-      h += `<div class="row"><div class="thumb">${ICONS[k]}</div><div class="info"><b>${d.name}</b><small>${d.desc}</small>${ok ? '' : costHTML(d.cost)}</div>`
-        + (ok ? '<span class="done">Hecho</span>' : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-tool="${k}" ${afford(d.cost) ? '' : 'disabled'}>Fabricar</button>`) + '</div>';
+      h += fold('t:' + k, ICONS[k], d.name, d.desc, '', ok ? '' : costHTML(d.cost), ok ? '<span class="done">Hecho</span>' : `<button class="btn${afford(d.cost) ? ' main' : ''}" data-tool="${k}" ${afford(d.cost) ? '' : 'disabled'}>Fabricar</button>`);
     }
     if (arg) h += upgradeHTML(arg);
   } else if (type === 'prod' && arg) {
@@ -107,8 +135,7 @@ function render() {
     if (b.jobs.length) h += `<div class="qline">${b.jobs.map((j, k) => { const o = jobInfo(j).out; return `<span class="q${k < fires ? ' now' : ''}">${o ? `<img src="${(ICON as any)[o]}" alt="">` : ''}</span>`; }).join('')}<div class="bar"><i id="hbar" style="width:${Math.round(b.prog * 100)}%"></i></div>${fires > 1 && b.jobs.length > 1 ? `<div class="bar"><i style="width:${Math.round(b.prog2 * 100)}%"></i></div>` : ''}</div>`;
     for (const [id, r] of recipesAt(b.type, b.lvl)) {
       const ok = afford(r.cost) && b.jobs.length < MAX_QUEUE;
-      h += `<div class="row"><div class="thumb"><img class="pix" src="${(ICON as any)[r.out]}" alt=""></div><div class="info"><b>${r.name}</b><small>${r.desc} · ${r.seconds} s</small>${costHTML(r.cost)}</div>`
-        + `<button class="btn${ok ? ' main' : ''}" data-recipe="${id}" ${ok ? '' : 'disabled'}>Hacer</button></div>`;
+      h += fold('r:' + id, `<img class="pix" src="${(ICON as any)[r.out]}" alt="">`, r.name, r.desc, `${r.seconds} s`, costHTML(r.cost), `<button class="btn${ok ? ' main' : ''}" data-recipe="${id}" ${ok ? '' : 'disabled'}>Hacer</button>`);
     }
     if (b.type === 'horno' && S.res.mineral < 2) h += '<p>El mineral sale al picar las rocas grises con vetas azules.</p>';
     h += upgradeHTML(b);
@@ -141,17 +168,45 @@ function render() {
         if (d.tier !== t) continue;
         const st = invState(id, b.jobs);
         const right = st === 'done' ? '<span class="done">Hecho</span>' : st === 'working' ? '<span class="done">Inventando…</span>'
-          : st === 'locked' ? `<span class="done" style="color:var(--muted)">${LOCK}</span>`
-          : st === 'needs' ? `<span class="done" style="color:var(--muted)">Necesita ${d.needs!.filter(n => !S.inv[n]).map(n => INV[n].name.toLowerCase()).join(', ')}</span>`
+          : st === 'locked' ? `<span class="done off">${LOCK}</span>`
+          : st === 'needs' ? `<span class="done off">Necesita ${d.needs!.filter(n => !S.inv[n]).map(n => INV[n].name.toLowerCase()).join(', ')}</span>`
           : `<button class="btn${afford(d.cost) && !cur ? ' main' : ''}" data-invent="${id}" ${afford(d.cost) && !cur ? '' : 'disabled'}>Inventar</button>`;
-        h += `<div class="row${st === 'locked' ? ' dim' : ''}"><div class="thumb">${BULB}</div><div class="info"><b>${d.name}</b><small>${st === 'locked' ? (d.locked || d.flagText) : d.desc}${d.seconds && st !== 'done' && st !== 'locked' ? ` · ${d.seconds} s` : ''}</small>${st === 'ready' || st === 'needs' ? costHTML(d.cost) : ''}</div>${right}</div>`;
+        h += fold('i:' + id, BULB, d.name, st === 'locked' ? (d.locked || d.flagText || '') : d.desc, st === 'locked' ? 'Bloqueado' : d.seconds && st !== 'done' ? `${d.seconds} s` : '', st === 'ready' || st === 'needs' ? costHTML(d.cost) : '', right, st === 'locked' ? ' dim' : '');
       }
     }
   } else if (type === 'menu') {
-    h += '<h2>Menú</h2><p>La partida se guarda sola en este navegador.</p>'
+    const m = Math.max(1, Math.round(S.time / 60));
+    h += `<h2>Menú</h2><p>Tu isla se guarda sola en este navegador · ${m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`} jugados.</p>`
+      + '<button class="btn main" data-act="close" style="width:100%">Seguir jugando</button>'
+      + '<h3>Sonido</h3>'
       + `<div class="row col"><div class="info"><b>Sonido</b><small>Efectos al trabajar, olas, pájaros de día y grillos de noche.</small></div>${onoff('sound')}</div>`
+      + `<div class="row col"><div class="info"><b>Efectos</b></div><div class="slide"><input type="range" id="vFx" min="0" max="100" step="5" value="${gfx.vfx}" aria-label="Volumen de efectos"><output id="vFxOut">${gfx.vfx}</output></div>`
+      + `<div class="info"><b>Ambiente</b><small>Olas, pájaros y grillos.</small></div><div class="slide"><input type="range" id="vAmb" min="0" max="100" step="5" value="${gfx.vamb}" aria-label="Volumen del ambiente"><output id="vAmbOut">${gfx.vamb}</output></div></div>`
+      + '<h3>Pantalla</h3>'
+      + `<div class="row col"><div class="info"><b>Tamaño del texto</b></div>${seg('bigtext', [['0', 'Normal'], ['1', 'Grande']], gfx.bigtext ? '1' : '0')}</div>`
       + '<div class="row"><div class="info"><b>Ajustes gráficos</b><small>Efecto maqueta, sombras, brillo y calidad.</small></div><button class="btn" data-act="gfx">Abrir</button></div>'
+      + '<h3>Partida</h3>'
+      + '<div class="row"><div class="info"><b>Respaldo</b><small>Un código con tu partida, para guardarlo o seguir en otro navegador.</small></div><button class="btn" data-act="backup">Abrir</button></div>'
       + `<div class="row"><div class="info"><b>Nueva partida</b><small>Borra el progreso y empieza de cero.</small></div>${confirmReset ? '<button class="btn main" data-act="reset2">Sí, borrar</button>' : '<button class="btn" data-act="reset">Empezar de cero</button>'}</div>`;
+  } else if (type === 'respaldo') {
+    h += '<h2>Respaldo</h2><p>Copia el código y guárdalo donde quieras (una nota, un correo). Para seguir en otro navegador, pégalo abajo y toca Cargar.</p>'
+      + `<textarea class="save" id="bkOut" readonly aria-label="Código de tu partida">${bkCode || 'Preparando…'}</textarea><div class="btns"><button class="btn main" data-act="bkCopy" ${bkCode ? '' : 'disabled'}>Copiar código</button></div>`
+      + '<h3>Cargar una partida</h3><textarea class="save" id="bkIn" placeholder="Pega aquí un código (empieza con IA)" aria-label="Pegar un código"></textarea><div class="btns"><button class="btn" data-act="bkLoad">Cargar</button></div>'
+      + '<button class="btn" data-act="menu" style="width:100%;margin-top:10px">Volver al menú</button>';
+  } else if (type === 'bolsa') {
+    h += '<h2>Bolsa</h2><p>Todo lo que tienes. Arriba se ven solo los materiales que estás usando ahora.</p>';
+    const keys = visibleRes(), SPECIAL = ['algas', 'cobre', 'cuarzo', 'obsidiana', 'semilla'];
+    const groups: [string, ResKey[]][] = [['De la isla', keys.filter(k => !REFINED.includes(k) && !SPECIAL.includes(k))], ['Refinados', keys.filter(k => REFINED.includes(k))], ['Especiales', keys.filter(k => SPECIAL.includes(k))]];
+    for (const [name, list] of groups) {
+      if (!list.length) continue;
+      h += `<h3>${name}</h3><div class="bag">`;
+      for (const k of list) {
+        const v = S.res[k], cap = capOf(k), pct = Math.min(100, Math.round(v / cap * 100));
+        h += `<div class="bagc${v >= cap ? ' full' : ''}${v === 0 ? ' zero' : ''}"><img class="pix" src="${(ICON as any)[k]}" alt=""><b>${v}<small>/${cap}</small></b><span>${(DATA.RESOURCES as any)[k].name}</span><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+      }
+      h += '</div>';
+    }
+    if (keys.some(k => S.res[k] >= capOf(k))) h += '<p>Con un material lleno, la figura que lo junta se detiene. El almacén guarda más.</p>';
   } else if (type === 'gfx') {
     h += '<h2>Ajustes gráficos</h2><p>Se guardan en este dispositivo.</p>'
       + `<div class="row col"><div class="info"><b>Efecto maqueta</b><small>Desenfoque arriba y abajo que da aspecto de miniatura. En 0 queda todo nítido.</small></div>
@@ -187,14 +242,13 @@ function render() {
   } else if (type === 'historia' && STORY[storyK]) {
     const st = STORY[storyK];
     h += `<h2>${st.title}</h2><div class="lore story">${st.text.split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('')}</div>`
-      + (storyK === 'cofre' ? '<p style="color:var(--muted)">Con este plano se arma la balsa en el capítulo 6, Mar adentro (próxima versión).</p>' : '')
       + '<button class="btn main" data-act="close" style="width:100%">Seguir</button>';
   } else if (type === 'diario') {
     h += diarioHTML();
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
-    h += `<h2>¡Las olas se abrieron!</h2><p>De la primera rama al paso entre las olas en ${m === 1 ? 'un minuto' : `unos ${m} minutos`}: despertaste a Musgo y a Brasa, pescaste lo que guardaba el mar, bajaste al río de lava y calmaste al guardián del volcán.</p>`
-      + '<p>Aquí termina esta versión. Lo que viene: la isla del faro, donde espera Marea. Mientras, sigue haciendo crecer tu isla y busca las reliquias escondidas de la cueva.</p>'
+    h += `<h2>¡El faro está encendido!</h2><p>De la primera rama a la luz del faro en ${m < 120 ? `unos ${m} minutos` : `unas ${Math.round(m / 60)} horas`}: despertaste a Musgo y a Brasa, calmaste al guardián del volcán, cruzaste las olas y Marea se unió al equipo.</p>`
+      + '<p>Aquí termina esta versión. Lo que viene: la Isla Ardiente, detrás de la puerta de lava del islote. Mientras, sigue haciendo crecer tu isla y busca las reliquias que faltan.</p>'
       + '<button class="btn main" data-act="close" style="width:100%">Seguir jugando</button>';
   }
   $('sheet').innerHTML = h;
@@ -212,7 +266,13 @@ export function initSheetEvents() {
   $('sheet').addEventListener('click', e => {
     const b = (e.target as HTMLElement).closest('button') as HTMLButtonElement | null;
     if (type === 'puzzle' && !(b && b.dataset.act === 'close')) { puzzleClick(e.target as HTMLElement); return; }
-    if (!b || b.disabled) return;
+    if (!b) {
+      const f = (e.target as HTMLElement).closest('[data-fold]') as HTMLElement | null;
+      if (f) { const k = f.dataset.fold!; openKey = openKey === k ? '' : k; $('sheet').querySelectorAll('[data-fold]').forEach(r => r.classList.toggle('open', (r as HTMLElement).dataset.fold === openKey)); sfx('tap', 0.6); }
+      return;
+    }
+    if (b.disabled) return;
+    sfx('tap');
     if (b.dataset.act === 'close') return closeSheet();
     if (type === 'diario') { const r = diarioClick(b); if (r !== undefined) { if (r) toast(r); render(); return; } }
     if (b.dataset.rebuild) {
@@ -238,6 +298,21 @@ export function initSheetEvents() {
     if (b.dataset.act === 'sail' && arg) { const m = arg; closeSheet(); const r = startSailing(m); if (r) toast(r); return; }
     if (b.dataset.act === 'coleccion') { openDiario('mar'); return; }
     if (b.dataset.act === 'gfx') { openSheet('gfx'); return; }
+    if (b.dataset.act === 'backup') { openSheet('respaldo'); return; }
+    if (b.dataset.act === 'menu') { openSheet('menu'); return; }
+    if (b.dataset.act === 'bkCopy') {
+      const ta = document.getElementById('bkOut') as HTMLTextAreaElement | null;
+      const done = () => toast('Código copiado');
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(bkCode).then(done, () => { ta?.select(); try { document.execCommand('copy'); done(); } catch { toast('Mantén presionado el código para copiarlo'); } });
+      else { ta?.select(); try { document.execCommand('copy'); done(); } catch { toast('Mantén presionado el código para copiarlo'); } }
+      return;
+    }
+    if (b.dataset.act === 'bkLoad') {
+      const v = (document.getElementById('bkIn') as HTMLTextAreaElement | null)?.value || '';
+      if (!v.trim()) { toast('Primero pega un código'); return; }
+      importSave(v).then(err => { if (err) { toast(err); return; } closeSheet(); onLoaded(); toast('Partida cargada'); });
+      return;
+    }
     if (b.dataset.act === 'expand') { closeSheet(); enterExpandMode(); return; }
     if (b.dataset.act === 'plant') { openSheet('plantar'); return; }
     if (b.dataset.act === 'path') { closeSheet(); enterMarkMode('path'); return; }
@@ -253,6 +328,7 @@ export function initSheetEvents() {
       setGfx(k === 'ao' || k === 'quality' ? { [k]: v } as any : { [k]: v === '1' });
       if (k === 'daycycle') refreshDay();
       if (k === 'sound') setSound(gfx.sound);
+      if (k === 'bigtext') document.documentElement.classList.toggle('bigtext', gfx.bigtext);
       render(); return;
     }
     if (b.dataset.act === 'reset') { confirmReset = true; render(); return; }
@@ -260,9 +336,16 @@ export function initSheetEvents() {
   });
   $('sheet').addEventListener('input', e => {
     const el = e.target as HTMLInputElement;
+    if (el.id === 'vFx' || el.id === 'vAmb') {
+      $(el.id + 'Out').textContent = el.value;
+      setGfx(el.id === 'vFx' ? { vfx: Number(el.value) } : { vamb: Number(el.value) });
+      setVolumes(gfx.vfx / 100, gfx.vamb / 100); return;
+    }
     if (el.id !== 'gTilt') return;
     $('gTiltOut').textContent = el.value;
     setGfx({ tilt: Number(el.value) / 100 });
   });
   on('finished', () => setTimeout(() => openSheet('fin'), 900));
+  on('openBag', () => openSheet('bolsa'));
+  $('sheet').addEventListener('change', e => { const el = e.target as HTMLInputElement; if (el.id === 'vFx') sfx('pop'); });
 }

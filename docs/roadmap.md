@@ -223,11 +223,26 @@ Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates p
 - **Capítulo 10 · La isla del faro** (8 metas, 3 etapas; premio +15 ★). El capítulo 11, **La Isla Ardiente**, queda anunciado.
 - **GitHub:** el proyecto vive en github.com/0-Zt/IslaArc, con un flujo que publica el juego en GitHub Pages en cada versión.
 
+## UI de arcilla (v0.19)
+
+- **Un solo material para toda la interfaz:** paneles como tablillas de arcilla clara, con borde café y sombra hundida, igual que las figuras. Botones gruesos que se hunden al tocarlos, títulos en una cinta amarilla, letra redonda (Fredoka y Nunito, incluidas en el archivo: funcionan sin internet).
+- **Bandeja de recursos:** arriba se ven solo los 4 o 5 materiales que importan ahora (los que nombra la meta, los que están llenos y los últimos que juntaste o gastaste). Todo lo demás está en la **bolsa**, con cuánto cabe de cada uno. La bolsa marca "!" si algo que no está a la vista se llenó.
+- **Lo que juntas vuela a la bandeja:** el ícono sale de donde trabajó la figura y cae en su casilla (o en la bolsa).
+- **Retratos de las figuras:** cada una con su cara real (se dibuja del mismo modelo 3D), su nombre y un ícono de lo que está haciendo ("zz" si espera, "!" si el almacén está lleno). Al elegir una, un globo dice "toca dónde trabajar". Los retratos también aparecen en la cueva, en el Diario y en la portada.
+- **Listas más cortas:** en Construir, Taller, Horno y Casa cada fila muestra ícono, nombre, costo y botón; la descripción se abre tocando la fila. El costo muestra solo la cantidad si alcanza, y "tienes/necesitas" en rojo si falta.
+- **Diario con íconos** en sus pestañas.
+- **Paneles que entran con rebote y salen deslizando**, con un sonido suave al tocar.
+- **Capítulo completo:** una tarjeta con confeti y estrellas sobre la isla (se va sola o con cualquier toque, nunca bloquea).
+- **Portada nueva:** logo de arcilla, la isla girando lento detrás, las figuras que tienes, "Continuar" con el capítulo y el tiempo jugado. "Nueva partida" pide confirmación si ya hay una isla guardada. La versión sale sola del proyecto.
+- **Menú:** volumen de efectos y de ambiente por separado, tamaño del texto (normal o grande), y **respaldo**: un código con tu partida para guardarlo o seguir en otro navegador.
+- Arreglos: el texto final ya habla del faro y la Isla Ardiente; Marea aparece en el Equipo del Diario; los avisos ya no tapan los botones de la derecha.
+
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
-- **Siguiente:** la Isla Ardiente (v0.19) y la Selva Enredada (v0.20). El orden completo está en docs/vision.md y docs/plan-figuras.md.
+- **Hierba alta en la isla principal**, un modelo de verdad para el faro que se ve desde el mar, revisar la dificultad del gólem.
+- **Siguiente:** la Isla Ardiente (v0.20) y la Selva Enredada (v0.21). El orden completo está en docs/vision.md y docs/plan-figuras.md.
 
 ## Decisiones tomadas
 

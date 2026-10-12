@@ -111,11 +111,13 @@ export interface Gfx {
   bloom: boolean; vignette: boolean; shadows: boolean; fps: boolean;
   daycycle: boolean;       // the day turns into night and back
   sound: boolean;
+  vfx: number; vamb: number;   // volumes, 0..100
+  bigtext: boolean;        // the interface a bit larger
   cap60: boolean;          // never draw more than 60 frames per second (120 Hz phones heat up and throttle)
   v?: number;
 }
 const GFX_KEY = 'isla-arcilla-gfx';
-export const GFX_DEFAULT: Gfx = { quality: IS_TOUCH ? 'baja' : 'alta', tilt: 0.35, tiltFollow: true, ao: 'off', bloom: true, vignette: true, shadows: true, fps: false, cap60: true, daycycle: true, sound: true, v: 2 };
+export const GFX_DEFAULT: Gfx = { quality: IS_TOUCH ? 'baja' : 'alta', tilt: 0.35, tiltFollow: true, ao: 'off', bloom: true, vignette: true, shadows: true, fps: false, cap60: true, daycycle: true, sound: true, vfx: 80, vamb: 80, bigtext: false, v: 2 };
 export const gfx: Gfx = { ...GFX_DEFAULT };
 try {
   const saved = JSON.parse(localStorage.getItem(GFX_KEY) || '{}');
@@ -175,7 +177,7 @@ export function setGfx(patch: Partial<Gfx>) {
   if (structural) buildComposer();
   else if (tilt) Object.assign(tilt, tiltParams(gfx.tilt));
 }
-export function resetGfx() { setGfx({ ...GFX_DEFAULT }); }
+export function resetGfx() { setGfx({ ...GFX_DEFAULT, sound: gfx.sound, vfx: gfx.vfx, vamb: gfx.vamb, bigtext: gfx.bigtext }); }
 
 /** Moves the sharp band of the miniature effect toward a screen height (-1 bottom .. 1 top). */
 export function focusOn(ndcY: number | null, dt: number, allSharp = false) {
