@@ -22,6 +22,7 @@ import { LORE_TEXT } from '../game/beach';
 import { STORY, startFishing } from '../game/fishing';
 import { startSailing, hasRaft } from '../game/raft';
 import { enterZone } from '../game/cave';
+import { offers, trade, traderHere } from '../game/trader';
 import { assignIdleBuilder } from '../game/crew';
 import { ICONS } from '../assets/buildings';
 import { $, img, toast, visibleRes } from './hud';
@@ -29,7 +30,7 @@ import type { Tile } from '../world/island';
 
 /* Bottom sheets: build menu, workshop, furnace, settings and the ending. */
 
-type SheetType = 'bolsa' | 'respaldo' | 'build' | 'casa' | 'prod' | 'taller' | 'almacen' | 'historia' | 'muelle' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin';
+type SheetType = 'bolsa' | 'respaldo' | 'build' | 'casa' | 'prod' | 'taller' | 'almacen' | 'historia' | 'muelle' | 'menu' | 'gfx' | 'expandir' | 'plantar' | 'ruina' | 'puzzle' | 'diario' | 'mensaje' | 'fin' | 'puesto';
 let type: SheetType | null = null, arg: Building | null = null, cell: [number, number] | null = null, confirmReset = false, sig = '';
 let centreTile: () => Tile | null = () => null;
 let onReset: () => void = () => {}, onPersist: () => void = () => {}, onLoaded: () => void = () => {};
@@ -79,7 +80,7 @@ const costHTML = (c: Cost) => `<div class="cost">${Object.entries(c).map(([k, v]
 const fold = (key: string, thumb: string, name: string, desc: string, meta: string, costs: string, right: string, cls = '') =>
   `<div class="row fold${openKey === key ? ' open' : ''}${cls}" data-fold="${key}"><div class="thumb">${thumb}</div><div class="info"><b>${name}</b><span class="more" aria-hidden="true">i</span>${meta ? `<span class="meta">${meta}</span>` : ''}<small class="desc">${desc}</small>${costs}</div>${right}</div>`;
 // the settings sheet never re-renders by itself, so sliders keep working while dragged
-const signature = () => type === 'gfx' ? 'gfx' : type === 'menu' ? 'menu' + confirmReset : type === 'respaldo' ? 'respaldo' + bkCode.length : type === 'historia' ? 'historia' + storyK : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.jobs?.length, arg?.jobs?.[0], arg?.lvl, arg?.up, arg && Math.floor(arg.work), S.inv, S.expanded.length]);
+const signature = () => type === 'gfx' ? 'gfx' : type === 'menu' ? 'menu' + confirmReset : type === 'respaldo' ? 'respaldo' + bkCode.length : type === 'historia' ? 'historia' + storyK : type === 'puzzle' ? 'puzzle' + puzzleSig() : type === 'diario' ? 'diario' + diarioSig() : JSON.stringify([type, S.res, S.tools, buildings.map(b => b.type + isDone(b)), arg?.jobs?.length, arg?.jobs?.[0], arg?.lvl, arg?.up, arg && Math.floor(arg.work), S.inv, S.expanded.length, traderHere(), offers().map(o => !!o.done)]);
 
 /** The level block shown in a building's sheet: what the next level does, its cost, or the upgrade in progress. */
 function upgradeHTML(b: Building) {
@@ -155,8 +156,18 @@ function render() {
       + (raft ? `<div class="row"><div class="thumb"><img class="pix" src="${(XICON as any).balsa}" alt=""></div><div class="info"><b>Zarpar en la balsa</b><small>Toca el mar para navegar. En las manchas oscuras está lo más raro.</small></div><button class="btn main" data-act="sail">Zarpar</button></div>` : '')
       + (S.flags.faroVisitado ? `<div class="row"><div class="thumb"><img class="pix" src="${(XICON as any).faro || (XICON as any).balsa}" alt=""></div><div class="info"><b>Ir a la isla del faro</b><small>La balsa ya conoce el paso entre las olas.</small></div><button class="btn main" data-act="faro">Viajar</button></div>` : '')
       + (S.flags.selvaVista ? `<div class="row"><div class="thumb"><img class="pix" src="${(XICON as any).semillaCeibo || (XICON as any).balsa}" alt=""></div><div class="info"><b>Ir a la Selva Enredada</b><small>Al oeste del faro. La balsa sigue el olor a flores.</small></div><button class="btn main" data-act="selva">Viajar</button></div>` : '')
+      + (traderHere() ? `<h3>El barco de Tito</h3><p>Tito cambia lo que te sobra por cosas difíciles de encontrar. Cada trueque, una vez por visita.</p>` + offers().map((o, i) => {
+          const getK = Object.keys(o.get)[0], n = o.get[getK], ok = !o.done && afford(o.give as Cost);
+          const name = getK === 'estrella' ? `${n} ★` : `${n} ${((DATA.RESOURCES as any)[getK]?.name || getK).toLowerCase()}`;
+          return `<div class="row${o.done ? ' dim' : ''}"><div class="thumb"><img class="pix" src="${(ICON as any)[getK] || (XICON as any)[getK] || XICON.estrella}" alt=""></div><div class="info"><b>Recibes ${name}</b><small>A cambio de:</small>${costHTML(o.give as Cost)}</div>${o.done ? '<span class="done">Hecho</span>' : `<button class="btn${ok ? ' main' : ''}" data-trade="${i}" ${ok ? '' : 'disabled'}>Cambiar</button>`}</div>`;
+        }).join('') : '')
       + `<div class="row"><div class="info"><b>Colección del mar</b><small>Lo que ya sacaste y lo que falta.</small></div><button class="btn" data-act="coleccion">Ver</button></div>`
       + upgradeHTML(arg);
+  } else if (type === 'puesto' && arg) {
+    const b = arg, d = buildingDef(b.type) as any, mk = d.makes as { every: number; gives: Record<string, number> };
+    h += `<h2>${d.name}</h2><p>${d.desc}</p>`
+      + `<div class="row"><div class="thumb">${ICONS[b.type]}</div><div class="info"><b>Cada ${mk.every} segundos</b><div class="cost">${Object.entries(mk.gives).map(([k, n]) => `<span>${img(k as ResKey)}${n}</span>`).join('')}</div><div class="dbar sm"><i id="hbar" style="width:${Math.round(b.prog * 100)}%"></i></div></div></div>`
+      + `<p style="color:var(--muted)">Si el almacén se llena, el ayudante sigue trabajando pero lo que saca no cabe.</p>`;
   } else if (type === 'taller' && arg) {
     const b = arg;
     h += '<h2>Taller de inventos</h2><p>Cada invento cambia algo para siempre. El taller trabaja en uno a la vez.</p>';
@@ -196,7 +207,7 @@ function render() {
       + '<button class="btn" data-act="menu" style="width:100%;margin-top:10px">Volver al menú</button>';
   } else if (type === 'bolsa') {
     h += '<h2>Bolsa</h2><p>Todo lo que tienes. Arriba se ven solo los materiales que estás usando ahora.</p>';
-    const keys = visibleRes(), SPECIAL = ['algas', 'cobre', 'cuarzo', 'obsidiana', 'semilla'];
+    const keys = visibleRes(), SPECIAL = ['algas', 'cobre', 'cuarzo', 'obsidiana', 'semilla', 'arcilla', 'ayudante'];
     const groups: [string, ResKey[]][] = [['De la isla', keys.filter(k => !REFINED.includes(k) && !SPECIAL.includes(k))], ['Refinados', keys.filter(k => REFINED.includes(k))], ['Especiales', keys.filter(k => SPECIAL.includes(k))]];
     for (const [name, list] of groups) {
       if (!list.length) continue;
@@ -248,8 +259,8 @@ function render() {
     h += diarioHTML();
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
-    h += `<h2>¡El Ceibo crece en tu isla!</h2><p>De la primera rama al árbol de Musgo en ${m < 120 ? `unos ${m} minutos` : `unas ${Math.round(m / 60)} horas`}: despertaste a Musgo y a Brasa, encendiste el faro con Marea, avivaste la forja de los Alfareros y despertaste al Ceibo de la selva.</p>`
-      + '<p>Aquí termina esta versión. Lo que viene: las Profundidades, bajo el mar frente al faro. Mientras, sigue haciendo crecer tu isla, visita los nidos y busca las reliquias que faltan.</p>'
+    h += `<h2>La puerta de los Alfareros</h2><p>De la primera rama a la puerta sellada en ${m < 120 ? `unos ${m} minutos` : `unas ${Math.round(m / 60)} horas`}: despertaste a Musgo y a Brasa, encendiste el faro con Marea, avivaste la forja, despertaste al Ceibo y bajaste diez pisos bajo la montaña.</p>`
+      + '<p>Aquí termina esta versión. Lo que viene: el origen, del otro lado de la puerta, y la quinta mano. Mientras, las Profundidades cambian en cada visita, los ayudantes trabajan y Tito vuelve con trueques nuevos.</p>'
       + '<button class="btn main" data-act="close" style="width:100%">Seguir jugando</button>';
   }
   $('sheet').innerHTML = h;
@@ -259,7 +270,7 @@ function render() {
 export function refreshSheet() {
   if (!type) return;
   if (signature() !== sig) render();
-  else if ((type === 'prod' || type === 'taller') && arg) { const bar = document.getElementById('hbar'); if (bar) bar.style.width = Math.round(arg.prog * 100) + '%'; }
+  else if ((type === 'prod' || type === 'taller' || type === 'puesto') && arg) { const bar = document.getElementById('hbar'); if (bar) bar.style.width = Math.round(arg.prog * 100) + '%'; }
 }
 
 export function initSheetEvents() {
@@ -299,6 +310,7 @@ export function initSheetEvents() {
     if (b.dataset.act === 'selva') { closeSheet(); enterZone('selva'); return; }
     if (b.dataset.act === 'sail' && arg) { const m = arg; closeSheet(); const r = startSailing(m); if (r) toast(r); return; }
     if (b.dataset.act === 'coleccion') { openDiario('mar'); return; }
+    if (b.dataset.trade) { const r = trade(Number(b.dataset.trade)); if (r) toast(r); render(); return; }
     if (b.dataset.act === 'gfx') { openSheet('gfx'); return; }
     if (b.dataset.act === 'backup') { openSheet('respaldo'); return; }
     if (b.dataset.act === 'menu') { openSheet('menu'); return; }

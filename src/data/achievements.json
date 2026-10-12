@@ -196,5 +196,27 @@
       40,
       120
     ]
+  },
+  {
+    "id": "comerciante",
+    "name": "Comerciante",
+    "desc": "Trueques con el barco de Tito",
+    "stat": "trueques",
+    "tiers": [
+      1,
+      10,
+      30
+    ]
+  },
+  {
+    "id": "hondo",
+    "name": "Más hondo",
+    "desc": "Pisos de las Profundidades bajados",
+    "stat": "pisos",
+    "tiers": [
+      5,
+      25,
+      80
+    ]
   }
 ]

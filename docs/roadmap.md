@@ -269,12 +269,28 @@ Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates p
 - **Capítulo 12 · La Selva Enredada** (9 metas, 3 etapas; premio +20 ★). El capítulo 13, **Las Profundidades**, queda anunciado.
 - Arreglo: después de un combate el guardián ya no queda pegado en su lugar.
 
+## Las Profundidades y economía 2 (v0.22)
+
+- **Cómo se baja:** con el Ceibo despierto, el gólem del volcán (en el río de lava de la cueva) se levanta y hace rodar una roca enorme que estaba junto a él. Detrás hay una escalera que baja.
+- **Pisos que cambian en cada visita:** cada vez que bajas, los túneles son otros. Cada piso tiene salas unidas por pasillos, una escalera hacia abajo y, en el camino, **un paso que solo una figura abre**: enredaderas (Musgo), hierba alta (Musgo), una grieta (puente de tablas o de raíces), brasas (Brasa), una planta carnívora (Brasa), agua (Marea), lava que corre (Marea) o un hoyo con su roca (Arci).
+- **Rincones escondidos:** un cuarto pegado a un costado, detrás de otro paso (a veces una pared hueca), con un cofre que da más. Charcas con un cofre al medio que solo alcanza Marea. Notas de los Alfareros en tablillas sueltas.
+- **Más hondo, mejores cosas:** cobre y cuarzo desde arriba, **arcilla azul** desde el piso 3, obsidiana desde el piso 5. Cofres más grandes mientras más abajo. La roca se pone más fría y azul.
+- **Lagartos de cuarzo:** nidos con combate corto (barra de Enojo); calmados dan cuarzo y arcilla.
+- **Lo que ya viste queda medio iluminado:** el mapa se va dibujando al caminar, para no perderse en la oscuridad.
+- **Piso 5, el campamento de los Alfareros:** una fogata, un diario y una cuerda que sube al piso 1. Desde ahí, en cada visita, la cuerda te baja directo al campamento.
+- **Piso 10, la puerta de los Alfareros:** una puerta enorme con cuatro pedestales, uno por figura. Cuando las cuatro ponen la mano, la puerta tiembla… y aparece una quinta marca vacía. Del otro lado se oye el mar.
+- **Economía 2, ayudantes de arcilla:** en el horno de forja (nivel 3) se cuecen ayudantes con arcilla azul, carbón y cuarzo. Cada ayudante va a un **puesto** que trabaja solo, aunque el equipo ande lejos: **cantera** (piedra y mineral), **leñera** (madera) o **criba** (arena y tierra). Se ve al ayudante trabajando.
+- **El barco de trueques:** Tito, un caracol de arcilla, amarra su barquito junto al muelle cada tanto (unos 4 minutos de visita, unos 5 de ausencia) con tres ofertas que cambian lo que sobra por cosas difíciles: cobre, cuarzo, vidrio, arcilla azul, obsidiana, estrellas y, muy de vez en cuando, un ayudante.
+- **Logros nuevos:** Comerciante (trueques) y Más hondo (pisos bajados). El Diario suma a los ayudantes en el Equipo.
+- **Capítulo 13 · Las Profundidades** (9 metas, 3 etapas; premio +25 ★). El capítulo 14, **El origen**, queda anunciado.
+- Arreglos: el agua de las cuevas ahora se ve como agua (antes parecía suelo); el letrero del piso cabe en el celular.
+
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
 - **Hierba alta en la isla principal**, un modelo de verdad para el faro que se ve desde el mar, revisar la dificultad del gólem.
-- **Siguiente:** las Profundidades con economía 2 (v0.22). El orden completo está en docs/vision.md y docs/plan-figuras.md.
+- **Siguiente:** el origen: la ciudad de los Alfareros, la quinta figura y el final (v0.23 en adelante). El orden completo está en docs/vision.md y docs/plan-figuras.md.
 
 ## Decisiones tomadas
 

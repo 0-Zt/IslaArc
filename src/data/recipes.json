@@ -77,5 +77,18 @@
     "n": 2,
     "seconds": 12,
     "at": "horno"
+  },
+  "ayudante": {
+    "name": "Ayudante de arcilla",
+    "desc": "Arcilla azul de las Profundidades cocida en el fuego de los Alfareros, con carbón y un poco de cuarzo para los ojos. Trabaja solo en un puesto",
+    "cost": {
+      "arcilla": 6,
+      "carbon": 2,
+      "cuarzo": 1
+    },
+    "out": "ayudante",
+    "seconds": 40,
+    "at": "horno",
+    "lvl": 3
   }
 }

@@ -45,6 +45,8 @@ Como las MO de Pokémon: cada objeto clave abre un tipo de obstáculo que el jug
 | Planos del horno de forja | La forja de los Alfareros | El horno nivel 3 | Hecho (v0.20) |
 | La lente del faro (con la forja viva) | Isla del faro | Ver la Selva Enredada | Hecho (v0.21) |
 | La semilla del Ceibo | El corazón del Ceibo | El Ceibo en tu isla (da semillas) | Hecho (v0.21) |
+| La roca del gólem | El gólem calmado + el Ceibo despierto | Las Profundidades | Hecho (v0.22) |
+| La cuerda del campamento | Piso 5 de las Profundidades | Bajar directo al piso 5 | Hecho (v0.22) |
 | Campana de vidrio (buceo) | Taller, con cuarzo | Zonas bajo el agua | Idea |
 | Timón reforzado | Taller, con el timón de Marea | Remolinos (atajos entre zonas) | Idea |
 | Lente del faro | Faro, con cuarzo y vidrio | Ver islas escondidas en el mapa | Idea |
@@ -131,7 +133,6 @@ Antes de agregar algo, cuatro preguntas. Si responde que sí a dos o más, entra
 
 - Carrera del bosque (minijuego de 3 carriles).
 - Mesa de pruebas para descubrir recetas combinando materiales.
-- Barco de trueques que visita la isla.
 - Molino, noria y canaletas (producción automática).
 - Luna llena y final secreto.
 - Linde del bosque con postes; semillas de pasto para borrar senderos.
@@ -148,7 +149,8 @@ Antes de agregar algo, cuatro preguntas. Si responde que sí a dos o más, entra
 | v0.19 · hecho | **UI de arcilla:** paneles de arcilla, bandeja de recursos con bolsa, retratos de las figuras, listas cortas, portada, volumen, respaldo de la partida | — |
 | v0.20 · hecho | **La Isla Ardiente:** la puerta de lava del islote, tres chimeneas (una por figura), géiseres, lava que Marea enfría, el nido y la salamandra madre, la forja y el horno de forja | Cap. 11 |
 | v0.21 · hecho | **La Selva Enredada:** la isla de Musgo, el río de capullos, la planta carnívora, el templo, las raíces del Ceibo, el guardián de raíces y el Ceibo en tu isla | Cap. 12 |
-| **v0.22** | **Las Profundidades y economía 2:** pisos que cambian, figuras asignadas a edificios, trueques | — |
+| v0.22 · hecho | **Las Profundidades y economía 2:** pisos que cambian en cada visita, arcilla azul, lagartos de cuarzo, campamento y puerta de los Alfareros; ayudantes de arcilla en puestos; el barco de trueques | Cap. 13 |
+| **v0.23** | **El origen, parte 1:** del otro lado de la puerta, la quinta figura | Cap. 14 |
 | Después | **El origen:** la ciudad de los Alfareros, el Espectro, el final | — |
 
 Ver docs/plan-figuras.md para el repaso completo y las referencias de otros juegos.

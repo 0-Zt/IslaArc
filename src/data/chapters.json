@@ -709,7 +709,69 @@
   {
     "id": "profundidades",
     "title": "Las Profundidades",
-    "desc": "Bajo el mar, frente a la isla del faro, algo brilla en el fondo. Para bajar hará falta una campana de vidrio. (Próximamente.)",
+    "desc": "Con el Ceibo despierto, Musgo siente que sus raíces bajan más hondo que la montaña. El gólem del volcán sabe por dónde se baja.",
+    "reward": {
+      "stars": 25,
+      "text": "La puerta sellada de los Alfareros y +25 ★"
+    },
+    "stages": [
+      {
+        "name": "La bajada",
+        "n": 3
+      },
+      {
+        "name": "La base trabaja",
+        "n": 4
+      },
+      {
+        "name": "La puerta",
+        "n": 2
+      }
+    ],
+    "goals": [
+      {
+        "id": "hoGolem",
+        "text": "En la cueva, en el río de lava, habla con el gólem"
+      },
+      {
+        "id": "hoBajar",
+        "text": "Baja por la escalera que había detrás de la roca"
+      },
+      {
+        "id": "hoPiso3",
+        "text": "Llega al piso 3 de las Profundidades"
+      },
+      {
+        "id": "hoArcilla",
+        "text": "Pica una veta de arcilla azul"
+      },
+      {
+        "id": "hoAyudante",
+        "text": "En el horno de forja, cuece un ayudante de arcilla"
+      },
+      {
+        "id": "hoPuesto",
+        "text": "Construye un puesto para tu ayudante (cantera, leñera o criba)",
+        "hint": "build"
+      },
+      {
+        "id": "hoTrueque",
+        "text": "Haz un trueque con el barco que llega al muelle"
+      },
+      {
+        "id": "hoCampamento",
+        "text": "Llega al campamento de los Alfareros, en el piso 5"
+      },
+      {
+        "id": "hoPuerta",
+        "text": "Baja hasta el piso 10 y pon las cuatro manos en la puerta"
+      }
+    ]
+  },
+  {
+    "id": "origen",
+    "title": "El origen",
+    "desc": "Del otro lado de la puerta se oye el mar. Falta una quinta mano. (Próximamente.)",
     "locked": true,
     "goals": []
   }

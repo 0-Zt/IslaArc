@@ -127,7 +127,7 @@ export function scareBats(p: THREE.Vector3, radius = 3.2) {
 }
 
 let darkAcc = 0, idleBat = 8;
-export function tickLife(dt: number, T: number, lead: THREE.Vector3, lights: Light[], leadR = 4.6) {
+export function tickLife(dt: number, T: number, lead: THREE.Vector3, lights: Light[], leadR = 4.6, memory?: [number, number][]) {
   if (!on) return;
   // ---- bats
   idleBat -= dt;
@@ -221,6 +221,8 @@ export function tickLife(dt: number, T: number, lead: THREE.Vector3, lights: Lig
   const x = dark.getContext('2d')!, sx = DK / box.w, sz = DK / box.h;
   x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, DK, DK); x.fillStyle = 'rgba(5,3,2,0.95)'; x.fillRect(0, 0, DK, DK);
   x.globalCompositeOperation = 'destination-out';
+  // cells already explored stay faintly visible (the Depths: a map you draw by walking)
+  if (memory) { x.fillStyle = 'rgba(0,0,0,0.5)'; for (const [wx, wz] of memory) x.fillRect((wx - 0.5 - box.x0) * sx, (wz - 0.5 + SHIFT - box.z0) * sz, sx + 0.5, sz + 0.5); }
   const hole = (wx: number, wz: number, r: number, k = 1) => {
     const px = (wx - box.x0) * sx, pz = (wz + SHIFT - box.z0) * sz, pr = r * sx;
     const gr = x.createRadialGradient(px, pz, pr * 0.15, px, pz, pr);

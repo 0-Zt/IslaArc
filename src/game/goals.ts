@@ -128,6 +128,15 @@ const CHECK: Record<string, () => boolean> = {
   selGuardian: () => !!S.flags.raizCalma,
   selCeibo: () => !!S.flags.ceiboDespierto,
   selPlantar: () => has('ceibo'),
+  hoGolem: () => !!S.flags.hondoAbierto,
+  hoBajar: () => (S.hondo?.max ?? -1) >= 0,
+  hoPiso3: () => (S.hondo?.max ?? -1) >= 2,
+  hoArcilla: () => !!S.flags.arcillaVista,
+  hoAyudante: () => !!S.flags.ayudanteListo,
+  hoPuesto: () => has('cantera') || has('lenera') || has('criba'),
+  hoTrueque: () => (S.stats.trueques || 0) > 0,
+  hoCampamento: () => !!S.flags.campamento,
+  hoPuerta: () => !!S.flags.puertaAlfareros,
 };
 /** Guardians of the second cave floor already looking at the altar. */
 const statuesRight = () => { const f = S.cave?.f[1]; return f ? (CAVE.floors[1].statues || []).filter(s => f.dirs[`${s.x},${s.z}`] === s.want).length : 0; };

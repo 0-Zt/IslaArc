@@ -13,6 +13,7 @@ export const CAVE_X = 300, CAVE_Z = 300;     // far from the island, out of its 
 export const FARO_X = 600, FARO_Z = 0;       // the lighthouse island, another place far away
 export const ARD_X = 600, ARD_Z = 320;       // the burning island (v0.20)
 export const SEL_X = 300, SEL_Z = 640;       // the tangled jungle (v0.21)
+export const HON_X = 600, HON_Z = 640;       // the Depths (v0.22)
 
 /* grass that sways in the wind: a Lambert material whose vertices lean more the higher they are */
 export const SWAY = { uniforms: { uTime: { value: 0 } } };
@@ -38,6 +39,8 @@ export const SEA_DARK = SEA_MAT.clone(); SEA_DARK.color = new THREE.Color(0.58, 
 const SPRING_MAT = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.55, 1.15, 1.1), transparent: true, opacity: 0.72, depthWrite: false });
 const STEAM_MAT = new THREE.MeshBasicMaterial({ color: '#f4f6f8', transparent: true, opacity: 0.5, depthWrite: false });
 const RIVER_MAT = new THREE.MeshLambertMaterial({ color: '#4aa8a0', transparent: true, opacity: 0.8, depthWrite: false });
+/** Still water underground: a dark pool that catches a little of the light. */
+const POOL_MAT = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.16, 0.42, 0.62), transparent: true, opacity: 0.78, depthWrite: false });
 export const cellPos = (x: number, z: number, y = 0) => new THREE.Vector3(CAVE_X + x + 0.5, y, CAVE_Z + z + 0.5);
 
 type L = THREE.BufferGeometry[];
@@ -112,23 +115,38 @@ export interface FloorView {
   /* the tangled jungle (v0.21) */
   buds: Map<string, { bud: THREE.Group; wet: THREE.Group; pad: THREE.Group }>; plants: Map<string, { g: THREE.Group; head: THREE.Group; jaw: THREE.Group }>;
   heart: { orb: THREE.Mesh; glow: THREE.Mesh } | null;
+  /* the Depths (v0.22) */
+  bigRock: THREE.Group | null; alfDoor: { hands: THREE.Mesh[]; fifth: THREE.Mesh; seam: THREE.Mesh } | null;
+  marks: Map<string, { glow: THREE.Mesh; who: string }>;
 }
+/** Extra things a floor may need to know: how deep it is (the Depths tint the rock), and which
+    figure each hand of the sealed door belongs to. */
+export interface FloorOpts { deep?: number; marks?: Record<string, string> }
+const MARK_COL: Record<string, string> = { arci: '#e0a070', musgo: '#8ad96b', brasa: '#ff8a40', marea: '#6ab8f0' };
 
 const isWall = (c: string | undefined) => !c || c === '#';
 
-export function buildFloor(map: string[], dirs: Record<string, string>, decor: { mushrooms: number[][]; stalagmites: number[][] }, relicKind = 0, theme = 'cueva', ox = CAVE_X, oz = CAVE_Z): FloorView {
+export function buildFloor(map: string[], dirs: Record<string, string>, decor: { mushrooms: number[][]; stalagmites: number[][] }, relicKind = 0, theme = 'cueva', ox = CAVE_X, oz = CAVE_Z, opts: FloorOpts = {}): FloorView {
   const W = map[0].length, Hh = map.length;
   const at = (x: number, z: number) => (map[z] && map[z][x]) || (theme === 'isla' || theme === 'volcan' || theme === 'selva' ? 'w' : '#');
   const root = new THREE.Group(); root.position.set(ox, 0, oz);
   const isla = theme === 'isla', torre = theme === 'torre', volcan = theme === 'volcan', selva = theme === 'selva', outdoor = isla || volcan || selva;
-  const v: FloorView = { root, boulders: new Map(), braziers: new Map(), statues: new Map(), doors: new Map(), gates: new Map(), plates: new Map(), crystals: new Map(), veins: new Map(), chests: new Map(), rubble: new Map(), pits: new Map(), lava: new Map(), altar: null, shell: null, golem: null, embers: [], lavaLights: [], cracked: new Map(), relic: null, vines: new Map(), ferns: new Map(), chasms: new Map(), obsidian: new Map(), gift: null, pieces: new Map(), lamp: null, flows: new Map(), geysers: new Map(), chimneys: new Map(), forge: null, foes: new Map(), springs: [], crater: null, buds: new Map(), plants: new Map(), heart: null };
+  const v: FloorView = { root, boulders: new Map(), braziers: new Map(), statues: new Map(), doors: new Map(), gates: new Map(), plates: new Map(), crystals: new Map(), veins: new Map(), chests: new Map(), rubble: new Map(), pits: new Map(), lava: new Map(), altar: null, shell: null, golem: null, embers: [], lavaLights: [], cracked: new Map(), relic: null, vines: new Map(), ferns: new Map(), chasms: new Map(), obsidian: new Map(), gift: null, pieces: new Map(), lamp: null, flows: new Map(), geysers: new Map(), chimneys: new Map(), forge: null, foes: new Map(), springs: [], crater: null, buds: new Map(), plants: new Map(), heart: null, bigRock: null, alfDoor: null, marks: new Map() };
   const S = P(); const glowParts: Record<string, L> = {};
   const addGlow = (k: keyof typeof GLOW, g: THREE.BufferGeometry) => { (glowParts[k] = glowParts[k] || []).push(g); };
   const box = (w: number, h: number, d: number, x: number, y: number, z: number) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); return g; };
 
   const FLOOR = torre ? ['#8a6a46', '#94724c', '#7e6040', '#8e6e48'] : volcan ? ['#867e79', '#8e857f', '#7c7571', '#89817a'] : ['#6a5c50', '#72624f', '#655648', '#6e5f52'];
   const MOSS = volcan ? ['#6e6662', '#766c66', '#6a625e'] : ['#5c6a40', '#647345', '#556238'];
-  const ROCK = torre ? ['#b8b0a4', '#c4bcb0', '#aaa296', '#bcb4a8'] : ['#3e3a44', '#47424d', '#38343e', '#4c4651'], DEEP = torre ? '#5a544c' : '#16141a';
+  let ROCK = torre ? ['#b8b0a4', '#c4bcb0', '#aaa296', '#bcb4a8'] : ['#3e3a44', '#47424d', '#38343e', '#4c4651'], DEEP = torre ? '#5a544c' : '#16141a';
+  let FLOORC = FLOOR;
+  if (opts.deep !== undefined) {
+    // the deeper, the colder: brown earth turns slate blue, the walls go from purple-grey to night blue
+    const k = Math.min(1, opts.deep / 8), mix = (a: string, b: string) => '#' + new THREE.Color(a).lerp(new THREE.Color(b), k).getHexString();
+    FLOORC = FLOOR.map((c, i) => mix(c, ['#4a5262', '#525a6a', '#465060', '#4e5666'][i]));
+    ROCK = ROCK.map((c, i) => mix(c, ['#2a3248', '#323a52', '#262e42', '#363e58'][i]));
+    DEEP = mix(DEEP, '#0a0e18');
+  }
   const GRASS = ['#6fae4a', '#78b850', '#66a444', '#73b04c'], SAND = ['#e8d8a0', '#e0d098', '#ecdca8'];
   const land = (q: string) => q !== 'w' && q !== '#';
   if (isla) {
@@ -158,7 +176,7 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
     while (q.length) { const [x, z] = q.shift()!; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = `${x + a},${z + b}`; if (!sea.has(k) && at(x + a, z + b) === 'w' && x + a >= 0 && z + b >= 0 && x + a < W && z + b < Hh) { sea.add(k); q.push([x + a, z + b]); } } }
     for (let z = 0; z < Hh; z++) for (let x = 0; x < W; x++) if (at(x, z) === 'w' && !sea.has(`${x},${z}`)) { spring.add(`${x},${z}`); v.springs.push([x, z]); }
   }
-  const springGeo: THREE.BufferGeometry[] = [];
+  const springGeo: THREE.BufferGeometry[] = [], poolGeo: THREE.BufferGeometry[] = [];
   for (let z = 0; z < Hh; z++) for (let x = 0; x < W; x++) {
     const c = at(x, z), cx = x + 0.5, cz = z + 0.5;
     if (selva) {
@@ -355,7 +373,20 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
     }
     const moss = !torre && (c === ',' || (!volcan && H(x, z, 3) < 0.12));
     if (torre) { vbox(S.plank, cx, -0.15, cz, 1, 0.3, 1, pick(FLOOR, x, z)); vbox(S.plank, cx, 0.005, cz + 0.49, 1, 0.01, 0.03, '#5a4028'); continue; }
-    vbox(S.stone, cx, -0.15, cz, 1, 0.3, 1, moss ? pick(MOSS, x, z) : pick(FLOOR, x, z));
+    if (c === 'w' && !torre) {
+      // a pool under the ground: a sunk bed of dark stone and still water; only Marea wades in
+      vbox(S.stone, cx, -0.5, cz, 1, 0.3, 1, '#1e2a32');
+      const g2 = new THREE.PlaneGeometry(1, 1); g2.rotateX(-Math.PI / 2); g2.translate(cx, -0.16, cz); poolGeo.push(g2);
+      for (const [a, b] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) { const q2 = at(x + a, z + b); if (q2 !== 'w' && q2 !== 'K' && !isWall(q2)) vbox(S.stone, cx + a * 0.46, -0.1, cz + b * 0.46, a ? 0.08 : 1, 0.16, b ? 0.08 : 1, '#3a3a44'); }
+      if (H(x, z, 52) < 0.3) vbox(S.stone, cx + (H(x, z, 53) - 0.5) * 0.5, -0.2, cz + (H(x, z, 54) - 0.5) * 0.5, 0.16, 0.08, 0.12, '#4a5058');
+      continue;
+    }
+    if (c === 'K' && !torre && [[-1, 0], [1, 0], [0, -1], [0, 1]].filter(([a, b]) => at(x + a, z + b) === 'w').length >= 3) {
+      // a chest on a stone in the middle of a pool
+      vbox(S.stone, cx, -0.5, cz, 1, 0.3, 1, '#1e2a32'); const g2 = new THREE.PlaneGeometry(1, 1); g2.rotateX(-Math.PI / 2); g2.translate(cx, -0.16, cz); poolGeo.push(g2);
+      vbox(S.stone, cx, -0.06, cz, 0.78, 0.2, 0.78, '#5a5660'); continue;
+    }
+    vbox(S.stone, cx, -0.15, cz, 1, 0.3, 1, moss ? pick(MOSS, x, z) : pick(FLOORC, x, z));
     // pebbles and cracks
     if (H(x, z, 4) < 0.55) for (let k = 0; k < 1 + Math.floor(H(x, z, 6) * 3); k++) vbox(S.stone, cx + (H(x, z, k + 20) - 0.5) * 0.8, 0.03, cz + (H(x, z, k + 23) - 0.5) * 0.8, 0.08 + H(x, z, k + 26) * 0.08, 0.06, 0.08 + H(x, z, k + 29) * 0.08, pick(['#6a5d50', '#5a4e44', '#7a6c5e'], x, z, k));
     if (H(x, z, 8) < 0.2) vbox(S.stone, cx + (H(x, z, 9) - 0.5) * 0.4, 0.005, cz, 0.5, 0.01, 0.04, '#2a2420');
@@ -399,6 +430,11 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
       for (let k = 0; k < 3; k++) vbox(S.stone, cx, 0.05 + k * 0.1, cz + 0.2 + k * 0.1, 0.8, 0.1, 0.25, '#6a5c50');
       const d = lightDecal(1.6, '#fff0c8'); d.position.set(cx, 0.02, cz); root.add(d);
     }
+    if (c === 'J') {
+      // behind the golem's rock: steps going down into the cold
+      vbox(S.stone, cx, -0.6, cz, 0.9, 1.0, 0.9, '#05070c');
+      for (let k = 0; k < 3; k++) vbox(S.stone, cx + 0.3 - k * 0.22, -0.08 - k * 0.14, cz, 0.22, 0.08, 0.8, '#30343e');
+    }
     if (c === '>') {
       vbox(S.stone, cx, -0.6, cz, 0.9, 1.0, 0.9, '#0a0807');
       for (let k = 0; k < 3; k++) vbox(S.stone, cx, -0.08 - k * 0.14, cz + 0.3 - k * 0.22, 0.8, 0.08, 0.22, '#3a302a');
@@ -428,6 +464,7 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
   for (const [k, list] of Object.entries(glowParts)) { const m = new THREE.Mesh(mergeGeometries(list), (GLOW as any)[k]); root.add(m); }
   if (springGeo.length) { const m = new THREE.Mesh(mergeGeometries(springGeo), SPRING_MAT); m.renderOrder = 2; root.add(m); }
   if (riverGeo.length) { const m = new THREE.Mesh(mergeGeometries(riverGeo), RIVER_MAT); m.renderOrder = 2; root.add(m); }
+  if (poolGeo.length) { const m = new THREE.Mesh(mergeGeometries(poolGeo), POOL_MAT); m.renderOrder = 2; root.add(m); }
 
   // ---------- dynamic objects ----------
   let runeSeed = 1;
@@ -496,6 +533,64 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
         G.add(cg); (G as any).shards = cg;
         const d = lightDecal(1.8, '#80e0ff'); d.position.y = 0.02; G.add(d); (G as any).decal = d;
         root.add(G); v.crystals.set(key, G); break;
+      }
+      case 'a': {
+        // a vein of blue clay: soft rock with streaks the colour of the Alfareros' figures
+        vbox(pp.stone, 0, 0.3, 0, 0.75, 0.6, 0.7, '#4e4a52'); vbox(pp.stone, -0.08, 0.62, 0.04, 0.5, 0.14, 0.45, '#46424a');
+        for (let k = 0; k < 4; k++) vbox(pp.brick, (H(x, z, k + 94) - 0.5) * 0.56, 0.18 + H(x, z, k + 96) * 0.42, 0.36, 0.2, 0.08, 0.02, k % 2 ? '#5a86c8' : '#4a72b0');
+        vbox(pp.brick, 0.2, 0.66, 0.1, 0.18, 0.06, 0.18, '#6a96d8');
+        merge(pp, G);
+        const sh = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.02), GLOW.crystal); sh.position.set(-0.18, 0.44, 0.37); G.add(sh);
+        root.add(G); v.veins.set(key, G); break;
+      }
+      case 'u': {
+        // the rope of the camp: a frame of poles, a wheel and a thick rope going up through the ceiling
+        for (const sx of [-0.32, 0.32]) vbox(pp.bark, sx, 0.75, 0, 0.08, 1.5, 0.08, '#6a4a2a');
+        vbox(pp.bark, 0, 1.48, 0, 0.8, 0.08, 0.1, '#5a3e24');
+        vbox(pp.plank, 0, 1.3, 0.04, 0.3, 0.3, 0.06, '#8a5a2e'); vbox(pp.plank, 0, 1.3, 0.08, 0.1, 0.1, 0.04, '#5a3e24');
+        vbox(pp.thatch, 0.12, 2.2, 0.06, 0.06, 1.8, 0.06, '#d8c090'); vbox(pp.thatch, 0.12, 0.62, 0.06, 0.06, 1.2, 0.06, '#d8c090');
+        vbox(pp.thatch, 0.12, 0.06, 0.06, 0.26, 0.1, 0.26, '#c8b080');
+        merge(pp, G);
+        const d = lightDecal(2.2, '#fff0c8'); d.position.y = 0.02; G.add(d);
+        root.add(G); break;
+      }
+      case 'J': {
+        // a round rock bigger than any boulder, smooth from the golem's hands; it hides a staircase
+        const rk = new THREE.Group(), rp = P();
+        vbox(rp.stone, 0, 0.62, 0, 1.0, 1.1, 0.96, '#6a5c50'); vbox(rp.stone, 0, 0.62, 0, 1.12, 0.86, 0.8, '#625548'); vbox(rp.stone, 0, 0.62, 0, 0.8, 0.86, 1.08, '#5e5246');
+        vbox(rp.stone, 0, 1.2, 0, 0.7, 0.14, 0.7, '#7a6c5e'); vbox(rp.stone, 0.2, 0.9, 0.5, 0.3, 0.08, 0.04, '#4a3f36'); vbox(rp.stone, -0.25, 0.45, 0.5, 0.2, 0.06, 0.04, '#4a3f36');
+        for (const [a, b] of [[-0.3, 0.8], [0.25, 0.5]]) vbox(rp.stone, a, b, 0.51, 0.16, 0.2, 0.02, '#3a322c');
+        merge(rp, rk); G.add(rk); root.add(G); v.bigRock = rk; break;
+      }
+      case '{': {
+        // the sealed door of the Alfareros: a slab of dark stone three cells wide, four figures carved
+        // with open hands, a fifth hand-shaped hollow in the middle
+        vbox(pp.stone, 0, 1.5, -0.1, 3.2, 3.0, 0.5, '#2e3446'); vbox(pp.stone, 0, 3.08, -0.1, 3.5, 0.2, 0.6, '#262c3c');
+        for (const sx of [-1.7, 1.7]) vbox(pp.stone, sx, 1.55, -0.05, 0.3, 3.1, 0.6, '#262c3c');
+        for (let k = 0; k < 4; k++) {
+          const fx = -1.1 + k * 0.73;
+          vbox(pp.stone, fx, 1.35, 0.16, 0.36, 0.6, 0.04, '#3a4256'); vbox(pp.stone, fx, 1.82, 0.16, 0.26, 0.24, 0.04, '#3e465a');
+          vbox(pp.stone, fx, 2.18, 0.16, 0.34, 0.12, 0.04, '#3a4256');
+        }
+        vbox(pp.stone, 0, 1.5, 0.16, 0.04, 2.9, 0.02, '#141824');
+        merge(pp, G);
+        const hands: THREE.Mesh[] = [];
+        for (let k = 0; k < 4; k++) { const hm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.02), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.18, 0.2, 0.26) })); hm.position.set(-1.1 + k * 0.73, 2.18 + 0.2, 0.19); G.add(hm); hands.push(hm); }
+        const fifth = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.34, 0.02), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.1, 0.11, 0.14) })); fifth.position.set(0, 0.95, 0.19); G.add(fifth);
+        const seam = new THREE.Mesh(new THREE.BoxGeometry(0.03, 2.9, 0.02), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.08, 0.09, 0.12) })); seam.position.set(0, 1.5, 0.18); G.add(seam);
+        root.add(G); v.alfDoor = { hands, fifth, seam }; break;
+      }
+      case 'k': {
+        // a pedestal with a hand pressed into the clay: of earth, of leaves, of embers, of water
+        const who = opts.marks?.[key] || 'arci', col = MARK_COL[who] || '#c0c0c0';
+        vbox(pp.stone, 0, 0.3, 0, 0.56, 0.6, 0.56, '#3a4054'); vbox(pp.stone, 0, 0.63, 0, 0.66, 0.06, 0.66, '#444c62');
+        vbox(pp.brick, 0, 0.665, 0, 0.36, 0.02, 0.4, col);
+        for (const [a, b] of [[-0.12, -0.14], [-0.04, -0.17], [0.04, -0.17], [0.12, -0.14]]) vbox(pp.brick, a, 0.675, b, 0.05, 0.01, 0.12, '#1a1e28');
+        vbox(pp.brick, 0, 0.675, 0.04, 0.2, 0.01, 0.18, '#1a1e28');
+        merge(pp, G);
+        const gl = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.012, 0.34), new THREE.MeshBasicMaterial({ color: new THREE.Color(col).multiplyScalar(0.25), transparent: true, opacity: 0.9 }));
+        gl.position.y = 0.69; G.add(gl);
+        root.add(G); v.marks.set(key, { glow: gl, who }); break;
       }
       case 'M': {
         vbox(pp.stone, 0, 0.3, 0, 0.75, 0.6, 0.7, '#5a4e44'); vbox(pp.stone, 0.1, 0.62, -0.05, 0.5, 0.14, 0.45, '#4e443c');
@@ -705,8 +800,9 @@ export function buildFloor(map: string[], dirs: Record<string, string>, decor: {
         if (c === 'N') {
           for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2; vbox(pp.stone, Math.cos(a) * 0.42, 0.06, Math.sin(a) * 0.42, 0.16, 0.12, 0.14, '#3a3234'); }
           merge(pp, G);
-          const bed = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.5), selva ? new THREE.MeshLambertMaterial({ color: '#8a7040' }) : GLOW.ember); bed.position.y = 0.015; G.add(bed);
-          const pal = selva ? IGUANA : undefined;
+          const bed = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.5), selva ? new THREE.MeshLambertMaterial({ color: '#8a7040' }) : opts.deep !== undefined ? GLOW.crystalDim : GLOW.ember); bed.position.y = 0.015; G.add(bed);
+          if (opts.deep !== undefined) for (let k = 0; k < 4; k++) { const cr = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.18 + k * 0.05, 0.07), GLOW.crystal); const a = k * 1.6 + 0.4; cr.position.set(Math.cos(a) * 0.36, 0.12, Math.sin(a) * 0.36); cr.rotation.z = (k - 1.5) * 0.2; G.add(cr); }
+          const pal = selva ? IGUANA : opts.deep !== undefined ? QUARTZ : undefined;
           const sm = salamander(0.62, pal); sm.g.position.set(-0.05, 0.03, 0.05); G.add(sm.g);
           const sm2 = salamander(0.45, pal); sm2.g.position.set(0.22, 0.03, -0.18); sm2.g.rotation.y = 2.4; G.add(sm2.g);
           root.add(G); v.foes.set(key, sm);
@@ -745,7 +841,8 @@ export function lavaScroll(dt: number) { lavaTex.offset.x += dt * 0.03; lavaTex.
 /** A fire salamander: a long body of black stone with glowing cracks, a head with ember eyes, four legs
     and a tail in three parts. Built as parts so it can rear up, snap and swing its tail in a fight. */
 const IGUANA = { body: '#4a7a3a', top: '#6a9a48', head: '#548a40', belly: '#d8c870', crack: 'mush' as const };
-export function salamander(scale = 1, pal?: { body: string; top: string; head: string; belly: string; crack: 'mush' }): Golem {
+const QUARTZ = { body: '#56607a', top: '#7a88a4', head: '#5e6a86', belly: '#c8e0f0', crack: 'crystal' as const };
+export function salamander(scale = 1, pal?: { body: string; top: string; head: string; belly: string; crack: 'mush' | 'crystal' }): Golem {
   const g = new THREE.Group(); g.scale.setScalar(scale);
   const torso = new THREE.Group(); torso.position.y = 0.16; g.add(torso);
   const tp = P();
@@ -754,7 +851,7 @@ export function salamander(scale = 1, pal?: { body: string; top: string; head: s
   for (const sx of [-1, 1]) vbox(tp.brick, sx * 0.22, -0.09, -0.2, 0.1, 0.14, 0.12, '#4a3c3a');
   merge(tp, torso);
   const cracks: THREE.Mesh[] = [];
-  for (const [a, b, w2, d2] of [[0, -0.12, 0.04, 0.22], [0.08, 0.08, 0.1, 0.03], [-0.08, 0.16, 0.1, 0.03]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w2, 0.012, d2), pal ? GLOW.mush : GLOW.flame); m.position.set(a, 0.135, b); torso.add(m); cracks.push(m); }
+  for (const [a, b, w2, d2] of [[0, -0.12, 0.04, 0.22], [0.08, 0.08, 0.1, 0.03], [-0.08, 0.16, 0.1, 0.03]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w2, 0.012, d2), pal ? GLOW[pal.crack] : GLOW.flame); m.position.set(a, 0.135, b); torso.add(m); cracks.push(m); }
   const head = new THREE.Group(); head.position.set(0, 0.04, 0.34); torso.add(head);
   const hp = P(); vbox(hp.brick, 0, 0.02, 0.1, 0.28, 0.16, 0.26, pal?.head || '#4e4040'); vbox(hp.brick, 0, -0.04, 0.2, 0.22, 0.05, 0.14, pal?.belly || '#b8502a'); merge(hp, head);
   const eyes: THREE.Mesh[] = [];
@@ -763,7 +860,7 @@ export function salamander(scale = 1, pal?: { body: string; top: string; head: s
   const armL = leg(-1), armR = leg(1);
   const tail = new THREE.Group(); tail.position.set(0, 0, -0.32); torso.add(tail);
   const tl = P(); vbox(tl.brick, 0, -0.02, -0.14, 0.2, 0.14, 0.3, '#4a3c3a'); vbox(tl.brick, 0, -0.04, -0.38, 0.13, 0.1, 0.26, '#4e4040'); vbox(tl.brick, 0, -0.06, -0.58, 0.07, 0.07, 0.2, '#5e4c46'); merge(tl, tail);
-  const tc = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.012, 0.4), GLOW.flame); tc.position.set(0, 0.06, -0.3); tail.add(tc); cracks.push(tc);
+  const tc = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.012, 0.4), pal ? GLOW[pal.crack] : GLOW.flame); tc.position.set(0, 0.06, -0.3); tail.add(tc); cracks.push(tc);
   return { g, torso, head, armL, armR, eyes, cracks, tail };
 }
 

@@ -269,5 +269,73 @@
     "requires": "casa",
     "work": 16,
     "needsFlag": "semillaCeibo"
+  },
+  "cantera": {
+    "name": "Cantera",
+    "desc": "Un ayudante de arcilla pica piedra y saca mineral sin parar, aunque el equipo ande lejos.",
+    "size": [
+      2,
+      1
+    ],
+    "cost": {
+      "piedra": 20,
+      "tablas": 8,
+      "ayudante": 1
+    },
+    "requires": "casa",
+    "work": 8,
+    "needsFlag": "ayudanteListo",
+    "makes": {
+      "every": 40,
+      "gives": {
+        "piedra": 4,
+        "mineral": 2
+      }
+    }
+  },
+  "lenera": {
+    "name": "Leñera",
+    "desc": "Un ayudante de arcilla junta ramas, corta leña y la apila. Da madera sola.",
+    "size": [
+      2,
+      1
+    ],
+    "cost": {
+      "madera": 15,
+      "tablas": 10,
+      "ayudante": 1
+    },
+    "requires": "casa",
+    "work": 8,
+    "needsFlag": "ayudanteListo",
+    "makes": {
+      "every": 40,
+      "gives": {
+        "madera": 5
+      }
+    }
+  },
+  "criba": {
+    "name": "Criba",
+    "desc": "Un ayudante de arcilla tamiza la tierra de la orilla: separa arena y tierra buena.",
+    "size": [
+      2,
+      1
+    ],
+    "cost": {
+      "tablas": 10,
+      "piedra": 10,
+      "ayudante": 1
+    },
+    "requires": "casa",
+    "work": 8,
+    "needsFlag": "ayudanteListo",
+    "makes": {
+      "every": 40,
+      "gives": {
+        "arena": 3,
+        "tierra": 3
+      }
+    }
   }
 }

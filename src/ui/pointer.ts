@@ -60,6 +60,7 @@ const CAVE_GOALS = new Set(['grieta', 'bajar', 'cvBraseros', 'cvSalon', 'cvEstat
 const FARO_GOALS = new Set(['faroMarea', 'faroPasto', 'faroVapor', 'faroRoca', 'faroLuz', 'faroAgua']);
 const ARD_GOALS = new Set(['ardPuerta', 'ardTablilla', 'ardVapor', 'ardRaices', 'ardRio', 'ardCrater', 'ardMadre', 'ardForja']);
 const SEL_GOALS = new Set(['selVer', 'selLlegar', 'selRio', 'selPlanta', 'selTemplo', 'selRaices', 'selGuardian', 'selCeibo']);
+const HO_CAVE = new Set(['hoGolem', 'hoBajar', 'hoPiso3', 'hoArcilla', 'hoCampamento', 'hoPuerta']);
 const SEA_GOALS = new Set(['zarpar', 'hondo', 'hondo1', 'cobre', 'brujula', 'olas', 'timon', 'soplar', 'abrir', 'cruzar']);
 /** Out at sea: towards the nearest dark water, or the big waves. */
 function seaTarget(goal: string): THREE.Vector3 | null {
@@ -80,6 +81,9 @@ export function pointerTarget(): THREE.Vector3 | null {
   }
   if (SEL_GOALS.has(g.id)) { if (sailingActive() || fishingActive()) return null; const m = done('muelle'); return m ? overBuilding(m) : null; }
   if (ARD_GOALS.has(g.id)) { const t = archTile(); return t && !sailingActive() ? new THREE.Vector3(t.wx, 2.6, t.wz) : null; }
+  if (HO_CAVE.has(g.id)) return sailingActive() || fishingActive() ? null : mouthTarget();
+  if (g.id === 'hoAyudante') { const b = done('horno'); return b && !b.jobs.length && !b.up ? overBuilding(b) : null; }
+  if (g.id === 'hoTrueque') { if (sailingActive() || fishingActive()) return null; const m = done('muelle'); return m ? overBuilding(m) : null; }
   if (g.id === 'ardHorno') { const b = done('horno'); return b && !b.up ? overBuilding(b) : null; }
   if (g.id === 'faroPesca') { if (fishingActive()) return null; const m = done('muelle'); return m ? overBuilding(m) : null; }
   if (CAVE_GOALS.has(g.id)) {

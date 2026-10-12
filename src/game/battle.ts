@@ -11,7 +11,8 @@ import { puff } from '../world/particles';
    and raises a mist). The enemy shows what it will do next, one turn ahead, so you can plan.
    Losing costs nothing: the team steps back and can try again.
    Enemies: the guardian of the volcano (v0.16), the fire salamanders of the nest and their mother
-   who guards the forge (v0.20). */
+   who guards the forge (v0.20), the iguanas and the guardian of the roots (v0.21), and the quartz
+   lizards of the Depths (v0.22). */
 
 type MoveId = 'pico' | 'cubrir' | 'musgo' | 'brotes' | 'absorber' | 'avivar' | 'agua' | 'neblina';
 /* descriptions name the enemy's bar (heat, anger) and its second phase (red-hot, in bloom) */
@@ -30,7 +31,7 @@ const HP: Record<string, number> = { arci: 40, musgo: 34, brasa: 38, marea: 34 }
 const NAME: Record<string, string> = { arci: 'Arci', musgo: 'Musgo', brasa: 'Brasa', marea: 'Marea' };
 
 /* what an enemy can do: hit one, hit everyone, or heat itself up again */
-type IntentId = 'puno' | 'pisoton' | 'ola' | 'puno2' | 'recalentar' | 'mordisco' | 'escupir' | 'enroscarse' | 'mordisco2' | 'lluvia' | 'coletazo' | 'colazo' | 'chillido' | 'sol' | 'latigo' | 'esporas' | 'raices' | 'espinas' | 'polen';
+type IntentId = 'puno' | 'pisoton' | 'ola' | 'puno2' | 'recalentar' | 'mordisco' | 'escupir' | 'enroscarse' | 'mordisco2' | 'lluvia' | 'coletazo' | 'colazo' | 'chillido' | 'sol' | 'latigo' | 'esporas' | 'raices' | 'espinas' | 'polen' | 'colaCristal' | 'destello' | 'esconderse';
 interface IntentDef { kind: 'one' | 'all' | 'heat'; n: number; text: (w: string) => string; log: (w: string) => string }
 const INTENTS: Record<IntentId, IntentDef> = {
   puno: { kind: 'one', n: 12, text: w => `Puño de roca → ${w} (12)`, log: w => `El gólem levanta el puño sobre ${w}…` },
@@ -51,9 +52,12 @@ const INTENTS: Record<IntentId, IntentDef> = {
   espinas: { kind: 'one', n: 17, text: w => `Lluvia de espinas → ${w} (17)`, log: w => `El guardián abre las flores de los hombros y dispara espinas a ${w}…` },
   esporas: { kind: 'all', n: 6, text: () => 'Esporas → todos (6)', log: () => 'El guardián sacude el musgo del lomo: una nube de esporas.' },
   polen: { kind: 'all', n: 9, text: () => 'Polen pesado → todos (9)', log: () => 'Las flores del guardián sueltan un polen que pica y pesa.' },
+  colaCristal: { kind: 'one', n: 10, text: w => `Cola de cristal → ${w} (10)`, log: w => `Un lagarto gira y le pega a ${w} con la cola llena de cristales…` },
+  destello: { kind: 'all', n: 6, text: () => 'Destello → todos (6)', log: () => 'Los lagartos erizan los cristales del lomo: un destello que encandila a todos.' },
+  esconderse: { kind: 'heat', n: 9, text: () => 'Se esconden entre los cristales (+9)', log: () => 'Los lagartos se meten entre los cristales y recuperan el ánimo.' },
   raices: { kind: 'heat', n: 14, text: () => 'Echa raíces (+14 de enojo)', log: () => 'El guardián hunde los pies en la tierra y bebe fuerza de las raíces.' },
 };
-export type FoeId = 'golem' | 'salamandra' | 'madre' | 'iguanas' | 'raiz';
+export type FoeId = 'golem' | 'salamandra' | 'madre' | 'iguanas' | 'raiz' | 'lagartos';
 interface FoeDef { name: string; heat: number; red: number; golem: boolean; pick: (phase: number, heat: number, reheated: boolean) => IntentId; win: string; lose: string; redLog: string; bar?: string; redName?: string; redOn?: string; on?: string }
 const FOES: Record<FoeId, FoeDef> = {
   golem: {
@@ -77,6 +81,11 @@ const FOES: Record<FoeId, FoeDef> = {
     name: 'Iguanas de la selva', heat: 40, red: 0, golem: false, on: 'a las iguanas',
     pick: (_ph, h, re) => h < 16 && !re ? 'sol' : Math.random() < 0.6 ? 'colazo' : 'chillido',
     win: 'Las iguanas se cansan y se tiran al sol, panza arriba.', lose: 'Las iguanas ganan esta vez. El equipo se aleja para descansar.', redLog: '',
+  },
+  lagartos: {
+    name: 'Lagartos de cuarzo', heat: 48, red: 0, golem: false, bar: 'Enojo', on: 'a los lagartos',
+    pick: (_ph, h, re) => h < 18 && !re ? 'esconderse' : Math.random() < 0.6 ? 'colaCristal' : 'destello',
+    win: 'Los lagartos se calman y se enroscan alrededor de sus cristales, brillando bajito.', lose: 'Los lagartos ganan esta vez. El equipo vuelve a la escalera para descansar.', redLog: '',
   },
   raiz: {
     name: 'El guardián de raíces', heat: 95, red: 48, golem: true, bar: 'Enojo', redName: 'en flor', redOn: 'las flores abiertas', on: 'al guardián',

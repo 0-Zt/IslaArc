@@ -175,6 +175,7 @@ function finishJob(b: Building, job: string) {
     if (out === 'lingote') S.made += n;
     S.stats[out] = (S.stats[out] || 0) + n;
     gain(out, n, v);
+    if (out === 'ayudante' && !S.flags.ayudanteListo) { S.flags.ayudanteListo = true; setTimeout(() => emit('story', 'ayudante'), 600); }
   }
   puff(v.x, v.y, v.z, '#ffd04a', 10, 2.2, 1.4);
   emit('smelted', b, job);
@@ -211,6 +212,18 @@ export function tickBuildings(dt: number) {
       b.prog += dt / 90;
       if (b.prog >= 1) { b.prog = 0; const v = smokePoint(b); gain('semilla', 2, new THREE.Vector3(v.x, v.y - 1.2, v.z)); puff(v.x, v.y - 0.8, v.z, '#8ad96b', 10, 1, 1.4); }
       if (Math.random() < dt * 0.6) { const v = smokePoint(b); puff(v.x + (Math.random() - 0.5) * 1.6, v.y - 0.6, v.z + (Math.random() - 0.5) * 1.6, Math.random() < 0.5 ? '#6fae4a' : '#f8a8c8', 1, -0.2, 0.6, 0); }
+    }
+    const mk = (def(b.type) as any).makes as { every: number; gives: Record<string, number> } | undefined;
+    if (mk) {
+      // a post with a clay helper: it works on its own and drops what it makes at its feet
+      b.prog += dt / mk.every;
+      if (b.prog >= 1) { b.prog = 0; const v = smokePoint(b); Object.entries(mk.gives).forEach(([k, n], i) => gain(k as ResKey, n, new THREE.Vector3(v.x, v.y + i * 0.35, v.z))); S.stats.ayudas = (S.stats.ayudas || 0) + 1; }
+      const arm = ((b as any).arm ||= b.group.getObjectByName('helperArm')) as THREE.Object3D | undefined, t = performance.now() / 1000 + b.i;
+      if (arm) {
+        if (b.type === 'criba') { arm.rotation.x = -0.9; arm.position.z = Math.sin(t * 9) * 0.04; }
+        else { const s2 = (t * 1.6) % 1; arm.rotation.x = s2 < 0.7 ? -1.8 * (s2 / 0.7) : -1.8 + 2.6 * ((s2 - 0.7) / 0.3); if (s2 > 0.98 && Math.random() < 0.5) { const v = smokePoint(b); puff(v.x, v.y - 0.4, v.z, b.type === 'cantera' ? '#9aa3ad' : '#e0b878', 2, 0.8, 0.8, v.y - 0.8); } }
+        const hb = arm.parent; if (hb) hb.position.y = 0.1 + Math.abs(Math.sin(t * 3.2)) * 0.02;
+      }
     }
     if (b.type === 'casa' && Math.random() < dt * 1.2) { const v = smokePoint(b); smoke(v.x, v.y, v.z, '#d8d4ce', 0.05, 1.8); }
     b.stoked = false; // set again next frame while Brasa keeps fanning

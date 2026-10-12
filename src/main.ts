@@ -38,10 +38,12 @@ import { tickLabels, clearLabels } from './ui/labels';
 import { tickPointer, pointerTarget } from './ui/pointer';
 import './game/economy';
 import { capOf } from './game/state';
+import { caveDebugMap } from './game/cave';
 import { tickCave, caveActive, enterCave, exitCave, caveAct, caveState, caveDebugFloor, switchLeader, tapCell, caveStepDir, caveFace, caveHold } from './game/cave';
 import { placeCaveMouth, tickCaveMouth, mouth, mouthTap } from './game/cavemouth';
 import { tickIslandLife } from './world/zonelife';
-import { setExitPoint, enterZone, zoneId, ardSave, caveWarp } from './game/cave';
+import { setExitPoint, enterZone, zoneId, ardSave, caveWarp, hondoSave } from './game/cave';
+import { tickTrader, trade, offers, traderHere } from './game/trader';
 import { GOALS, CHAPTERS, currentChapter } from './game/goals';
 import { portrait } from './ui/portraits';
 import { setVolumes } from './audio/sfx';
@@ -250,6 +252,7 @@ function frame(now: number) {
   tickSea(dt, T);
   tickCaveMouth(dt, T);
   tickCave(dt, T);
+  tickTrader(dt, T);
   tickIslandLife(dt, T, controls.target, !!zoneId() || sailingActive());
   tickPointer(dt, T, sheetOpen());
   uiAcc += dt; if (uiAcc > 0.25) { refreshHUD(uiAcc); refreshSheet(); uiAcc = 0; }
@@ -273,9 +276,9 @@ if (location.hash === '#debug') {
     get S() { return S; }, crew, buildings, trees, rocks, ancients, get mound() { return mound; }, grove: () => grove,
     renderer, camera, controls, order, tileAt, landTiles, checkGoals, pixelRatio,
     drawCalls: () => ({ terrain: terrainDrawCalls(), trees: treeDrawCalls(), frame: renderer.info.render.calls }),
-    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickRaft(0.05, T); tickCaveMouth(0.05, T); tickCave(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
+    step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickRaft(0.05, T); tickCaveMouth(0.05, T); tickCave(0.05, T); tickTrader(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
     scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, cancelFly, startSailing, fishHere, goBack, sailState, DEEP, sailTo: (x: number, z: number) => { const r = new THREE.Raycaster(); r.ray.origin.set(x, 5, z); r.ray.direction.set(0, -1, 0); return sailTap(r); }, startFishing, stopFishing, castAt, fishState, useBait, fishShadows, bestShadow, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
-    enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold, caveActive, mouthTap, blowShell, switchLeader, enterZone, zoneId, battleState, battleChoose, battleMoves, archTap, ardSave, caveWarp, chapterCard, banner, toast, mouth: () => mouth && { i: mouth.tile.i, j: mouth.tile.j, open: mouth.open, x: mouth.tile.wx, z: mouth.tile.wz },
+    enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold, caveActive, mouthTap, blowShell, switchLeader, enterZone, zoneId, battleState, battleChoose, battleMoves, archTap, ardSave, caveWarp, hondoSave, caveDebugMap, trade, offers, traderHere, chapterCard, banner, toast, mouth: () => mouth && { i: mouth.tile.i, j: mouth.tile.j, open: mouth.open, x: mouth.tile.wx, z: mouth.tile.wz },
   };
 }

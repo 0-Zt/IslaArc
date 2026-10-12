@@ -45,7 +45,7 @@ En exploración se elige quién va adelante tocando su cara. Si la de adelante n
 - **Zonas nuevas en los tres pisos** que solo una figura abre: el jardín de musgo (piso 1, Musgo), la galería del mural (piso 2, Arci con un puente) y la cámara de obsidiana (piso 3, Brasa por las brasas).
 - **Los cristales y las vetas vuelven a crecer** con el tiempo; la hierba alta también.
 - **Obsidiana**, un material nuevo que solo sale de la cueva: abre el **pico de obsidiana**, que pica todo el doble en la cueva y saca más mineral en la isla.
-- Después: **las Profundidades**, pisos que cambian en cada visita, con minerales mejores mientras más hondo (como las minas de Stardew).
+- **Las Profundidades** (v0.22): pisos que cambian en cada visita, con minerales mejores mientras más hondo (como las minas de Stardew). Cada piso tiene un paso para una figura distinta.
 
 ### 3. Una isla para cada figura
 
@@ -69,7 +69,7 @@ Puentes de tablas (Arci), puentes de raíces (Musgo), y más adelante antorchas,
 | v0.19 · UI de arcilla (hecho) | La interfaz completa rehecha con un solo estilo de juego. |
 | v0.20 · La Isla Ardiente (hecho) | La puerta de lava del islote, la isla de Brasa. |
 | v0.21 · La Selva Enredada (hecho) | La isla de Musgo, las raíces del Ceibo y el Ceibo en tu isla. |
-| v0.22 · Las Profundidades y economía 2 | Pisos que cambian, figuras asignadas a edificios, trueques. |
+| v0.22 · Las Profundidades y economía 2 (hecho) | Pisos que cambian en cada visita, ayudantes de arcilla en puestos, el barco de trueques. |
 | Después | La ciudad de los Alfareros y el final. |
 
 **Sobre el islote de Brasa:** moverlo más lejos rompería las partidas guardadas (los braseros están construidos encima). Mejor darle un futuro: la puerta de lava que lleva a la Isla Ardiente.

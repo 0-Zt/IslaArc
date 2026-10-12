@@ -21,7 +21,7 @@ export interface Req {
 export interface SavedBuilding { type: string; i: number; j: number; rot: number; queue?: number; jobs?: string[]; prog: number; prog2?: number; work?: number; lvl?: number; up?: number }
 /** One floor of the volcano cave: where its boulders are and what was solved there. */
 export interface CaveFloorSave { b: ([number, number] | null)[]; fill: string[]; broken: string[]; lit: string[]; dirs: Record<string, string>; mined: string[]; opened: string[]; read: string[]; door: boolean; cut?: Record<string, number>; minedAt?: Record<string, number>; built?: Record<string, string> }
-export interface CaveSave { at?: [number, number]; hits: number; max: number; f: CaveFloorSave[]; caracola: boolean; chests: number; relics?: string[]; nestAt?: number }
+export interface CaveSave { at?: [number, number]; hits: number; max: number; f: CaveFloorSave[]; caracola: boolean; chests: number; relics?: string[]; nestAt?: number; seed?: number }
 export interface State {
   res: Record<ResKey, number>;
   got: Record<ResKey, number>;
@@ -58,6 +58,8 @@ export interface State {
   faro?: CaveSave;                     // the lighthouse island (v0.18)
   ardiente?: CaveSave;                 // the burning island (v0.20)
   selva?: CaveSave;                    // the tangled jungle (v0.21)
+  hondo?: CaveSave;                    // the Depths (v0.22): floors change on every visit (seed)
+  trade?: { next: number; until: number; offers: { give: Record<string, number>; get: Record<string, number>; done?: boolean }[] };   // the trading boat (v0.22)
   done: boolean;
 }
 

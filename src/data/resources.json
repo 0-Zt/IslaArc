@@ -59,5 +59,15 @@
     "name": "Obsidiana",
     "hidden": true,
     "nohud": true
+  },
+  "arcilla": {
+    "name": "Arcilla azul",
+    "hidden": true,
+    "nohud": true
+  },
+  "ayudante": {
+    "name": "Ayudantes",
+    "hidden": true,
+    "nohud": true
   }
 }

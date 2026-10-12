@@ -206,9 +206,67 @@ export function modelCeibo(): Model {
   for (let k = 0; k < 5; k++) { const a = k * 1.3; vbox(M.bark, Math.cos(a) * 0.9, 1.9, Math.sin(a) * 0.9, 0.1, 0.18, 0.1, '#8a5a2e'); }
   return { group: group({ ...M, leaf: L }), smoke: [0, 3.4, 0] };
 }
-export const MODELS: Record<string, () => Model> = { ceibo: modelCeibo, casa: modelCasa, horno: modelHorno, tablon: modelTablon, almacen: modelAlmacen, muelle: modelMuelle, aserradero: modelAserradero, taller: modelTaller, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
+/** A clay helper: a small blue figure with white eyes; its arm (named 'helperArm') swings a tool.
+    Built apart from the merged building so it can move. */
+function helper(tool: 'pico' | 'hacha' | 'criba'): THREE.Group {
+  const g = new THREE.Group(); g.name = 'helper';
+  const M = parts();
+  vbox(M.brick, 0, 0.12, 0, 0.2, 0.2, 0.16, '#5a86c8'); vbox(M.brick, 0, 0.03, 0, 0.22, 0.06, 0.18, '#4a72b0');
+  vbox(M.brick, 0, 0.3, 0, 0.2, 0.16, 0.18, '#6a96d8'); vbox(M.brick, 0, 0.39, 0, 0.16, 0.03, 0.14, '#4a72b0');
+  for (const ex of [-0.05, 0.05]) vbox(M.thatch, ex, 0.31, 0.092, 0.04, 0.05, 0.01, '#f0f6ff');
+  vbox(M.brick, -0.13, 0.15, 0, 0.06, 0.14, 0.07, '#5a86c8');
+  g.add(group(M));
+  const arm = new THREE.Group(); arm.name = 'helperArm'; arm.position.set(0.13, 0.2, 0);
+  const A = parts();
+  vbox(A.brick, 0, -0.06, 0.02, 0.06, 0.14, 0.07, '#5a86c8');
+  if (tool === 'pico') { vbox(A.bark, 0, -0.04, 0.12, 0.03, 0.03, 0.22, '#8a5a2e'); vbox(A.stone, 0, -0.04, 0.23, 0.18, 0.04, 0.04, '#b9c2cc'); }
+  else if (tool === 'hacha') { vbox(A.bark, 0, -0.04, 0.12, 0.03, 0.03, 0.22, '#8a5a2e'); vbox(A.stone, 0, -0.01, 0.22, 0.03, 0.1, 0.07, '#dde3ea'); }
+  else { vbox(A.plank, 0, -0.12, 0.14, 0.24, 0.03, 0.24, '#b07a44'); vbox(A.thatch, 0, -0.105, 0.14, 0.2, 0.01, 0.2, '#d8c8a0'); }
+  arm.add(group(A)); g.add(arm);
+  return g;
+}
+/** Quarry: a cut face of grey rock with a wooden crane and a cart of stone; a helper with a pick. */
+export function modelCantera(): Model {
+  const M = parts();
+  vbox(M.stone, 0, 0.05, 0, 1.86, 0.1, 0.9, '#a49e92');
+  vbox(M.stone, -0.45, 0.42, -0.18, 0.86, 0.74, 0.5, '#8a8f9a'); vbox(M.stone, -0.5, 0.86, -0.22, 0.6, 0.18, 0.4, '#9aa3ad'); vbox(M.stone, -0.2, 0.25, 0.08, 0.3, 0.3, 0.2, '#7a808a');
+  for (const [a, b] of [[-0.7, 0.62], [-0.3, 0.45], [-0.55, 0.3]]) vbox(M.stone, a, b, 0.08, 0.14, 0.04, 0.02, '#5ab8ff');
+  vbox(M.bark, 0.55, 0.6, -0.25, 0.08, 1.1, 0.08, '#6a4226'); vbox(M.bark, 0.3, 1.12, -0.25, 0.6, 0.06, 0.06, '#6a4226'); vbox(M.thatch, 0.05, 0.9, -0.25, 0.02, 0.44, 0.02, '#d8c8a0');
+  vbox(M.plank, 0.55, 0.22, 0.2, 0.46, 0.2, 0.3, '#8a5a2e'); for (const sx of [0.38, 0.72]) vbox(M.stone, sx, 0.1, 0.36, 0.1, 0.1, 0.04, '#3a3430');
+  vbox(M.stone, 0.5, 0.36, 0.2, 0.16, 0.1, 0.14, '#9aa3ad'); vbox(M.stone, 0.62, 0.38, 0.18, 0.12, 0.1, 0.12, '#8a8f9a');
+  const g = group(M); const h = helper('pico'); h.position.set(0.05, 0.1, 0.18); h.rotation.y = -0.9; g.add(h);
+  return { group: g, smoke: [-0.45, 1.0, -0.18] };
+}
+/** Woodshed: a lean-to full of stacked logs, a chopping block; a helper with an axe. */
+export function modelLenera(): Model {
+  const M = parts();
+  vbox(M.stone, 0, 0.05, 0, 1.86, 0.1, 0.9, '#a49e92');
+  for (const [x, z] of [[-0.8, -0.32], [0.1, -0.32], [-0.8, 0.12], [0.1, 0.12]]) vbox(M.bark, x, 0.45, z, 0.07, 0.8, 0.07, '#6a4226');
+  vbox(M.thatch, -0.35, 0.88, -0.1, 1.1, 0.07, 0.62, '#c08a50'); vbox(M.thatch, -0.35, 0.93, -0.1, 0.9, 0.05, 0.46, '#a8743e');
+  for (let r = 0; r < 3; r++) for (let k = 0; k < 4 - r; k++) { vbox(M.bark, -0.62 + k * 0.18 + r * 0.09, 0.18 + r * 0.15, -0.1, 0.16, 0.15, 0.52, k % 2 ? '#7a4a2a' : '#8a5a32'); vbox(M.plank, -0.62 + k * 0.18 + r * 0.09, 0.18 + r * 0.15, 0.165, 0.12, 0.11, 0.01, '#e0b878'); }
+  vbox(M.bark, 0.55, 0.15, 0.15, 0.3, 0.3, 0.3, '#7a4a2a'); vbox(M.plank, 0.55, 0.305, 0.15, 0.26, 0.01, 0.26, '#e0b878');
+  vbox(M.plank, 0.75, 0.08, -0.25, 0.2, 0.06, 0.12, '#c08a50'); vbox(M.plank, 0.62, 0.06, -0.3, 0.16, 0.05, 0.1, '#e0b070');
+  const g = group(M); const h = helper('hacha'); h.position.set(0.32, 0.1, 0.28); h.rotation.y = 1.2; g.add(h);
+  return { group: g, smoke: [0.55, 0.6, 0.15] };
+}
+/** Sieve: a wooden frame over two heaps, sand and earth; a helper shaking a sieve. */
+export function modelCriba(): Model {
+  const M = parts();
+  vbox(M.stone, 0, 0.05, 0, 1.86, 0.1, 0.9, '#a49e92');
+  vbox(M.stone, -0.5, 0.18, -0.05, 0.6, 0.18, 0.5, '#e8d8a0'); vbox(M.stone, -0.5, 0.3, -0.05, 0.36, 0.1, 0.3, '#f0e0a8');
+  vbox(M.stone, 0.5, 0.18, -0.05, 0.6, 0.18, 0.5, '#8a5a34'); vbox(M.stone, 0.5, 0.3, -0.05, 0.36, 0.1, 0.3, '#7a5030');
+  for (const sx of [-0.25, 0.25]) vbox(M.bark, sx, 0.4, -0.3, 0.06, 0.7, 0.06, '#6a4226');
+  vbox(M.bark, 0, 0.74, -0.3, 0.6, 0.05, 0.06, '#6a4226'); vbox(M.plank, 0, 0.55, -0.22, 0.46, 0.04, 0.3, '#b07a44'); vbox(M.thatch, 0, 0.57, -0.22, 0.4, 0.01, 0.26, '#d8c8a0');
+  vbox(M.plank, 0.8, 0.15, 0.3, 0.18, 0.22, 0.18, '#c08a50');
+  const g = group(M); const h = helper('criba'); h.position.set(0, 0.1, 0.25); h.rotation.y = Math.PI; g.add(h);
+  return { group: g, smoke: [0, 0.8, 0] };
+}
+export const MODELS: Record<string, () => Model> = { cantera: modelCantera, lenera: modelLenera, criba: modelCriba, ceibo: modelCeibo, casa: modelCasa, horno: modelHorno, tablon: modelTablon, almacen: modelAlmacen, muelle: modelMuelle, aserradero: modelAserradero, taller: modelTaller, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
 
 export const ICONS: Record<string, string> = {
+  cantera: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="32" width="34" height="4" fill="#a49e92"/><rect x="4" y="12" width="18" height="20" fill="#8a8f9a"/><rect x="6" y="9" width="12" height="5" fill="#9aa3ad"/><rect x="8" y="18" width="5" height="2" fill="#5ab8ff"/><rect x="14" y="25" width="5" height="2" fill="#5ab8ff"/><rect x="25" y="22" width="5" height="10" fill="#5a86c8"/><rect x="25" y="17" width="5" height="5" fill="#6a96d8"/><rect x="31" y="14" width="2" height="10" fill="#8a5a2e"/><rect x="28" y="13" width="8" height="2" fill="#b9c2cc"/></svg>',
+  lenera: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="32" width="34" height="4" fill="#a49e92"/><rect x="3" y="10" width="22" height="3" fill="#c08a50"/><rect x="4" y="13" width="2" height="19" fill="#6a4226"/><rect x="22" y="13" width="2" height="19" fill="#6a4226"/><circle cx="9" cy="28" r="3" fill="#e0b878"/><circle cx="15" cy="28" r="3" fill="#e0b878"/><circle cx="12" cy="22" r="3" fill="#e0b878"/><circle cx="18" cy="22" r="3" fill="#e0b878"/><rect x="28" y="22" width="5" height="10" fill="#5a86c8"/><rect x="28" y="17" width="5" height="5" fill="#6a96d8"/><rect x="34" y="14" width="2" height="10" fill="#8a5a2e"/><rect x="35" y="13" width="3" height="5" fill="#dde3ea"/></svg>',
+  criba: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="32" width="34" height="4" fill="#a49e92"/><path d="M3 32Q9 22 15 32Z" fill="#e8d8a0"/><path d="M25 32Q31 22 37 32Z" fill="#8a5a34"/><rect x="11" y="16" width="18" height="3" fill="#b07a44"/><rect x="12" y="19" width="16" height="2" fill="#d8c8a0"/><rect x="17" y="22" width="5" height="10" fill="#5a86c8"/><rect x="17" y="18" width="5" height="4" fill="#6a96d8"/></svg>',
   ceibo: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="17" y="20" width="6" height="16" fill="#7a5634"/><rect x="12" y="33" width="16" height="3" fill="#6a4a2c"/><rect x="5" y="12" width="30" height="9" fill="#3a7a30"/><rect x="9" y="6" width="22" height="7" fill="#559640"/><rect x="14" y="2" width="12" height="5" fill="#62a448"/><rect x="8" y="14" width="3" height="3" fill="#f8a8c8"/><rect x="27" y="10" width="3" height="3" fill="#ffd84a"/><rect x="19" y="8" width="3" height="3" fill="#f8a8c8"/></svg>',
   casa: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="18" width="24" height="16" fill="#d9a066"/><rect x="17" y="24" width="6" height="10" fill="#7a4f2a"/><path d="M4 20L20 7L36 20Z" fill="#e0b050"/><rect x="27" y="8" width="4" height="8" fill="#8a847a"/></svg>',
   horno: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="30" width="32" height="5" fill="#a49e92"/><path d="M6 30Q6 14 18 14Q30 14 30 30Z" fill="#b86a42"/><rect x="13" y="23" width="10" height="7" rx="3" fill="#ff7a2a"/><rect x="22" y="6" width="4" height="10" fill="#8a847a"/></svg>',

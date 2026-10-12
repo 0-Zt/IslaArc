@@ -466,7 +466,7 @@ body.incave #toast{top:calc(124px + env(safe-area-inset-top,0px))}
 #cvBar button{background:linear-gradient(var(--card),var(--paper2));border:2px solid var(--edge);border-radius:11px;padding:5px 9px;font-family:var(--display);font-weight:600;font-size:12.5px;white-space:nowrap;color:var(--ink);box-shadow:0 3px 0 var(--edge)}
 #cvBar button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--edge)}
 @media (max-width:520px){#cvBar{bottom:calc(178px + env(safe-area-inset-bottom,0px));left:12px;right:84px;transform:none;max-width:none}#cvBar span{min-width:0}}
-#cvSign{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%);font-family:var(--display);font-weight:700;font-size:25px;color:#ffe2b0;background:#2a180ce6;border:3px solid #8a5a2e;border-radius:10px;padding:10px 22px;z-index:6;pointer-events:none;box-shadow:0 0 0 4px #0006;text-align:center;white-space:nowrap}
+#cvSign{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%);font-family:var(--display);font-weight:700;font-size:25px;color:#ffe2b0;background:#2a180ce6;border:3px solid #8a5a2e;border-radius:10px;padding:10px 22px;z-index:6;pointer-events:none;box-shadow:0 0 0 4px #0006;text-align:center;white-space:pre-line;max-width:88vw;line-height:1.15}
 #cvSign.in{animation:cvsign 3.2s ease-out forwards}
 @keyframes cvsign{0%{opacity:0;transform:translate(-50%,-30%)}10%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1}100%{opacity:0}}
 #cvFade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:8;transition:opacity .28s}

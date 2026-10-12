@@ -1,0 +1,277 @@
+{
+  "door": {
+    "name": "La puerta de los Alfareros",
+    "theme": "cueva",
+    "door": "",
+    "intro": "",
+    "map": [
+      "#####################",
+      "##########{##########",
+      "######L........######",
+      "#####C.........K#####",
+      "####...k.k.k.k...####",
+      "####.............####",
+      "####.*.........*.####",
+      "####..,.......,..####",
+      "####....,...,....####",
+      "####.*.........*.####",
+      "####C.....,.....C####",
+      "#########...#########",
+      "#########...#########",
+      "##########.##########",
+      "##########.##########",
+      "##########S##########",
+      "#####################"
+    ],
+    "decor": {
+      "mushrooms": [
+        [
+          6,
+          9
+        ],
+        [
+          14,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          13,
+          10
+        ],
+        [
+          9,
+          13
+        ],
+        [
+          11,
+          12
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          16,
+          5
+        ],
+        [
+          8,
+          3
+        ],
+        [
+          12,
+          3
+        ]
+      ],
+      "stalagmites": []
+    },
+    "lore": "",
+    "chest": {
+      "gives": {
+        "arcilla": 6,
+        "cuarzo": 6,
+        "obsidiana": 4
+      },
+      "stars": 3
+    },
+    "loreAt": {
+      "6,2": {
+        "title": "La última tablilla",
+        "text": "«Aquí abajo empieza el camino de vuelta a casa. La sellamos con las cuatro manos para que nadie la abra solo. Si llegaste hasta acá con las cuatro, ya sabes lo que falta.»"
+      }
+    },
+    "marks": {
+      "7,4": "arci",
+      "9,4": "musgo",
+      "11,4": "brasa",
+      "13,4": "marea"
+    }
+  },
+  "story": {
+    "golemRoca": {
+      "title": "La roca del gólem",
+      "text": "El gólem levanta la cabeza cuando ve a Musgo. Musgo le cuenta lo del Ceibo: que sus raíces bajan más hondo que la montaña, y que allá abajo algo late.\n\nEl gólem se levanta despacio, camina hasta la roca enorme y la empuja con las dos manos, como quien abre una puerta pesada. La roca rueda y se queda a un lado.\n\nDetrás hay una escalera de piedra que baja hacia el frío. Del fondo sube un aire húmedo, con olor a arcilla mojada."
+    },
+    "hondoEntrada": {
+      "title": "Las Profundidades",
+      "text": "La escalera termina en túneles que nadie dibujó en ningún mapa. Marea pone la mano en la pared: está tibia y se mueve, despacio, como si respirara.\n\n«Cada vez que bajemos van a estar distintos», dice. «Mientras más hondo, más raro lo que vamos a encontrar.»\n\nCada piso tiene una escalera que baja. A veces hay un paso que solo una figura puede abrir, y rincones escondidos con cofres."
+    },
+    "arcillaAzul": {
+      "title": "Arcilla azul",
+      "text": "Una veta de arcilla azul, fría y suave. Arci la reconoce al tiro: es de la misma que sus manos.\n\nLos Alfareros hacían figuras con esto. Con el fuego del horno de forja, tal vez se pueda cocer algo pequeño… alguien que ayude en la isla mientras el equipo anda lejos."
+    },
+    "campamento": {
+      "title": "El campamento de los Alfareros",
+      "text": "Una fogata vieja, mantas de barro seco y cuencos apilados. Alguien acampó aquí hace muchísimo tiempo.\n\nDe un hueco del techo cuelga una cuerda gruesa que sube hasta el primer piso. Desde ahora, al bajar a las Profundidades, la cuerda te deja directo en el campamento."
+    },
+    "puertaHola": {
+      "title": "Una puerta enorme",
+      "text": "Al fondo del salón hay una puerta de piedra más alta que el faro. Tiene tallados cuatro Alfareros con las manos abiertas.\n\nDelante hay cuatro pedestales, cada uno con una mano marcada: una de tierra, una de hojas, una de brasas y una de agua. Cada figura tendría que poner la suya."
+    },
+    "puertaAlfareros": {
+      "title": "La puerta de los Alfareros",
+      "text": "Las cuatro manos brillan: tierra, planta, fuego y agua. La puerta tiembla, suelta polvo… y se queda quieta.\n\nEn el centro se enciende una quinta marca, vacía, con la forma de una mano que nadie del equipo tiene.\n\nDel otro lado se oye el mar. Y algo más, muy lejos: una campana.\n\nArci se queda mirando la marca vacía un buen rato."
+    },
+    "ayudante": {
+      "title": "El primer ayudante",
+      "text": "Del horno de forja sale una figurita del porte de una mano, azul y tibia. Abre los ojos, mira a Arci y se pone a barrer el suelo sin que nadie se lo pida.\n\nNo habla. Pero si le construyes un puesto (una cantera, una leñera o una criba) se queda ahí trabajando, aunque el equipo ande lejos."
+    },
+    "barco": {
+      "title": "El barco de trueques",
+      "text": "Un barquito de vela a rayas se acerca al muelle. Lo maneja Tito, un caracol de arcilla con sombrero de paja.\n\n«¡Buenas! Ando de isla en isla cambiando cosas. Lo que a ti te sobra, a otro le falta. Vuelvo cada tanto y siempre traigo algo distinto.»"
+    }
+  },
+  "notes": [
+    "«Los túneles se movieron otra vez. Marcamos el camino con tiza y en la mañana la tiza estaba en el techo.»",
+    "«La arcilla azul solo aparece del tercer piso para abajo. Más arriba la tierra está cansada.»",
+    "«Los lagartos de cuarzo no muerden de verdad. Solo quieren que nadie toque sus cristales.»",
+    "«Cocimos el primer ayudante en la forja grande. No habla, pero trabaja tarareando bajito.»",
+    "«El que baja con las cuatro figuras no se pierde nunca: una empuja, otra corta, otra quema, otra enfría.»",
+    "«Hoy encontramos agua dulce muy abajo, fría como la nieve. Dormimos escuchando las gotas.»",
+    "«Dejamos cofres en los rincones para el que venga después. Ojalá alguien los encuentre.»"
+  ],
+  "names": {
+    "top": [
+      "Galería de los hongos",
+      "Pasillos de barro",
+      "La cámara del eco",
+      "Túneles de raíces",
+      "El sótano tibio"
+    ],
+    "mid": [
+      "La veta azul",
+      "Galería húmeda",
+      "Cuevas de cristal",
+      "El pasillo de las gotas",
+      "Salas de arcilla"
+    ],
+    "deep": [
+      "Las grietas frías",
+      "El salón negro",
+      "Bóvedas hondas",
+      "El laberinto quieto",
+      "Cuevas sin eco"
+    ],
+    "camp": "El campamento de los Alfareros"
+  },
+  "trades": [
+    {
+      "give": {
+        "piedra": 30
+      },
+      "get": {
+        "cobre": 4
+      }
+    },
+    {
+      "give": {
+        "madera": 30
+      },
+      "get": {
+        "cuarzo": 3
+      }
+    },
+    {
+      "give": {
+        "arena": 25
+      },
+      "get": {
+        "vidrio": 5
+      }
+    },
+    {
+      "give": {
+        "tierra": 20
+      },
+      "get": {
+        "semilla": 6
+      }
+    },
+    {
+      "give": {
+        "ladrillo": 10
+      },
+      "get": {
+        "arcilla": 3
+      }
+    },
+    {
+      "give": {
+        "tablas": 12
+      },
+      "get": {
+        "obsidiana": 3
+      }
+    },
+    {
+      "give": {
+        "carbon": 8
+      },
+      "get": {
+        "lingote": 4
+      }
+    },
+    {
+      "give": {
+        "mineral": 20
+      },
+      "get": {
+        "cobre": 5
+      }
+    },
+    {
+      "give": {
+        "semilla": 10
+      },
+      "get": {
+        "madera": 40
+      }
+    },
+    {
+      "give": {
+        "vidrio": 6
+      },
+      "get": {
+        "cuarzo": 4
+      }
+    },
+    {
+      "give": {
+        "lingote": 6
+      },
+      "get": {
+        "arcilla": 4
+      }
+    },
+    {
+      "give": {
+        "obsidiana": 6
+      },
+      "get": {
+        "estrella": 1
+      }
+    },
+    {
+      "give": {
+        "cuarzo": 8
+      },
+      "get": {
+        "estrella": 1
+      }
+    },
+    {
+      "give": {
+        "piedra": 25,
+        "madera": 25
+      },
+      "get": {
+        "ayudante": 1
+      },
+      "rare": true
+    }
+  ],
+  "campDiario": "«Quinto día bajando. Los túneles cambian cada noche, así que dejamos una cuerda hasta arriba. Más abajo está la puerta: la sellamos con las cuatro manos, para que nadie la abra solo. Del otro lado se oye el mar.»"
+}

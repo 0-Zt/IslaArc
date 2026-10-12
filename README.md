@@ -2,7 +2,7 @@
 
 Juego de progresión y descubrimiento inspirado en la serie GROW. Guías a figuras de arcilla que transforman una isla: talan, pican, construyen, funden metal y, poco a poco, despiertan sus secretos. Desde la isla se sale a pescar, a navegar en balsa y a explorar la cueva del volcán, con puzles al estilo de Pokémon de GBA, un combate por turnos y una habilidad distinta para cada figura.
 
-**Estado:** v0.21 · la Selva Enredada · 12 capítulos jugables (unas 4 horas y media). Se juega en el navegador: [0-zt.github.io/IslaArc](https://0-zt.github.io/IslaArc/) (cuando GitHub Pages está activado). Lo que viene está en `docs/vision.md`.
+**Estado:** v0.22 · las Profundidades · 13 capítulos jugables (unas 5 horas). Se juega en el navegador: [0-zt.github.io/IslaArc](https://0-zt.github.io/IslaArc/) (cuando GitHub Pages está activado). Lo que viene está en `docs/vision.md`.
 
 Hecho con [Three.js](https://threejs.org/) y TypeScript, pensado primero para celular.
 

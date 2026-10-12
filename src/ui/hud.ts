@@ -30,6 +30,8 @@ export const ICON: Record<ResKey, string> = {
   cobre: mkIcon(['.......', '..CCC..', '.CHCCC.', 'CCCCCDC', 'CCHCCDC', '.CCDDD.'], { C: '#c8763a', H: '#f0b070', D: '#8a4a22' }),
   obsidiana: mkIcon(['.......', '...K...', '..KHK..', '.KKPKK.', 'KKPKKKK', '.KKKKK.'], { K: '#1e1826', H: '#6a5a8a', P: '#3c3050' }),
   cuarzo: mkIcon(['...Q...', '..QHQ..', '.Q.QH.Q', '.QH.QQH', 'QQHQQQ.', '.DDDDD.'], { Q: '#7ad8f0', H: '#e8fbff', D: '#4a5a6a' }),
+  arcilla: mkIcon(['.......', '..BBB..', '.BHBBB.', 'BBBBBDB', 'BHBBBDB', '.BBDDD.'], { B: '#5a86c8', H: '#a8c8f0', D: '#3a5a90' }),
+  ayudante: mkIcon(['..BBB..', '.BWBWB.', '..BBB..', '.BBBBB.', 'B.BBB.B', '..B.B..'], { B: '#5a86c8', W: '#f0f6ff' }),
   carbon: mkIcon(['.......', '..KK...', '.KHKK.K', '.KKKKKH', 'KKHKKKK', '.KKKDK.'], { K: '#3a3632', H: '#6a625a', D: '#e0602a' }),
 };
 export const img = (k: ResKey) => `<img src="${ICON[k]}" alt="">`;
@@ -73,6 +75,7 @@ export const XICON: Record<string, string> = {
   semillaCeibo: mkIcon(['...L...', '..LGL..', '.BBBBB.', 'BBHBBBB', 'BBBBBBB', '.BBBBB.'], { L: '#8ad96b', G: '#4ea33c', B: '#8a5a2e', H: '#c08a50' }),
   reliquia: mkIcon(['.......', '...?...', '..???..', '...?...', '.SSSSS.', '.SSSSS.'], { '?': '#4a4048', S: '#5e5650' }),
   hondo: mkIcon(['.......', '..DDD..', '.DDDDD.', '.D.D.D.', '.DDDDD.', '..D.D..'], { D: '#2a3a5a' }),
+  barco: mkIcon(['...M...', '..RMW..', '.RWMRW.', '...M...', 'BBBBBBB', '.BBBBB.'], { M: '#6a4226', R: '#d9463c', W: '#f0e6d0', B: '#8a5a2e' }),
   invento: mkIcon(['..YYY..', '.YHYYY.', '.YHYYY.', '..YYY..', '..GGG..', '...G...'], { Y: '#f2c14e', H: '#fff3c0', G: '#8a8f9a' }),
 };
 /** Any icon by key: a material or one of the extra ones. */
@@ -214,7 +217,7 @@ export function refreshHUD(dt = 0) {
   const st = chapterStep();
   const gn = st ? `Cap. ${st.ch + 1}<span class="gp">${Array.from({ length: st.of }, (_, i) => `<i class="${i < st.done ? 'on' : i === st.done ? 'cur' : ''}"></i>`).join('')}</span>` : 'Listo';
   if ($('goalN').innerHTML !== gn) $('goalN').innerHTML = gn;
-  const gt = g ? goalText(g) : 'Sigue con los encargos del tablón. Las Profundidades llegan pronto.';
+  const gt = g ? goalText(g) : 'Sigue con los encargos del tablón y baja a las Profundidades: cambian en cada visita.';
   if ($('goalT').textContent !== gt) $('goalT').textContent = gt;
   const hint = g && !place ? g.hint : undefined;
   // crew portraits

@@ -102,7 +102,7 @@ function encargos() {
 }
 
 /* Achievements as a grid of medals: icon, name, bar, and three dots for bronze, silver, gold. */
-const ACH_ICON: Record<string, string> = { talador: 'madera', cantero: 'piedra', arenero: 'arena', fundidor: 'lingote', jardinero: 'semilla', arquitecto: 'obra', decorador: 'adorno', tierra: 'tierra', caminante: 'sendero', noctambulo: 'noche', vecino: 'encargo', playero: 'caja', lector: 'botella', inventor: 'invento' };
+const ACH_ICON: Record<string, string> = { talador: 'madera', cantero: 'piedra', arenero: 'arena', fundidor: 'lingote', jardinero: 'semilla', arquitecto: 'obra', decorador: 'adorno', tierra: 'tierra', caminante: 'sendero', noctambulo: 'noche', vecino: 'encargo', playero: 'caja', lector: 'botella', inventor: 'invento', comerciante: 'barco', hondo: 'arcilla' };
 function logros() {
   const list = ACHIEVEMENTS.map(a => ({ a, p: achProgress(a) }));
   const medals = list.reduce((n, q) => n + q.p.tier, 0), max = list.length * 3;
@@ -121,7 +121,8 @@ const TEAM = [
   { id: 'musgo', name: 'Musgo', color: '#7e9c58', skill: 'Pulgar verde', desc: 'Lo que planta nace un paso más crecido, al talar suelta el doble de semillas y en el bosque los tocones que deja rebrotan antes.', how: 'Duerme enterrado en el claro de los árboles antiguos.' },
   { id: 'brasa', name: 'Brasa', color: '#5c3d31', skill: 'Corazón de brasa', desc: 'Al picar roca, a veces funde el mineral ahí mismo y sale un lingote. Si lo mandas al horno, aviva el fuego: todo sale el doble de rápido. De noche da luz.', how: 'Una estatua en las ruinas, mar adentro.' },
   { id: 'marea', name: 'Marea', color: '#4a86c0', skill: 'Ojo de agua', desc: 'Lo que vive en el agua se acerca antes a su anzuelo, y desde más lejos.', how: 'Una figura azul pintada en una vasija, pescando desde una balsa mar adentro.', when: () => (S.fish.vasija || 0) >= 4 || S.crew.includes('marea') },
-  { id: 'golem', name: 'El gólem', color: '#4a3a30', skill: 'Guardián de la montaña', desc: 'Se quedó cuidando el corazón del volcán. Gracias a él, la caracola grande ya calma las olas.', how: 'Duerme en el río de lava, junto al pedestal de la caracola.', when: () => !!S.cave?.caracola },
+  { id: 'golem', name: 'El gólem', color: '#4a3a30', skill: 'Guardián de la montaña', desc: 'Se quedó cuidando el corazón del volcán. Gracias a él, la caracola grande ya calma las olas, y fue él quien movió la roca que tapaba la bajada a las Profundidades.', how: 'Duerme en el río de lava, junto al pedestal de la caracola.', when: () => !!S.cave?.caracola },
+  { id: 'ayudante', name: 'Los ayudantes', color: '#5a86c8', skill: 'Trabajan solos', desc: 'Figuritas de arcilla azul cocidas en el horno de forja. Cada una se queda en su puesto (cantera, leñera o criba) y produce aunque el equipo ande lejos.', how: 'Se cuecen en el horno de forja, con arcilla azul de las Profundidades.', when: () => !!S.flags.arcillaVista },
   { id: 'espectro', name: '???', color: '#6a7488', skill: '???', desc: 'Dicen que un barco aparece de noche cuando el faro está apagado.', how: 'Más adelante.' },
 ];
 const FIELD: Record<string, string> = { arci: 'empuja rocas (también al agua, a la lava y a los géiseres), tiende puentes de tablas.', musgo: 'aparta enredaderas, corta la hierba alta y los matorrales secos.', brasa: 'camina sobre las brasas y enciende el fuego (braseros, chimeneas, la forja).', marea: 'camina por el agua baja y enfría la lava que corre.' };
@@ -133,7 +134,7 @@ function equipo() {
   let h = '<h3>Figuras</h3>';
   for (const f of TEAM as { id: string; name: string; color: string; skill: string; desc: string; how: string; when?: () => boolean }[]) {
     if (f.when && !f.when()) continue;
-    const has = f.id === 'golem' ? !!S.flags.golemCalmo : S.crew.includes(f.id);
+    const has = f.id === 'golem' ? !!S.flags.golemCalmo : f.id === 'ayudante' ? !!S.flags.ayudanteListo : S.crew.includes(f.id);
     const up = has && UPS[f.id]?.flag && S.flags[UPS[f.id].flag] ? `<br><span style="color:var(--good)">${UPS[f.id].text}</span>` : '';
     const field = has && FIELD[f.id] ? `<br>En exploración: ${FIELD[f.id]}` : '';
     const face = has && ['arci', 'musgo', 'brasa', 'marea'].includes(f.id) ? portrait(f.id as any) : '';

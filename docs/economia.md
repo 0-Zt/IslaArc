@@ -159,5 +159,5 @@ Medido con el bot después de los cambios:
 
 1. **Hecho · v0.12 · Economía, parte 1:** almacén y topes con la burbuja "Lleno", mejoras de nivel 2 para casa, horno, aserradero y almacén, carbón, parcelas con costo creciente, nuevo balance de costos, y el bot con registro y gráfico.
 2. **v0.13 · Cueva, prototipo:** antorchas y comida como provisiones, modo exploración, primer combate.
-3. **v0.14 · Economía, parte 2:** barco de trueques, figuras asignadas a edificios (cantera, leñador, huerto), mejoras de nivel 3.
+3. **Hecho en v0.22 · Economía, parte 2:** barco de trueques (Tito), ayudantes de arcilla asignados a puestos (cantera, leñera, criba). Las mejoras de nivel 3 llegaron antes (horno de forja, v0.20).
 4. **v0.15 · Cueva completa** y Gólem de magma.

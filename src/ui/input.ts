@@ -9,6 +9,7 @@ import { tileProxies, topY, tileAt as tileAtIJ, type Tile } from '../world/islan
 import { pickTree } from '../world/trees';
 import { rocks } from '../world/rocks';
 import { crew, selected, select, order, tileOf, nextSite, assignIdleBuilder, bfs, type JobKind } from '../game/crew';
+import { boatObject } from '../game/trader';
 import { buildings, place, movePlace, rotatePlace, cancelPlace, confirmPlace, isDone, buildingDef, footprint } from '../game/buildings';
 import { ancients, mound } from '../game/grove';
 import { stumps, sproutMeshes, growing, growthProgress } from '../game/forest';
@@ -42,7 +43,7 @@ function pick(): Hit | null {
   const hits: Hit[] = [];
   const up = (o: THREE.Object3D | null, key: string) => { while (o && o.userData[key] === undefined) o = o.parent; return o ? o.userData[key] : undefined; };
   const ch = ray.intersectObjects(crew.map(c => c.root), true)[0]; if (ch) hits.push({ d: ch.distance - 0.3, kind: 'char', id: ch.object.userData.char });
-  const bh = ray.intersectObjects(buildings.map(b => b.group), true)[0]; if (bh) hits.push({ d: bh.distance, kind: 'building', b: up(bh.object, 'building') });
+  const bo = boatObject(); const bh = ray.intersectObjects(bo ? [...buildings.map(b => b.group), bo] : buildings.map(b => b.group), true)[0]; if (bh) hits.push({ d: bh.distance, kind: 'building', b: up(bh.object, 'building') });
   const th = pickTree(ray); if (th) hits.push({ d: th.distance, kind: 'tree', tile: th.tree.tile });
   const rh = ray.intersectObjects(rocks, false)[0]; if (rh) hits.push({ d: rh.distance, kind: 'rock', tile: rh.object.userData.tile });
   const ah = ray.intersectObjects(ancients.map(a => a.group), true)[0]; if (ah) { const a = up(ah.object, 'ancient'); if (a && !a.falling) hits.push({ d: ah.distance, kind: 'ancient', tile: a.tile }); }
@@ -142,6 +143,8 @@ export function onTap(x: number, y: number) {
     if (b.type === 'taller') { select(null); openSheet('taller', b); }
     if (b.type === 'almacen') { select(null); openSheet('almacen' as any, b); }
     if (b.type === 'tablon') { select(null); openDiario('encargos'); }
+    if ((buildingDef(b.type) as any).makes) { select(null); openSheet('puesto' as any, b); }
+    if (b.type === 'ceibo') toast('El Ceibo de Musgo. Cada tanto suelta semillas a sus pies.');
     if (b.type === 'brasero') { const k = slotOf(b.tiles[0]); select(null); if (S.ruins.lit[k]) toast('Esta llama ya arde.'); else openFlame(k); }
     return;
   }
