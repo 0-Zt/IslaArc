@@ -253,12 +253,28 @@ Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates p
 - **Vida:** ceniza que cae, salamandras chicas que escapan del equipo, vapor de géiseres y termas, humo de las chimeneas encendidas.
 - **Capítulo 11 · La Isla Ardiente** (9 metas, 3 etapas; premio +18 ★). El capítulo 12, **La Selva Enredada**, queda anunciado.
 
+## La Selva Enredada (v0.21)
+
+- **Cómo se llega:** con la forja avivada, la lente del faro deja ver una isla verde al oeste. Desde entonces el muelle de tu isla tiene un viaje nuevo: **Ir a la Selva Enredada**.
+- **La orilla verde** (exterior, 30×24): selva tupida con matorrales al frente, ruinas de los Alfareros cubiertas de enredaderas, barro, helechos, árboles con fruta, un río que cruza la isla y una charca. Mariposas, loros, hojas que caen y luciérnagas.
+- **Cada figura abre un paso:**
+  - **El río (Marea + Musgo):** dos capullos gigantes en medio del agua. Marea los riega, Musgo los hace florecer y quedan como puente de pétalos.
+  - **La planta carnívora (Brasa):** cierra el sendero y se lanza contra quien se acerca. Brasa la asusta con calor y se encoge.
+  - **El templo (Arci):** una roca empujada hasta la losa abre la reja del templo.
+- **Secretos:** el nido de las iguanas (combate corto que se repite), un cofre en la charca (Marea), un cofre detrás de las lianas, una tablilla con **el sueño de Musgo** en un rincón escondido y la **Flauta de caña** detrás de una pared hueca.
+- **Las raíces del Ceibo** (interior): un abismo que se cruza con un puente de raíces de Musgo, hoyos que se tapan con rocas, enredaderas y otra planta carnívora, el mural del Ceibo, un cofre en el estanque, cristales, hongos y el **Brote de piedra** como reliquia.
+- **El guardián de raíces:** un gólem de raíz y musgo con barra de **Enojo** y fase **en flor**. Calmado, se hace a un lado y deja ver el corazón del Ceibo.
+- **El corazón del Ceibo:** Musgo le canta y despierta. Te da **la semilla del Ceibo**.
+- **El Ceibo en tu isla:** un árbol nuevo en Construir (2×2, tierra, madera y semillas; pide la casa). Una vez plantado, suelta semillas solo, cada minuto y medio.
+- **Capítulo 12 · La Selva Enredada** (9 metas, 3 etapas; premio +20 ★). El capítulo 13, **Las Profundidades**, queda anunciado.
+- Arreglo: después de un combate el guardián ya no queda pegado en su lugar.
+
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
 - **Hierba alta en la isla principal**, un modelo de verdad para el faro que se ve desde el mar, revisar la dificultad del gólem.
-- **Siguiente:** la Selva Enredada (v0.21) y las Profundidades con economía 2 (v0.22). El orden completo está en docs/vision.md y docs/plan-figuras.md.
+- **Siguiente:** las Profundidades con economía 2 (v0.22). El orden completo está en docs/vision.md y docs/plan-figuras.md.
 
 ## Decisiones tomadas
 

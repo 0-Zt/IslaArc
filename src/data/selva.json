@@ -1,0 +1,200 @@
+{
+  "floors": [
+    {
+      "name": "La orilla verde",
+      "theme": "selva",
+      "door": "",
+      "intro": "Todo es verde y respira: lianas, flores del tamaño de una balsa y un río tibio que parte la isla en dos. Musgo se queda quieto, oliendo el aire: «Aquí soñé».",
+      "map": [
+        "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+        "wwwwwwwww..%%%%%%%%%wwwwwwwwww",
+        "wwwwwwww..#%%..>..%%.w......ww",
+        "www...L....%%,....%%#..,www.ww",
+        "www.T......%%....,%%....wKw.ww",
+        "www.hhhh...%%.....%%....www.ww",
+        "www.hhhh...%%%%G%%%%....T...ww",
+        "www...#.....................ww",
+        "ww.#.....B.P....,.....#..#.#ww",
+        "w#############x##############w",
+        "w.............:..............w",
+        "wwwwwwwwwwwwwwfwwwwwwwwwwwwww#",
+        "wwwwwwwwwwwwwwfwwwwwwwwwwwwwww",
+        "####.###..##..::..#..####....w",
+        "wYX...##.#.....:...T#.#..##..w",
+        "w#hhhh#...T...,:......#.hh..ww",
+        "wwhhh.x..,.....:,...,.V.hh..ww",
+        "ww.N..#........:...hhh#...K.ww",
+        "ww...,##.#..#..:...hhh#.....ww",
+        "ww....#..#.#T..:......#..wwwww",
+        "wwwwww###......:L.##..#.wwwwww",
+        "wwwwwwwww##....:.....##wwwwwww",
+        "wwwwwwwwwwwwww.S.#wwwwwwwwwwww",
+        "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+      ],
+      "decor": {
+        "mushrooms": [],
+        "stalagmites": []
+      },
+      "lore": "«La selva.»",
+      "loreAt": {
+        "16,20": {
+          "title": "Tablilla de la orilla",
+          "text": "«Esta selva creció de una sola semilla: la del Ceibo. Sus raíces llegan hasta el fondo de la isla. Quien quiera hablar con él, que baje por el templo.»"
+        },
+        "6,3": {
+          "title": "El sueño de Musgo",
+          "text": "La tablilla tiene un dibujo: una figurita verde dormida bajo un árbol enorme. Musgo la toca y se ríe bajito: «Esa figurita soy yo. Me hicieron aquí, con tierra de las raíces. El Ceibo me cantaba para que creciera».\n\nMás abajo, una flecha apunta al templo."
+        }
+      },
+      "chest": {
+        "gives": {
+          "semilla": 4
+        },
+        "stars": 1
+      },
+      "chestAt": {
+        "25,4": {
+          "gives": {
+            "semilla": 8,
+            "cuarzo": 3,
+            "algas": 6
+          },
+          "stars": 2,
+          "flag": "charca"
+        },
+        "26,17": {
+          "gives": {
+            "madera": 30,
+            "tablas": 10,
+            "semilla": 4
+          },
+          "stars": 2,
+          "flag": "cofreLianas"
+        }
+      },
+      "relic": {
+        "id": "flauta",
+        "name": "Flauta de caña",
+        "text": "Una flauta de caña de río, con cuatro agujeros. Cuando Musgo sopla, todas las flores de alrededor se giran a mirar."
+      },
+      "nest": "3,17"
+    },
+    {
+      "name": "Las raíces del Ceibo",
+      "theme": "cueva",
+      "door": "",
+      "intro": "Bajo el templo, las raíces del Ceibo forman pasillos que brillan con hongos. Al fondo late algo verde, despacio, como un corazón dormido.",
+      "map": [
+        "#####################",
+        "#########.H.#########",
+        "###.L...##.###wwwK###",
+        "#X........W.#.wwww###",
+        "#Y#.....,.....www.###",
+        "###..hh..........C###",
+        "###..hh..#........###",
+        "###..........########",
+        "###V###=####O########",
+        "###.###=####O########",
+        "###x......#.......###",
+        "###.........B.B...###",
+        "###..,..........,.###",
+        "######.........######",
+        "##########S##########",
+        "#####################"
+      ],
+      "decor": {
+        "mushrooms": [
+          [
+            5,
+            4
+          ],
+          [
+            7,
+            6
+          ],
+          [
+            11,
+            5
+          ],
+          [
+            13,
+            6
+          ],
+          [
+            5,
+            11
+          ],
+          [
+            15,
+            12
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            16,
+            10
+          ],
+          [
+            6,
+            3
+          ],
+          [
+            4,
+            7
+          ],
+          [
+            11,
+            7
+          ]
+        ],
+        "stalagmites": []
+      },
+      "lore": "«El Ceibo.»",
+      "loreAt": {
+        "4,2": {
+          "title": "El mural del Ceibo",
+          "text": "«Plantamos el Ceibo el primer día. Sus raíces guardan la tierra buena de la isla, la que usamos para las figuras verdes. Al irnos dejamos al guardián de raíces cuidándolo. Si el Ceibo duerme, la selva se enreda; si despierta, la selva respira.»"
+        }
+      },
+      "chest": {
+        "gives": {
+          "semilla": 10,
+          "cuarzo": 4,
+          "madera": 20
+        },
+        "stars": 3
+      },
+      "relic": {
+        "id": "brote",
+        "name": "Brote de cristal",
+        "text": "Un brote verde atrapado en cuarzo, como si alguien hubiera congelado una semilla justo al despertar."
+      },
+      "guardian": "10,3",
+      "guardianRest": "11,3"
+    }
+  ],
+  "story": {
+    "selvaVista": {
+      "title": "Por la lente del faro",
+      "text": "La lente gira y se detiene sola, apuntando al oeste. Detrás de la niebla aparece una isla verde, tan tupida que no se ve la arena.\n\nMusgo se pega al vidrio: «La conozco. La soñé».\n\nDesde el muelle de tu isla ya se puede viajar hasta ella."
+    },
+    "nidoIguanas": {
+      "title": "Las iguanas de la selva",
+      "text": "Las iguanas se cansan, se tiran al sol con la panza para arriba y se quedan quietas. Una deja caer algo brillante entre las hojas.\n\nCon el tiempo volverán a molestar."
+    },
+    "raizHola": {
+      "title": "El guardián de raíces",
+      "text": "Las raíces del suelo se trenzan y se levantan: un gigante de madera y musgo, con flores en los hombros, se pone de pie frente al corazón del Ceibo.\n\nNo habla, pero cruje como un árbol en el viento. Habrá que calmarlo."
+    },
+    "raizCalma": {
+      "title": "El guardián se aparta",
+      "text": "El guardián deja de crujir. Se inclina ante Musgo como si lo reconociera y se hace a un lado. Le brotan flores nuevas en los brazos."
+    },
+    "ceibo": {
+      "title": "El corazón del Ceibo",
+      "text": "Musgo pone las manos sobre el corazón verde y canta, bajito, una canción que nadie le enseñó. El corazón late más fuerte y, arriba, toda la selva se mueve: las lianas se sueltan, el río corre más claro.\n\nEntre las raíces cae una semilla grande y tibia, del tamaño de un puño: una semilla del Ceibo.\n\n«Para nuestra isla», dice Musgo."
+    }
+  }
+}

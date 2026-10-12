@@ -43,6 +43,8 @@ Como las MO de Pokémon: cada objeto clave abre un tipo de obstáculo que el jug
 | **La caracola grande** (afinada con cuarzo) | Fondo de la cueva + el permiso del gólem | Las olas grandes → la isla del faro | Hecho (v0.16) |
 | El corazón de magma + la puerta de lava | Cueva (cap. 9) + el arco del islote | La Isla Ardiente | Hecho (v0.20) |
 | Planos del horno de forja | La forja de los Alfareros | El horno nivel 3 | Hecho (v0.20) |
+| La lente del faro (con la forja viva) | Isla del faro | Ver la Selva Enredada | Hecho (v0.21) |
+| La semilla del Ceibo | El corazón del Ceibo | El Ceibo en tu isla (da semillas) | Hecho (v0.21) |
 | Campana de vidrio (buceo) | Taller, con cuarzo | Zonas bajo el agua | Idea |
 | Timón reforzado | Taller, con el timón de Marea | Remolinos (atajos entre zonas) | Idea |
 | Lente del faro | Faro, con cuarzo y vidrio | Ver islas escondidas en el mapa | Idea |
@@ -145,8 +147,8 @@ Antes de agregar algo, cuatro preguntas. Si responde que sí a dos o más, entra
 | v0.18 · hecho | **La isla del faro:** primera isla exterior, Marea se une (agua), lente en tres trozos (uno por figura), pasto que se mece, luciérnagas, gaviotas y cangrejos | Cap. 10 |
 | v0.19 · hecho | **UI de arcilla:** paneles de arcilla, bandeja de recursos con bolsa, retratos de las figuras, listas cortas, portada, volumen, respaldo de la partida | — |
 | v0.20 · hecho | **La Isla Ardiente:** la puerta de lava del islote, tres chimeneas (una por figura), géiseres, lava que Marea enfría, el nido y la salamandra madre, la forja y el horno de forja | Cap. 11 |
-| **v0.21** | **La Selva Enredada:** la isla de Musgo | Cap. 12 |
-| v0.22 | **Las Profundidades y economía 2:** pisos que cambian, figuras asignadas a edificios, trueques | — |
+| v0.21 · hecho | **La Selva Enredada:** la isla de Musgo, el río de capullos, la planta carnívora, el templo, las raíces del Ceibo, el guardián de raíces y el Ceibo en tu isla | Cap. 12 |
+| **v0.22** | **Las Profundidades y economía 2:** pisos que cambian, figuras asignadas a edificios, trueques | — |
 | Después | **El origen:** la ciudad de los Alfareros, el Espectro, el final | — |
 
 Ver docs/plan-figuras.md para el repaso completo y las referencias de otros juegos.

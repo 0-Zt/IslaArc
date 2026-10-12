@@ -206,6 +206,12 @@ export function tickBuildings(dt: number) {
         (b.glow.material as THREE.MeshBasicMaterial).color.setRGB(2.4 * f * glowMul, 0.9 * f * glowMul, 0.22 * f * glowMul);
       }
     }
+    if (b.type === 'ceibo') {
+      // the Ceibo drops seeds at its feet now and then; its leaves rustle
+      b.prog += dt / 90;
+      if (b.prog >= 1) { b.prog = 0; const v = smokePoint(b); gain('semilla', 2, new THREE.Vector3(v.x, v.y - 1.2, v.z)); puff(v.x, v.y - 0.8, v.z, '#8ad96b', 10, 1, 1.4); }
+      if (Math.random() < dt * 0.6) { const v = smokePoint(b); puff(v.x + (Math.random() - 0.5) * 1.6, v.y - 0.6, v.z + (Math.random() - 0.5) * 1.6, Math.random() < 0.5 ? '#6fae4a' : '#f8a8c8', 1, -0.2, 0.6, 0); }
+    }
     if (b.type === 'casa' && Math.random() < dt * 1.2) { const v = smokePoint(b); smoke(v.x, v.y, v.z, '#d8d4ce', 0.05, 1.8); }
     b.stoked = false; // set again next frame while Brasa keeps fanning
   }

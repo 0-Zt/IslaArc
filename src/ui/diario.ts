@@ -1,4 +1,4 @@
-import { RELICS, ARD_RELICS } from '../game/cave';
+import { RELICS, ARD_RELICS, SEL_RELICS } from '../game/cave';
 import { S } from '../game/state';
 import { CHAPTERS, GOALS, goalText, goalDone, currentChapter, stagesOf } from '../game/goals';
 import { LEVELS, ACHIEVEMENTS, TIER_NAMES, levelProgress, achProgress, boardSlots } from '../game/progress';
@@ -168,6 +168,12 @@ function mar() {
     const got = RELICS.filter(r => S.cave?.relics?.includes(r.id));
     h += `<div class="mtier"><b>Reliquias de la cueva</b><small>${got.length}/${RELICS.length} · tras paredes huecas</small></div><div class="mgrid">`;
     for (const r of RELICS) { const c = S.cave?.relics?.includes(r.id); h += `<div class="mcell${c ? ' got' : ''}"><img class="pix${c ? '' : ' sil'}" src="${XICON[c ? r.id : 'reliquia']}" alt=""><b>${c ? r.name : '???'}</b><small>${c ? 'Cueva del volcán' : 'En algún piso'}</small></div>`; }
+    h += '</div>';
+  }
+  if (S.flags.selvaVisitada) {
+    const got = SEL_RELICS.filter(r => S.selva?.relics?.includes(r.id));
+    h += `<div class="mtier"><b>Reliquias de la Selva Enredada</b><small>${got.length}/${SEL_RELICS.length}</small></div><div class="mgrid">`;
+    for (const r of SEL_RELICS) { const c = S.selva?.relics?.includes(r.id); h += `<div class="mcell${c ? ' got' : ''}"><img class="pix${c ? '' : ' sil'}" src="${XICON[c ? r.id : 'reliquia'] || XICON.reliquia}" alt=""><b>${c ? r.name : '???'}</b><small>${c ? 'Selva Enredada' : 'Detrás de una roca hueca'}</small></div>`; }
     h += '</div>';
   }
   if (S.flags.ardVisitado) {

@@ -3,9 +3,10 @@ import { portrait } from '../ui/portraits';
 import CAVE from '../data/cave.json';
 import FARO from '../data/faro.json';
 import ARD from '../data/ardiente.json';
+import SEL from '../data/selva.json';
 import { scene, camera, controls, cancelFly, setCaveMode, inCaveLight, FR } from '../render/renderer';
 import { refreshDay } from '../render/daynight';
-import { buildFloor, lavaScroll, GLOW, DIR_ANGLE, CAVE_X, CAVE_Z, FARO_X, FARO_Z, ARD_X, ARD_Z, type FloorView, type Golem } from '../world/cavebuild';
+import { buildFloor, lavaScroll, GLOW, DIR_ANGLE, CAVE_X, CAVE_Z, FARO_X, FARO_Z, ARD_X, ARD_Z, SEL_X, SEL_Z, type FloorView, type Golem } from '../world/cavebuild';
 import { zoneLifeStart, zoneLifeStop, tickZoneLife } from '../world/zonelife';
 import { nightK } from '../render/daynight';
 import { vbox } from '../assets/voxel';
@@ -20,7 +21,7 @@ import { STORY } from './fishing';
 import type { CharId, ToolKey } from '../assets/characters';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { MAT } from '../assets/voxel';
-import { startBattle, battleActive, battleFocus, tickBattle, golemPose, salamanderPose, type FoeId } from './battle';
+import { startBattle, battleActive, battleFocus, tickBattle, golemPose, salamanderPose, releaseFoe, type FoeId } from './battle';
 import { lifeStart, lifeStop, tickLife, scareBats, type Light } from '../world/cavelife';
 
 /* The volcano cave, explored like the old handheld adventures: the figures walk in a line,
@@ -41,22 +42,22 @@ interface FloorDef {
   upgrade?: { id: string; who: string; name: string; text: string };
   chestAt?: Record<string, { gives: Record<string, number>; stars: number; flag?: string }>;
   loreAt?: Record<string, string | { title: string; text: string }>;
-  theme?: 'isla' | 'torre' | 'volcan' | 'cueva';
+  theme?: 'isla' | 'torre' | 'volcan' | 'cueva' | 'selva';
   chimneys?: Record<string, { name: string; flag: string; plug?: string; blocked?: string }>;
-  nest?: string; madre?: string; madreRest?: string;
+  nest?: string; madre?: string; madreRest?: string; guardian?: string; guardianRest?: string;
   npc?: number[];
   pieces?: Record<string, { id: string; name: string; text: string }>;
 }
-const CAVE_FLOORS = CAVE.floors as FloorDef[], FARO_FLOORS = FARO.floors as FloorDef[], ARD_FLOORS = ARD.floors as unknown as FloorDef[];
+const CAVE_FLOORS = CAVE.floors as FloorDef[], FARO_FLOORS = FARO.floors as FloorDef[], ARD_FLOORS = ARD.floors as unknown as FloorDef[], SEL_FLOORS = SEL.floors as unknown as FloorDef[];
 /** The places explored cell by cell: the volcano cave and, from v0.18, the lighthouse island. */
-export type ZoneId = 'cueva' | 'faro' | 'ardiente';
+export type ZoneId = 'cueva' | 'faro' | 'ardiente' | 'selva';
 let zone: ZoneId = 'cueva';
 let FLOORS = CAVE_FLOORS;
 const K = (x: number, z: number) => `${x},${z}`;
 const cellsOf = (fi: number, c: string) => { const out: [number, number][] = []; FLOORS[fi].map.forEach((row, z) => [...row].forEach((ch, x) => { if (ch === c) out.push([x, z]); })); return out; };
 
 /* stories: the cave texts, the tablets and the lighthouse */
-Object.assign(STORY, CAVE.story, FARO.story, ARD.story);
+Object.assign(STORY, CAVE.story, FARO.story, ARD.story, SEL.story);
 for (const f of FARO_FLOORS) for (const pc of Object.values(f.pieces || {})) STORY[pc.id] = { title: pc.name, text: pc.text };
 STORY.fa_sign = { title: 'Un letrero', text: FARO_FLOORS[0].lore.replace(/ — .*$/, '') };
 /** The three hidden relics, one behind a hollow wall on each floor (the cave collection). */
@@ -66,6 +67,7 @@ for (const r of RELICS) STORY[`rel_${r.id}`] = { title: r.name, text: r.text };
 function loreKey(i: number, x: number, z: number) {
   const f = FLOORS[i], k = K(x, z);
   if (zone === 'ardiente') return `ar${i}_${x}_${z}`;
+  if (zone === 'selva') return `sv${i}_${x}_${z}`;
   if (f.loreAt?.[k]) return `cv${i}_${x}_${z}`;
   return `cv${i}_${cellsOf(i, 'L').filter(([a, b]) => !f.loreAt?.[K(a, b)]).findIndex(([a, b]) => a === x && b === z)}`;
 }
@@ -80,6 +82,9 @@ FLOORS.forEach((f, i) => {
 });
 /* the burning island: its tablets (each with its own title) and its relics */
 ARD_FLOORS.forEach((f, i) => { for (const [k, t] of Object.entries(f.loreAt || {})) { const [x, z] = k.split(',').map(Number); const o = t as { title: string; text: string }; STORY[`ar${i}_${x}_${z}`] = { title: o.title, text: o.text }; } });
+SEL_FLOORS.forEach((f, i) => { for (const [k, t] of Object.entries(f.loreAt || {})) { const [x, z] = k.split(',').map(Number); const o = t as { title: string; text: string }; STORY[`sv${i}_${x}_${z}`] = { title: o.title, text: o.text }; } });
+export const SEL_RELICS = SEL_FLOORS.map(f => f.relic!).filter(Boolean);
+for (const r of SEL_RELICS) STORY[`rel_${r.id}`] = { title: r.name, text: r.text };
 export const ARD_RELICS = ARD_FLOORS.map(f => f.relic!).filter(Boolean);
 for (const r of ARD_RELICS) STORY[`rel_${r.id}`] = { title: r.name, text: r.text };
 /* what each figure can do out here, and how they are called */
@@ -110,7 +115,13 @@ export function ardSave(): CaveSave {
   if (!c.relics) c.relics = [];
   return c;
 }
-const ZS = () => zone === 'cueva' ? caveSave() : zone === 'faro' ? faroSave() : ardSave();
+export function selSave(): CaveSave {
+  const c = S.selva || (S.selva = { hits: 0, max: -1, f: [], caracola: false, chests: 0, relics: [] });
+  SEL_FLOORS.forEach((_, i) => { if (!c.f[i]) c.f[i] = freshFloor(i, SEL_FLOORS); });
+  if (!c.relics) c.relics = [];
+  return c;
+}
+const ZS = () => zone === 'cueva' ? caveSave() : zone === 'faro' ? faroSave() : zone === 'ardiente' ? ardSave() : selSave();
 let OX = CAVE_X, OZ = CAVE_Z;
 const theme = () => FLOORS[fi]?.theme || 'cueva';
 
@@ -194,7 +205,7 @@ function fade(then: () => void, immediate = false) {
 
 /* ---------- entering and leaving ---------- */
 let before: { target: THREE.Vector3; pos: THREE.Vector3; zoom: number } | null = null;
-const exitTo: Record<ZoneId, () => THREE.Vector3 | null> = { cueva: () => null, faro: () => null, ardiente: () => null };
+const exitTo: Record<ZoneId, () => THREE.Vector3 | null> = { cueva: () => null, faro: () => null, ardiente: () => null, selva: () => null };
 /** Where the camera goes back to on the island (the cave mouth and the pier set this). */
 export function setExitPoint(f: () => THREE.Vector3 | null, z: ZoneId = 'cueva') { exitTo[z] = f; }
 
@@ -203,10 +214,10 @@ export const exitCave = (immediate = false) => exitZone(immediate);
 export const zoneId = () => active ? zone : null;
 export function enterZone(z: ZoneId, immediate = false) {
   if (active) return;
-  ui(); caveSave(); faroSave(); ardSave();
+  ui(); caveSave(); faroSave(); ardSave(); selSave();
   fade(() => {
-    zone = z; FLOORS = z === 'cueva' ? CAVE_FLOORS : z === 'faro' ? FARO_FLOORS : ARD_FLOORS;
-    [OX, OZ] = z === 'cueva' ? [CAVE_X, CAVE_Z] : z === 'faro' ? [FARO_X, FARO_Z] : [ARD_X, ARD_Z];
+    zone = z; FLOORS = z === 'cueva' ? CAVE_FLOORS : z === 'faro' ? FARO_FLOORS : z === 'ardiente' ? ARD_FLOORS : SEL_FLOORS;
+    [OX, OZ] = z === 'cueva' ? [CAVE_X, CAVE_Z] : z === 'faro' ? [FARO_X, FARO_Z] : z === 'ardiente' ? [ARD_X, ARD_Z] : [SEL_X, SEL_Z];
     active = true; cancelFly(); select(null);
     before = { target: controls.target.clone(), pos: camera.position.clone(), zoom: camera.zoom };
     controls.enabled = false;
@@ -223,6 +234,7 @@ export function enterZone(z: ZoneId, immediate = false) {
     if (z === 'cueva' && !S.flags.cuevaEntro) { S.flags.cuevaEntro = true; emit('changed'); }
     if (z === 'faro' && !S.flags.faroVisitado) { S.flags.faroVisitado = true; emit('changed'); }
     if (z === 'ardiente' && !S.flags.ardVisitado) { S.flags.ardVisitado = true; emit('changed'); }
+    if (z === 'selva' && !S.flags.selvaVisitada) { S.flags.selvaVisitada = true; emit('changed'); }
     emit('caveMode', true); emit('caveChanged');
   }, immediate);
 }
@@ -267,7 +279,7 @@ function loadFloor(n: number, how: 'down' | 'up' | 'reset') {
   unloadFloor();
   fi = n; map = FLOORS[n].map;
   const st = F();
-  view = buildFloor(map, st.dirs, FLOORS[n].decor, zone === 'ardiente' ? n + 3 : n, FLOORS[n].theme || 'cueva', OX, OZ);
+  view = buildFloor(map, st.dirs, FLOORS[n].decor, zone === 'ardiente' ? n + 3 : zone === 'selva' ? n + 5 : n, FLOORS[n].theme || 'cueva', OX, OZ);
   scene.add(view.root);
   // underground floors use the cave's light; the outdoor ones the day's
   if (theme() === 'cueva') { if (!inCaveLight()) setCaveMode(true); }
@@ -291,9 +303,13 @@ function loadFloor(n: number, how: 'down' | 'up' | 'reset') {
   for (const [k, kind] of Object.entries(st.built)) { const c = view.chasms.get(k); if (c) (kind === 'raices' ? c.root : c.plank).visible = true; if (kind === 'frio') { const [a, b] = k.split(',').map(Number); addSlab(a, b); } }
   for (const k of st.lit) { const c = view.chimneys.get(k); if (c) { c.flame.visible = true; c.glow.material = GLOW.flame; } }
   for (const [k, g] of view.geysers) if (st.fill.includes(k)) g.col.visible = false;
+  for (const [k, b] of view.buds) setBud(b, st.built[k]);
+  for (const [k, p] of view.plants) if (st.built[k] === 'susto') hidePlant(p, true);
+  if (view.heart && S.flags.ceiboDespierto) view.heart.orb.scale.setScalar(1.5);
   if (view.forge) { view.forge.fire.visible = !!S.flags.forjaViva; }
   for (const [k, f] of view.foes) {
-    if (FLOORS[n].madre === k) { salamanderPose(f, !S.flags.madreCalma && !!S.flags.madreHola); if (S.flags.madreCalma) placeMadre(f); }
+    if (FLOORS[n].guardian === k) { if (S.flags.raizCalma) placeAside(f, FLOORS[n].guardianRest); golemPose(f, S.flags.raizCalma ? 'calm' : S.flags.raizHola ? 'awake' : 'sleep'); }
+    else if (FLOORS[n].madre === k) { salamanderPose(f, !S.flags.madreCalma && !!S.flags.madreHola); if (S.flags.madreCalma) placeMadre(f); }
     else salamanderPose(f, !nestCalm());
   }
   const up = FLOORS[n].upgrade; if (up && S.flags[up.id] && view.gift) view.gift.visible = false;
@@ -314,7 +330,7 @@ function loadFloor(n: number, how: 'down' | 'up' | 'reset') {
   if (n > ZS().max) { ZS().max = n; emit('changed'); }
   setupLights();
   if (theme() === 'cueva') { lifeStart(map, n, (x, z) => !solid(x, z), OX, OZ); setCaveAmbience(true, n === 2 || zone === 'ardiente'); }
-  else { setCaveAmbience(false); zoneLifeStart(map, theme() as 'isla' | 'torre' | 'volcan', OX, OZ, (x, z) => !blockedFor('arci', x, z), view.springs, view.crater); }
+  else { setCaveAmbience(false); zoneLifeStart(map, theme() as 'isla' | 'torre' | 'volcan' | 'selva', OX, OZ, (x, z) => !blockedFor('arci', x, z), view.springs, view.crater); }
   // Marea waits by the lighthouse until it shines again
   const npc = FLOORS[n].npc;
   if (npc && !S.flags.mareaUnida) { npcFig = makeFigure('marea'); npcFig.lamp = 0; npcFig.ring.visible = false; npcFig.root.position.copy(world(npc[0], npc[1])); npcFig.dir = 0; npcFig.root.rotation.y = 0; scene.add(npcFig.root); }
@@ -339,6 +355,8 @@ function loadFloor(n: number, how: 'down' | 'up' | 'reset') {
     if (c === 'l') glowSpots.push(() => cooled(k2) ? null : { x: w2.x, z: w2.z, r: 1.4 });
     if (c === 'Z') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: S.flags.forjaViva ? 3.4 : 1.2 }));
     if (c === 'm' || c === 'N') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: c === 'm' ? 2.6 : 1.5 }));
+    if (c === 'H') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: S.flags.ceiboDespierto ? 3.6 : 2.2 }));
+    if (c === 'W') glowSpots.push(() => ({ x: w2.x, z: w2.z, r: 1.8 }));
     if (c === 'E') glowSpots.push(() => F().lit.includes(k2) ? { x: w2.x, z: w2.z, r: 2.2 } : null);
   }));
   for (const [x, z] of FLOORS[n].decor.mushrooms) { const w2 = world(x, z); glowSpots.push(() => ({ x: w2.x, z: w2.z, r: 1.1 })); }
@@ -407,13 +425,18 @@ function geyserOn(x: number, z: number) {
 }
 /** The salamanders of the nest sleep for a while after a fight, then wake up again. */
 const NEST_SLEEP = 600;
-const nestCalm = () => S.ardiente?.nestAt !== undefined && S.time - S.ardiente.nestAt! < NEST_SLEEP;
+const nestCalm = () => { const n = ZS().nestAt; return n !== undefined && S.time - n < NEST_SLEEP; };
+function setBud(b: { bud: THREE.Group; wet: THREE.Group; pad: THREE.Group }, state?: string) { b.bud.visible = !state; b.wet.visible = state === 'regada'; b.pad.visible = state === 'flor'; }
+function hidePlant(p: { g: THREE.Group; head: THREE.Group; jaw: THREE.Group }, hide: boolean) { p.head.position.y = hide ? 0.12 : 0.62; p.jaw.rotation.x = hide ? 0 : -0.7; p.head.scale.setScalar(hide ? 0.7 : 1); }
+/** A guardian that has been calmed moves to its resting cell, out of the way. */
+function placeAside(f: Golem, rest?: string) { if (!rest) return; const [a, b] = rest.split(',').map(Number); f.g.position.copy(local(a, b)); }
 /** The mother, once calm, lies down beside the forge (out of the way). */
 function placeMadre(f: Golem) { const r = FLOORS[fi].madreRest; if (!r) return; const [a, b] = r.split(',').map(Number); f.g.parent!.position.copy(local(a, b)); f.g.rotation.y = -0.6; }
 function solid(x: number, z: number) {
   if (boulderAt(x, z) >= 0) return true;
   const c = ch(x, z), st = F(), k = K(x, z);
   if (S.flags.madreCalma && FLOORS[fi].madreRest === k) return true;
+  if (S.flags.raizCalma && FLOORS[fi].guardianRest === k) return true;
   switch (c) {
     case '.': case ',': case 'S': case '>': case 'P': case 'B': case ':': case 'd': return false;   // under a boulder there is floor
     case 'w': return false;                                     // water: see blockedFor
@@ -429,6 +452,9 @@ function solid(x: number, z: number) {
     case 'q': return false;                                     // a geyser: see tryStep (it blows now and then)
     case 'j': return !st.fill.includes(k);
     case 'm': return !S.flags.madreCalma;
+    case 'W': return !S.flags.raizCalma;
+    case 'f': return false;                                     // a bud in the river: see blockedFor
+    case 'x': return st.built?.[k] !== 'susto';
     case 'D': return !(st.door && doorK > 0.7);
     case 'G': return gateK < 0.7;
     default: return true;
@@ -441,6 +467,7 @@ function blockedFor(id: string, x: number, z: number) {
   if (solid(x, z)) return true;
   const c = ch(x, z);
   if (c === 'w') return id !== 'marea' && !F().fill.includes(K(x, z));   // only Marea walks in the water
+  if (c === 'f') return id !== 'marea' && F().built?.[K(x, z)] !== 'flor';   // a flower pad in bloom carries anyone
   return c === 'b' && id !== 'brasa';
 }
 /** Which figure is needed for what is in this cell (null: anyone). */
@@ -455,6 +482,9 @@ function needs(x: number, z: number): string | null {
   if (c === 'l' && !cooled(k)) return 'marea';
   if (c === 'E' && !st.lit.includes(k)) { const d = FLOORS[fi].chimneys?.[k]; return d?.plug && !st.fill.includes(d.plug) ? null : 'brasa'; }
   if (c === 'Z' && S.flags.madreCalma && !S.flags.forjaViva) return 'brasa';
+  if (c === 'f') { const b = st.built?.[k]; return b === 'flor' ? null : b === 'regada' ? 'musgo' : 'marea'; }
+  if (c === 'x' && st.built?.[k] !== 'susto') return 'brasa';
+  if (c === 'H' && S.flags.raizCalma && !S.flags.ceiboDespierto) return 'musgo';
   return null;
 }
 let hintT = 0;
@@ -476,6 +506,8 @@ function tryStep(d: Dir): boolean {
     if (c === 'l') hint(has('marea') ? 'Lava que corre: Marea la puede enfriar con agua (toca su cara).' : 'Lava que corre. Hace falta agua para enfriarla.');
     if (c === '~') hint(id === 'marea' ? 'Esta lava es muy honda para enfriarla: hace falta una roca que la tape.' : 'Lava honda. Una roca grande la taparía.');
     if (c === 'j') hint('Un géiser que nunca para. Una roca lo podría tapar.');
+    if (c === 'f') hint('Un capullo gigante en el río. Marea lo puede regar y Musgo hacerlo florecer: así se cruza.');
+    if (c === 'x') hint(has('brasa') ? 'Una planta carnívora: muerde todo lo que se acerca. Brasa la puede asustar con una chispa (toca su cara).' : 'Una planta carnívora. Muerde.');
     if (c === 'b') hint(has('brasa') ? (theme() === 'isla' ? 'Vapor hirviendo: solo Brasa camina entre las fumarolas (toca su cara).' : 'El suelo quema: solo Brasa camina sobre las brasas (toca su cara arriba).') : 'El suelo quema.');
     if (c === 'w') hint(has('marea') ? 'Agua: solo Marea camina por ahí (toca su cara).' : 'Agua. Nadie del equipo sabe moverse en el agua… todavía.');
     return false;
@@ -544,7 +576,7 @@ function refreshWho() {
 
 function push(bi: number, dx: number, dz: number) {
   const st = F(), [bx, bz] = st.b[bi]!, tx = bx + dx, tz = bz + dz, c = ch(tx, tz), k = K(tx, tz);
-  if (boulderAt(tx, tz) >= 0 || c === 'S' || c === '>') return false;
+  if (boulderAt(tx, tz) >= 0 || c === 'S' || c === '>' || c === 'f' || c === 'x') return false;
   const hole = (c === 'O' || c === '~' || c === 'w' || c === 'j' || (c === 'l' && !cooled(k))) && !st.fill.includes(k);
   if (!hole && solid(tx, tz)) return false;
   if (party.slice(1).some(m => m.x === tx && m.z === tz)) return false;
@@ -553,6 +585,7 @@ function push(bi: number, dx: number, dz: number) {
   if (hole) { st.fill.push(k); boulderMeshes[bi] = null; }
   const from = mesh.position.clone(), to = local(tx, tz);
   sfx('dig', 0.9);
+  if (c === 'P' && !hole && zone === 'selva' && !S.flags.temploAbierto) { S.flags.temploAbierto = true; setTimeout(() => { sfx('solve'); say('La roca hunde la losa: clic. La reja del templo sube y se queda arriba.'); }, 300); emit('changed'); }
   const w = world(bx, bz); puff(w.x - dx * 0.4, 0.1, w.z - dz * 0.4, '#8a7a6a', 6, 0.9, 0.9, 0);
   slides.push({ o: mesh, from, to, t: 0, d: STEP * 1.05, spin: dx ? -dx : dz, done: hole ? () => fall(mesh, tx, tz, c) : undefined });
   emit('caveChanged');
@@ -638,6 +671,10 @@ function actionLabel(): string {
     case 'Z': return S.flags.forjaViva || !S.flags.madreCalma ? 'Mirar' : 'Avivar';
     case 'N': return nestCalm() ? 'Mirar' : 'Acercarse';
     case 'm': return S.flags.madreCalma ? '' : S.flags.madreHola ? 'Calmar' : 'Mirar';
+    case 'W': return S.flags.raizCalma ? '' : S.flags.raizHola ? 'Calmar' : 'Mirar';
+    case 'f': { const b = st.built?.[k]; return b === 'flor' ? '' : b === 'regada' ? 'Florecer' : 'Regar'; }
+    case 'x': return st.built?.[k] === 'susto' ? '' : 'Asustar';
+    case 'H': return S.flags.ceiboDespierto || !S.flags.raizCalma ? 'Mirar' : 'Cantar';
   }
   return '';
 }
@@ -812,6 +849,7 @@ export function caveAct() {
       if (FLOORS[fi].loreAt?.[k] && !S.flags.mural) { S.flags.mural = true; emit('changed'); }
       if (zone === 'ardiente' && fi === 0 && k === '14,21' && !S.flags.ardTablilla) { S.flags.ardTablilla = true; emit('changed'); }
       if (zone === 'ardiente' && k === '7,3' && !S.flags.grabadoMarea) { S.flags.grabadoMarea = true; emit('changed'); }
+      if (zone === 'selva' && fi === 0 && k === '6,3' && !S.flags.suenoMusgo) { S.flags.suenoMusgo = true; emit('changed'); }
       emit('story', zone === 'faro' ? 'fa_sign' : loreKey(fi, x, z));
       return;
     }
@@ -850,7 +888,7 @@ export function caveAct() {
       say(n < 3 ? `Marea: «Faltan ${3 - n} ${3 - n === 1 ? 'trozo' : 'trozos'} de la lente. Pasto alto, fumarolas y la roca del este.»` : 'Marea: «¡Los tres! Sube al faro y ponlos en el marco de arriba.»');
       return;
     }
-    case 'T': say(theme() === 'isla' ? 'Una palmera de arcilla. Los cocos son duros como piedra.' : theme() === 'volcan' ? 'Un árbol quemado hace mucho. En las puntas de las ramas todavía brillan brasas.' : 'Un árbol.'); return;
+    case 'T': say(theme() === 'selva' ? 'Un árbol de frutas de arcilla. Huelen a mango, pero son duras como ladrillo.' : theme() === 'isla' ? 'Una palmera de arcilla. Los cocos son duros como piedra.' : theme() === 'volcan' ? 'Un árbol quemado hace mucho. En las puntas de las ramas todavía brillan brasas.' : 'Un árbol.'); return;
     case 'F': say('El faro de los Alfareros. La puerta está al frente.'); return;
     case 'A': if (zone === 'faro') { lightLens(); return; } say(st.door ? 'El orbe del altar brilla: las cuatro guardianas lo miran.' : 'Un altar con un orbe apagado. Ninguna de las guardianas lo mira.'); return;
     case 'g': {
@@ -859,6 +897,62 @@ export function caveAct() {
       say(ZS().caracola ? 'El gólem no se mueve… pero ahora sus ojos parecen seguirte.' : 'Un gólem de arcilla oscura, enorme, dormido sobre las rodillas. El calor le late en las grietas.'); return;
     }
     case '*': say('Una estalagmita. Gotea.'); return;
+    case 'f': {
+      const b = st.built?.[k]; if (b === 'flor') return;
+      if (!b) {
+        work(1.0, '', () => {
+          (st.built ||= {})[k] = 'regada'; const v2 = view!.buds.get(k); if (v2) setBud(v2, 'regada');
+          sfx('splash', 0.7); puff(w.x, 0.6, w.z, '#7ec8f0', 14, 1.6, 1, 0);
+          say('Marea riega el capullo con agua del río. Se hincha y se pone rosado… falta que alguien le hable.');
+          emit('changed'); emit('caveChanged');
+        });
+      } else {
+        work(1.2, '', () => {
+          (st.built ||= {})[k] = 'flor'; const v2 = view!.buds.get(k); if (v2) setBud(v2, 'flor');
+          sfx('heal'); sfx('coin', 0.5); puff(w.x, 0.3, w.z, '#f8a8c8', 22, 2, 1.4, 0);
+          const all = cellsOf(fi, 'f'), n = all.filter(([a, b2]) => st.built?.[K(a, b2)] === 'flor').length;
+          say(n < all.length ? `Musgo le canta al capullo y se abre en una flor enorme que flota: se puede pisar (${n}/${all.length}).` : 'La última flor se abre. El río ya se puede cruzar de flor en flor.');
+          if (n >= all.length && !S.flags.rioFlor) S.flags.rioFlor = true;
+          emit('changed'); emit('caveChanged');
+        });
+      }
+      return;
+    }
+    case 'x': {
+      if (st.built?.[k] === 'susto') return;
+      work(0.8, '', () => {
+        (st.built ||= {})[k] = 'susto'; const p2 = view!.plants.get(k); if (p2) hidePlant(p2, true);
+        sfx('fire'); sfx('snap', 0.6); puff(w.x, 0.7, w.z, '#ffb040', 10, 1.6, 0.8, 0); puff(w.x, 0.3, w.z, '#4e8a3a', 10, 1.2, 1, 0);
+        say(S.flags.plantaAsustada ? 'Brasa le acerca una chispa y la planta se esconde bajo sus hojas.' : 'Brasa le acerca una chispa a la planta. ¡Se asusta! Cierra la boca y se esconde bajo sus hojas, temblando. Ya se puede pasar.');
+        if (!S.flags.plantaAsustada) S.flags.plantaAsustada = true;
+        emit('changed'); emit('caveChanged');
+      });
+      return;
+    }
+    case 'W': {
+      if (S.flags.raizCalma) return;
+      const f = view!.foes.get(k); if (!f) return;
+      if (!S.flags.raizHola) { S.flags.raizHola = true; golemPose(f, 'awake'); shakeT = 0.4; sfx('roar', 0.5); emit('story', 'raizHola'); emit('changed'); return; }
+      fightFoe('raiz', x, z, f, () => {
+        S.flags.raizCalma = true; releaseFoe();
+        const holder = f.g, r = FLOORS[fi].guardianRest; if (r) { const [a, b] = r.split(',').map(Number); slides.push({ o: holder, from: holder.position.clone(), to: local(a, b), t: 0, d: 1.2 }); }
+        setTimeout(() => emit('story', 'raizCalma'), 1500);
+      });
+      return;
+    }
+    case 'H': {
+      if (S.flags.ceiboDespierto) { say('El corazón del Ceibo late tranquilo. Arriba, la selva respira.'); return; }
+      if (!S.flags.raizCalma) { say('Una luz verde late entre las raíces. El guardián no deja acercarse.'); return; }
+      work(1.8, '', () => {
+        S.flags.ceiboDespierto = true; S.flags.semillaCeibo = true; sfx('solve'); sfx('heal');
+        if (view!.heart) view!.heart.orb.scale.setScalar(1.5);
+        puff(w.x, 0.8, w.z, '#9aff90', 34, 2.6, 1.6, 0); shakeT = 0.3;
+        for (const m of party) m.c.cheer = 2.4;
+        setTimeout(() => emit('story', 'ceibo'), 1300);
+        emit('changed'); emit('caveChanged');
+      });
+      return;
+    }
     case 'q': say(geyserOn(x, z) ? '¡Fiuuu! El géiser sopla un chorro de vapor hirviendo.' : 'Un géiser dormido… por un momento. Sopla cada pocos segundos.'); return;
     case 'j': say('Un géiser que nunca para. Una roca grande lo podría tapar.'); return;
     case 'l': {
@@ -900,14 +994,17 @@ export function caveAct() {
       return;
     }
     case 'N': {
-      if (nestCalm()) { say('Las salamandras duermen enroscadas entre las brasas. Más tarde volverán a despertar.'); return; }
+      if (nestCalm()) { say(zone === 'selva' ? 'Las iguanas duermen al sol, panza arriba. Más tarde volverán a molestar.' : 'Las salamandras duermen enroscadas entre las brasas. Más tarde volverán a despertar.'); return; }
       const f = view!.foes.get(k); if (!f) return;
-      fightFoe('salamandra', x, z, f, () => {
+      const jungle = zone === 'selva';
+      fightFoe(jungle ? 'iguanas' : 'salamandra', x, z, f, () => {
         ZS().nestAt = S.time; salamanderPose(f, false);
         const at = w.clone().setY(1);
-        gain('obsidiana', 2, at); gain('carbon', 3, at.clone().setY(1.35)); if (Math.random() < 0.5) gain('cuarzo', 1, at.clone().setY(1.7));
-        if (Math.random() < 0.25 || !S.flags.nidoCalmo) addStars(1, 'Las salamandras del nido');
-        if (!S.flags.nidoCalmo) { S.flags.nidoCalmo = true; setTimeout(() => emit('story', 'nido'), 500); }
+        if (jungle) { gain('semilla', 3, at); gain('madera', 6, at.clone().setY(1.35)); if (Math.random() < 0.5) gain('cuarzo', 1, at.clone().setY(1.7)); }
+        else { gain('obsidiana', 2, at); gain('carbon', 3, at.clone().setY(1.35)); if (Math.random() < 0.5) gain('cuarzo', 1, at.clone().setY(1.7)); }
+        const fl = jungle ? 'nidoIguanas' : 'nidoCalmo';
+        if (Math.random() < 0.25 || !S.flags[fl]) addStars(1, jungle ? 'Las iguanas de la selva' : 'Las salamandras del nido');
+        if (!S.flags[fl]) { S.flags[fl] = true; setTimeout(() => emit('story', jungle ? 'nidoIguanas' : 'nido'), 500); }
       });
       return;
     }
@@ -947,7 +1044,10 @@ function checkDoor() {
 const PIECES = ['piezaPasto', 'piezaVapor', 'piezaRoca'];
 export const piecesHeld = () => PIECES.filter(f => S.flags[f]).length;
 function lightLens() {
-  if (S.flags.faroEncendido) { say('La lente gira despacio. Desde aquí se ve tu isla.'); return; }
+  if (S.flags.faroEncendido) {
+    if (S.flags.forjaViva && !S.flags.selvaVista) { S.flags.selvaVista = true; sfx('solve'); shakeT = 0.2; emit('story', 'selvaVista'); emit('changed'); return; }
+    say(S.flags.selvaVista ? 'La lente gira despacio. Al oeste, la selva verde; al sur, tu isla.' : 'La lente gira despacio. Desde aquí se ve tu isla.'); return;
+  }
   const n = piecesHeld();
   if (n < 3) { say(`El marco de bronce de la lente. Faltan ${3 - n} ${3 - n === 1 ? 'trozo' : 'trozos'}.`); return; }
   work(1.2, '', () => {
@@ -1012,7 +1112,7 @@ export function tapCell(x: number, z: number) {
   const L = leader(); if (L.x === x && L.z === z) return;
   held = null; pendingAct = null;
   const adj = Math.abs(L.x - x) + Math.abs(L.z - z) === 1;
-  const interest = boulderAt(x, z) >= 0 || 'tsRCMKLQDGAg*XYVh=oUpnTFlEjNZm'.includes(ch(x, z)) && solid(x, z);
+  const interest = boulderAt(x, z) >= 0 || 'tsRCMKLQDGAg*XYVh=oUpnTFlEjNZmWxH'.includes(ch(x, z)) && solid(x, z) || ch(x, z) === 'f' && F().built?.[K(x, z)] !== 'flor';
   if (adj && interest && !moving) {
     const d = (Object.keys(DV) as Dir[]).find(q => L.x + DV[q][0] === x && L.z + DV[q][1] === z)!;
     facing = d; L.c.dir = Math.atan2(DV[d][0], DV[d][1]); caveAct(); return;
@@ -1111,6 +1211,14 @@ function tickBurning(dt: number) {
     rumbleT -= dt;
     if (rumbleT <= 0) { rumbleT = 45 + Math.random() * 30; sfx('rumble', 0.7); shakeT = 0.5; for (let q = 0; q < 6; q++) smoke(view.crater.x + (Math.random() - 0.5), view.crater.y + 0.4, view.crater.z, '#ff8a40', 0.2, 1.4); }
   }
+  for (const [k, p] of view.plants) {
+    if (F().built?.[k] === 'susto') { p.head.rotation.z = Math.sin(clock * 30) * 0.03; continue; }
+    const [x, z] = k.split(',').map(Number), d = L ? Math.abs(L.x - x) + Math.abs(L.z - z) : 9;
+    const snap = d <= 1 && Math.sin(clock * 5 + x) > 0.6;
+    p.jaw.rotation.x += ((snap ? 0 : -0.7 - Math.sin(clock * 2 + z) * 0.1) - p.jaw.rotation.x) * Math.min(1, dt * (snap ? 25 : 4));
+    p.head.rotation.y = L && d < 4 ? Math.atan2(L.x - x, L.z - z) : Math.sin(clock * 0.6 + x) * 0.5;
+  }
+  if (view.heart) { const k2 = S.flags.ceiboDespierto ? 1 : 0.6; view.heart.orb.rotation.y += dt * 0.6; (view.heart.glow.material as THREE.MeshBasicMaterial).opacity = (0.5 + 0.2 * Math.sin(clock * (S.flags.ceiboDespierto ? 2 : 1.2))) * k2; }
   for (const [k, f] of view.foes) { if (battleActive()) break; const t = (f as any).tail as THREE.Group | undefined; if (t) t.rotation.y = Math.sin(clock * (FLOORS[fi].madre === k && !S.flags.madreCalma && S.flags.madreHola ? 2 : 0.7) + f.g.position.x) * 0.25; }
 }
 
@@ -1264,6 +1372,22 @@ export function caveHint(goal: string): THREE.Vector3 | null {
     if (goal === 'ardForja') return over(cellsOf(1, 'Z')[0], 1.9);
     return over(cellsOf(fi, 'S')[0], 0.9);
   }
+  if (zone === 'selva') {
+    const at2 = (k: string, y = 1.4) => { const [a, b] = k.split(',').map(Number); return over([a, b], y); };
+    if (fi === 0) {
+      const st0 = ZS().f[0];
+      if (goal === 'selRio') { const b = cellsOf(0, 'f').sort((p, q) => q[1] - p[1]).find(p => st0.built?.[K(...p)] !== 'flor'); return b ? over(b, 1.2) : null; }
+      if (goal === 'selPlanta') { const x = cellsOf(0, 'x').find(p => st0.built?.[K(...p)] !== 'susto'); return x ? over(x, 1.4) : null; }
+      if (goal === 'selTemplo') { const bi = st0.b.findIndex(Boolean); const b = st0.b[bi]; return b ? over(b as [number, number], 1.3) : null; }
+      if (goal === 'selRaices' || goal === 'selGuardian' || goal === 'selCeibo') return over(cellsOf(0, '>')[0], 0.9);
+      if (goal === 'selPlantar') return over(cellsOf(0, 'S')[0], 0.9);
+      return null;
+    }
+    if (goal === 'selGuardian') return S.flags.raizCalma ? null : at2(FLOORS[1].guardian!, 2.2);
+    if (goal === 'selCeibo') return over(cellsOf(1, 'H')[0], 1.6);
+    return over(cellsOf(fi, 'S')[0], 0.9);
+  }
+  if (zone === 'faro' && goal === 'selVer') return fi === 0 ? over(cellsOf(0, '>')[0], 1.2) : over(cellsOf(1, 'A')[0], 1.6);
   if (zone === 'faro') {
     const piece: Record<string, string> = { faroPasto: '5,8', faroVapor: '16,8', faroRoca: '21,12' };
     if (goal === 'faroMarea' && fi === 0) { const n = FLOORS[0].npc!; return over([n[0], n[1]], 2.2); }

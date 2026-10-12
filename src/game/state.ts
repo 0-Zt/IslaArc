@@ -57,6 +57,7 @@ export interface State {
   cave?: CaveSave;                     // the volcano cave (v0.15): entrance, floors, puzzles
   faro?: CaveSave;                     // the lighthouse island (v0.18)
   ardiente?: CaveSave;                 // the burning island (v0.20)
+  selva?: CaveSave;                    // the tangled jungle (v0.21)
   done: boolean;
 }
 

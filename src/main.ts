@@ -142,6 +142,7 @@ function pierTile(): Tile | null {
 }
 setExitPoint(() => { const p = pierTile(); return p ? new THREE.Vector3(p.wx, 0.5, p.wz) : null; }, 'faro');
 setExitPoint(() => { const t = archTile(); return t ? new THREE.Vector3(t.wx, 0.5, t.wz) : null; }, 'ardiente');
+setExitPoint(() => { const p = pierTile(); return p ? new THREE.Vector3(p.wx, 0.5, p.wz) : null; }, 'selva');
 on('mareaJoins', () => {
   if (crew.some(c => c.id === 'marea')) return;
   const p = pierTile() || tileUnder(crew[0].root.position.x, crew[0].root.position.z); if (!p) return;

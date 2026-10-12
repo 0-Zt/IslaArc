@@ -58,7 +58,7 @@ const salB = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 0.06, 0.3), new
 const salT = new THREE.InstancedMesh(new THREE.BoxGeometry(0.05, 0.04, 0.22), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 0.55, 0.12) }), NS);
 for (const m of [ash, salB, salT]) { m.frustumCulled = false; m.count = 0; }
 const group = new THREE.Group(); group.add(bWing, gull, gWing, crab, crabClaw, ash, salB, salT);
-let on = false, OX = 0, OZ = 0, W = 0, H = 0, walk: Walk = () => false, kind: 'isla' | 'torre' | 'volcan' = 'isla';
+let on = false, OX = 0, OZ = 0, W = 0, H = 0, walk: Walk = () => false, kind: 'isla' | 'torre' | 'volcan' | 'selva' = 'isla';
 let flakes: { x: number; y: number; z: number; vx: number; ph: number }[] = [];
 let sals: { x: number; z: number; tx: number; tz: number; wait: number; ph: number; a: number }[] = [];
 let springs: [number, number][] = [], ashCells: [number, number][] = [];
@@ -69,12 +69,16 @@ let crabs: { x: number; z: number; tx: number; tz: number; wait: number; ph: num
 let vents: [number, number][] = [], flowers: [number, number][] = [], sand: [number, number][] = [], grassCells: [number, number][] = [];
 let steamT = 0;
 
-export function zoneLifeStart(map: string[], theme: 'isla' | 'torre' | 'volcan', ox: number, oz: number, walkable: Walk, springCells: [number, number][] = [], _crater: THREE.Vector3 | null = null) {
+export function zoneLifeStart(map: string[], theme: 'isla' | 'torre' | 'volcan' | 'selva', ox: number, oz: number, walkable: Walk, springCells: [number, number][] = [], _crater: THREE.Vector3 | null = null) {
   zoneLifeStop();
   on = true; OX = ox; OZ = oz; W = map[0].length; H = map.length; walk = walkable; kind = theme;
   vents = []; flowers = []; sand = []; grassCells = []; springs = springCells; ashCells = [];
   map.forEach((row, z) => [...row].forEach((c, x) => { if (c === 'b') vents.push([x, z]); if (c === ',') flowers.push([x, z]); if (c === ':') sand.push([x, z]); if (c === '.' || c === ',') grassCells.push([x, z]); if (c === '.' || c === ',' || c === ':') ashCells.push([x, z]); }));
   flakes = []; sals = [];
+  (ash.material as THREE.MeshLambertMaterial).color.set(theme === 'selva' ? '#6aa040' : '#9a9496');
+  (gull.material as THREE.MeshLambertMaterial).color.set(theme === 'selva' ? '#d83a2a' : '#f4f4f0');
+  (gWing.material as THREE.MeshLambertMaterial).color.set(theme === 'selva' ? '#2a8ad8' : '#e8e8e4');
+  if (theme === 'selva') flakes = Array.from({ length: 22 }, (_, k) => ({ x: 0, y: 1 + hash(k, 1, 341) * 4, z: 0, vx: 0.05 + hash(k, 2, 342) * 0.1, ph: k * 0.7 }));
   if (theme === 'volcan') {
     flakes = Array.from({ length: NA }, (_, k) => ({ x: 0, y: 1 + hash(k, 1, 341) * 5, z: 0, vx: 0.1 + hash(k, 2, 342) * 0.2, ph: k * 0.7 }));
     sals = ashCells.length ? Array.from({ length: NS }, (_, k) => { const [x, z] = ashCells[Math.floor(hash(k, 9, 343) * ashCells.length)]; return { x: OX + x + 0.5, z: OZ + z + 0.5, tx: OX + x + 0.5, tz: OZ + z + 0.5, wait: k, ph: k * 1.9, a: 0 }; }) : [];
@@ -83,7 +87,7 @@ export function zoneLifeStart(map: string[], theme: 'isla' | 'torre' | 'volcan',
     scene.add(group); return;
   }
   flies.forEach(f => { f.set = false; });
-  if (theme === 'isla') {
+  if (theme === 'isla' || theme === 'selva') {
     // tufts of grass on some meadow cells: one merged mesh, swaying in the shader
     const list: THREE.BufferGeometry[] = [];
     for (const [x, z] of grassCells) {
@@ -96,7 +100,7 @@ export function zoneLifeStart(map: string[], theme: 'isla' | 'torre' | 'volcan',
     if (list.length) { grass = new THREE.Mesh(mergeGeometries(list), SWAY_MAT); grass.position.set(OX, 0, OZ); grass.receiveShadow = true; group.add(grass); }
     butterflies = Array.from({ length: NB }, (_, k) => { const [x, z] = (flowers.length ? flowers : grassCells)[k % Math.max(1, (flowers.length ? flowers : grassCells).length)] || [W / 2, H / 2]; return { x: OX + x + 0.5, z: OZ + z + 0.5, y: 0.5, tx: OX + x + 0.5, tz: OZ + z + 0.5, ph: k * 1.3 }; });
     gulls = Array.from({ length: NG }, (_, k) => ({ r: 4 + k * 2.2, a: k * 2.1, w: (k % 2 ? 1 : -1) * (0.25 + k * 0.05), y: 3.2 + k * 0.5, ph: k }));
-    crabs = sand.length ? Array.from({ length: NC }, (_, k) => { const [x, z] = sand[Math.floor(hash(k, 7, 311) * sand.length)]; return { x: OX + x + 0.5, z: OZ + z + 0.5, tx: OX + x + 0.5, tz: OZ + z + 0.5, wait: k, ph: k * 2 }; }) : [];
+    crabs = theme === 'selva' ? [] : sand.length ? Array.from({ length: NC }, (_, k) => { const [x, z] = sand[Math.floor(hash(k, 7, 311) * sand.length)]; return { x: OX + x + 0.5, z: OZ + z + 0.5, tx: OX + x + 0.5, tz: OZ + z + 0.5, wait: k, ph: k * 2 }; }) : [];
   } else { butterflies = []; gulls = []; crabs = []; }
   scene.add(group);
 }
@@ -155,10 +159,10 @@ export function tickZoneLife(dt: number, T: number, lead: THREE.Vector3) {
   }
   crab.count = c; crabClaw.count = c * 2; crab.instanceMatrix.needsUpdate = crabClaw.instanceMatrix.needsUpdate = true;
   // the burning island: ash drifting down around the party, salamanders on the ash
-  if (kind === 'volcan') {
+  if (kind === 'volcan' || kind === 'selva') {
     let a = 0;
     for (const f of flakes) {
-      f.y -= dt * 0.35; f.x += f.vx * dt;
+      f.y -= dt * (kind === 'selva' ? 0.25 : 0.35); f.x += f.vx * dt;
       if (f.y < 0 || !f.x || Math.abs(f.x - lead.x) > 7 || Math.abs(f.z - lead.z) > 6) { f.x = lead.x + (Math.random() - 0.5) * 12; f.z = lead.z + (Math.random() - 0.5) * 10; f.y = f.y < 0 || !f.x ? 4 + Math.random() * 2 : f.y; }
       _o.position.set(f.x + Math.sin(T + f.ph) * 0.2, f.y, f.z); _o.rotation.set(Math.sin(T * 2 + f.ph), f.ph, 0); _o.scale.setScalar(1); _o.updateMatrix(); ash.setMatrixAt(a++, _o.matrix);
     }
@@ -182,7 +186,7 @@ export function tickZoneLife(dt: number, T: number, lead: THREE.Vector3) {
   steamT -= dt;
   if (steamT <= 0 && vents.length) { steamT = 0.18; const [x, z] = vents[Math.floor(Math.random() * vents.length)]; smoke(OX + x + 0.5 + (Math.random() - 0.5) * 0.4, 0.15, OZ + z + 0.5 + (Math.random() - 0.5) * 0.4, Math.random() < 0.7 ? '#f4f4f0' : '#e8e4c8', 0.1, 1.8); }
   // fireflies over the meadow at night
-  if (kind === 'isla') tickFlies(T, k => { const p = grassCells[Math.floor(hash(k, 3, 321) * grassCells.length)]; return p ? [OX + p[0] + 0.5, 0.7 + hash(k, 5, 322) * 0.6, OZ + p[1] + 0.5] : null; });
+  if (kind === 'isla' || kind === 'selva') tickFlies(T, k => { const p = grassCells[Math.floor(hash(k, 3, 321) * grassCells.length)]; return p ? [OX + p[0] + 0.5, 0.7 + hash(k, 5, 322) * 0.6, OZ + p[1] + 0.5] : null; });
   else fly.count = 0;
 }
 

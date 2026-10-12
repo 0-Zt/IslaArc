@@ -193,9 +193,23 @@ export function modelScaffold(w: number, d: number, h: number) {
   return group({ plank: P });
 }
 
-export const MODELS: Record<string, () => Model> = { casa: modelCasa, horno: modelHorno, tablon: modelTablon, almacen: modelAlmacen, muelle: modelMuelle, aserradero: modelAserradero, taller: modelTaller, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
+/** The Ceibo: a huge tree from the jungle seed, with buttress roots, a wide crown in layers, pink flowers and seed pods. */
+export function modelCeibo(): Model {
+  const M = parts(), L: THREE.BufferGeometry[] = [];
+  vbox(M.stone, 0, 0.04, 0, 1.9, 0.08, 1.9, '#6a5a3e');
+  vbox(M.bark, 0, 1.1, 0, 0.62, 2.2, 0.62, '#7a5634'); vbox(M.bark, 0.05, 1.6, 0.05, 0.5, 1.2, 0.5, '#6a4a2c');
+  for (const [a, b] of [[0.45, 0], [-0.45, 0], [0, 0.45], [0, -0.45], [0.32, 0.32], [-0.32, -0.32]]) vbox(M.bark, a, 0.22, b, Math.abs(a) > 0.1 && Math.abs(b) > 0.1 ? 0.22 : a ? 0.4 : 0.16, 0.44, Math.abs(a) > 0.1 && Math.abs(b) > 0.1 ? 0.22 : b ? 0.4 : 0.16, '#6a4a2c');
+  for (const [a, b, s] of [[0.7, 0.2, 1.0], [-0.6, 0.3, 0.9], [0.1, -0.6, 0.9]]) vbox(M.bark, a * 0.6, 2.1, b * 0.6, 0.18, 0.18, 0.18 * s + 0.6, '#6a4a2c');
+  const layers: [number, number, string][] = [[2.25, 2.6, '#3a7a30'], [2.6, 2.2, '#4a8a3a'], [2.95, 1.6, '#559640'], [3.25, 0.9, '#62a448']];
+  for (const [y, s, c] of layers) vbox(L, 0, y, 0, s, 0.4, s, c);
+  for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2, r = 0.8 + (k % 3) * 0.2; vbox(L, Math.cos(a) * r, 2.5 + (k % 2) * 0.35, Math.sin(a) * r, 0.14, 0.1, 0.14, k % 3 ? '#f8a8c8' : '#ffd84a'); }
+  for (let k = 0; k < 5; k++) { const a = k * 1.3; vbox(M.bark, Math.cos(a) * 0.9, 1.9, Math.sin(a) * 0.9, 0.1, 0.18, 0.1, '#8a5a2e'); }
+  return { group: group({ ...M, leaf: L }), smoke: [0, 3.4, 0] };
+}
+export const MODELS: Record<string, () => Model> = { ceibo: modelCeibo, casa: modelCasa, horno: modelHorno, tablon: modelTablon, almacen: modelAlmacen, muelle: modelMuelle, aserradero: modelAserradero, taller: modelTaller, farol: modelFarol, cerco: modelCerco, banca: modelBanca, macetero: modelMacetero, brasero: () => modelBrasero(braseroNext[0], braseroNext[1]) };
 
 export const ICONS: Record<string, string> = {
+  ceibo: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="17" y="20" width="6" height="16" fill="#7a5634"/><rect x="12" y="33" width="16" height="3" fill="#6a4a2c"/><rect x="5" y="12" width="30" height="9" fill="#3a7a30"/><rect x="9" y="6" width="22" height="7" fill="#559640"/><rect x="14" y="2" width="12" height="5" fill="#62a448"/><rect x="8" y="14" width="3" height="3" fill="#f8a8c8"/><rect x="27" y="10" width="3" height="3" fill="#ffd84a"/><rect x="19" y="8" width="3" height="3" fill="#f8a8c8"/></svg>',
   casa: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="18" width="24" height="16" fill="#d9a066"/><rect x="17" y="24" width="6" height="10" fill="#7a4f2a"/><path d="M4 20L20 7L36 20Z" fill="#e0b050"/><rect x="27" y="8" width="4" height="8" fill="#8a847a"/></svg>',
   horno: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="30" width="32" height="5" fill="#a49e92"/><path d="M6 30Q6 14 18 14Q30 14 30 30Z" fill="#b86a42"/><rect x="13" y="23" width="10" height="7" rx="3" fill="#ff7a2a"/><rect x="22" y="6" width="4" height="10" fill="#8a847a"/></svg>',
   hacha: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="18" y="8" width="4" height="28" rx="1" fill="#8a5a2e"/><path d="M20 8H32V20Q26 20 20 16Z" fill="#dde3ea"/><path d="M30 8H32V20H30Z" fill="#fff"/></svg>',

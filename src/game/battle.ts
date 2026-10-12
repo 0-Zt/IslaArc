@@ -14,22 +14,23 @@ import { puff } from '../world/particles';
    who guards the forge (v0.20). */
 
 type MoveId = 'pico' | 'cubrir' | 'musgo' | 'brotes' | 'absorber' | 'avivar' | 'agua' | 'neblina';
-const MOVES: Record<MoveId, { name: string; desc: string }> = {
-  pico: { name: 'Golpe de pico', desc: 'Le quita 10 de calor' },
-  cubrir: { name: 'Cubrir', desc: 'El equipo recibe la mitad del próximo golpe' },
-  musgo: { name: 'Musgo húmedo', desc: 'Enfría 8; 15 si está al rojo' },
-  brotes: { name: 'Brotes', desc: 'Cura 9 a todo el equipo y levanta a quien cayó' },
-  absorber: { name: 'Absorber calor', desc: 'Se traga 9 de calor y recupera 5 de vida' },
-  avivar: { name: 'Avivar', desc: 'El próximo ataque de otra figura pega ×1,6' },
-  agua: { name: 'Chorro de agua', desc: 'Enfría 9; 16 si está al rojo' },
-  neblina: { name: 'Neblina', desc: 'El próximo golpe pega la mitad y el equipo recupera 4' },
+/* descriptions name the enemy's bar (heat, anger) and its second phase (red-hot, in bloom) */
+const MOVES: Record<MoveId, { name: string; desc: (b: string, r: string) => string }> = {
+  pico: { name: 'Golpe de pico', desc: b => `Le quita 10 de ${b}` },
+  cubrir: { name: 'Cubrir', desc: () => 'El equipo recibe la mitad del próximo golpe' },
+  musgo: { name: 'Musgo húmedo', desc: (b, r) => `Baja 8 de ${b}; 15 si está ${r}` },
+  brotes: { name: 'Brotes', desc: () => 'Cura 9 a todo el equipo y levanta a quien cayó' },
+  absorber: { name: 'Absorber', desc: b => `Se traga 9 de ${b} y recupera 5 de vida` },
+  avivar: { name: 'Avivar', desc: () => 'El próximo ataque de otra figura pega ×1,6' },
+  agua: { name: 'Chorro de agua', desc: (b, r) => `Baja 9 de ${b}; 16 si está ${r}` },
+  neblina: { name: 'Neblina', desc: () => 'El próximo golpe pega la mitad y el equipo recupera 4' },
 };
 const KIT: Record<string, MoveId[]> = { arci: ['pico', 'cubrir'], musgo: ['musgo', 'brotes'], brasa: ['absorber', 'avivar'], marea: ['agua', 'neblina'] };
 const HP: Record<string, number> = { arci: 40, musgo: 34, brasa: 38, marea: 34 };
 const NAME: Record<string, string> = { arci: 'Arci', musgo: 'Musgo', brasa: 'Brasa', marea: 'Marea' };
 
 /* what an enemy can do: hit one, hit everyone, or heat itself up again */
-type IntentId = 'puno' | 'pisoton' | 'ola' | 'puno2' | 'recalentar' | 'mordisco' | 'escupir' | 'enroscarse' | 'mordisco2' | 'lluvia' | 'coletazo';
+type IntentId = 'puno' | 'pisoton' | 'ola' | 'puno2' | 'recalentar' | 'mordisco' | 'escupir' | 'enroscarse' | 'mordisco2' | 'lluvia' | 'coletazo' | 'colazo' | 'chillido' | 'sol' | 'latigo' | 'esporas' | 'raices' | 'espinas' | 'polen';
 interface IntentDef { kind: 'one' | 'all' | 'heat'; n: number; text: (w: string) => string; log: (w: string) => string }
 const INTENTS: Record<IntentId, IntentDef> = {
   puno: { kind: 'one', n: 12, text: w => `Puño de roca → ${w} (12)`, log: w => `El gólem levanta el puño sobre ${w}…` },
@@ -43,9 +44,17 @@ const INTENTS: Record<IntentId, IntentDef> = {
   mordisco2: { kind: 'one', n: 13, text: w => `Mordisco → ${w} (13)`, log: w => `La madre abre la boca sobre ${w}…` },
   coletazo: { kind: 'one', n: 16, text: w => `Coletazo ardiente → ${w} (16)`, log: w => `La cola de la madre se pone al rojo. Va por ${w}…` },
   lluvia: { kind: 'all', n: 8, text: () => 'Lluvia de brasas → todos (8)', log: () => 'La madre sacude el lomo y llueven brasas sobre el equipo.' },
+  colazo: { kind: 'one', n: 9, text: w => `Coletazo → ${w} (9)`, log: w => `Una iguana gira y le da un coletazo a ${w}…` },
+  chillido: { kind: 'all', n: 5, text: () => 'Chillido → todos (5)', log: () => 'Las iguanas chillan todas a la vez. ¡Duele en los oídos!' },
+  sol: { kind: 'heat', n: 8, text: () => 'Se calienta al sol (+8)', log: () => 'Las iguanas se tiran al sol y recuperan fuerzas.' },
+  latigo: { kind: 'one', n: 12, text: w => `Látigo de raíz → ${w} (12)`, log: w => `Una raíz se levanta del suelo y azota a ${w}…` },
+  espinas: { kind: 'one', n: 17, text: w => `Lluvia de espinas → ${w} (17)`, log: w => `El guardián abre las flores de los hombros y dispara espinas a ${w}…` },
+  esporas: { kind: 'all', n: 6, text: () => 'Esporas → todos (6)', log: () => 'El guardián sacude el musgo del lomo: una nube de esporas.' },
+  polen: { kind: 'all', n: 9, text: () => 'Polen pesado → todos (9)', log: () => 'Las flores del guardián sueltan un polen que pica y pesa.' },
+  raices: { kind: 'heat', n: 14, text: () => 'Echa raíces (+14 de enojo)', log: () => 'El guardián hunde los pies en la tierra y bebe fuerza de las raíces.' },
 };
-export type FoeId = 'golem' | 'salamandra' | 'madre';
-interface FoeDef { name: string; heat: number; red: number; golem: boolean; pick: (phase: number, heat: number, reheated: boolean) => IntentId; win: string; lose: string; redLog: string }
+export type FoeId = 'golem' | 'salamandra' | 'madre' | 'iguanas' | 'raiz';
+interface FoeDef { name: string; heat: number; red: number; golem: boolean; pick: (phase: number, heat: number, reheated: boolean) => IntentId; win: string; lose: string; redLog: string; bar?: string; redName?: string; redOn?: string; on?: string }
 const FOES: Record<FoeId, FoeDef> = {
   golem: {
     name: 'Gólem del volcán', heat: 100, red: 50, golem: true,
@@ -62,9 +71,22 @@ const FOES: Record<FoeId, FoeDef> = {
     name: 'La salamandra madre', heat: 90, red: 45, golem: false,
     pick: (ph, h, re) => ph === 1 ? (Math.random() < 0.55 ? 'mordisco2' : 'lluvia') : h < 28 && !re ? 'recalentar' : Math.random() < 0.5 ? 'coletazo' : 'lluvia',
     win: 'La madre se enfría y baja la cabeza. Ya no está enojada.', lose: 'El calor de la madre es demasiado. El equipo retrocede hasta la entrada.',
-    redLog: '¡La madre se pone al rojo! El agua y el musgo ahora la enfrían más.',
+    redLog: '¡La madre se pone al rojo! El agua y el musgo ahora la enfrían más.', redOn: 'la piel al rojo', on: 'a la salamandra',
+  },
+  iguanas: {
+    name: 'Iguanas de la selva', heat: 40, red: 0, golem: false, on: 'a las iguanas',
+    pick: (_ph, h, re) => h < 16 && !re ? 'sol' : Math.random() < 0.6 ? 'colazo' : 'chillido',
+    win: 'Las iguanas se cansan y se tiran al sol, panza arriba.', lose: 'Las iguanas ganan esta vez. El equipo se aleja para descansar.', redLog: '',
+  },
+  raiz: {
+    name: 'El guardián de raíces', heat: 95, red: 48, golem: true, bar: 'Enojo', redName: 'en flor', redOn: 'las flores abiertas', on: 'al guardián',
+    pick: (ph, h, re) => ph === 1 ? (Math.random() < 0.55 ? 'latigo' : 'esporas') : h < 30 && !re ? 'raices' : Math.random() < 0.5 ? 'espinas' : 'polen',
+    win: 'El enojo se va. El guardián baja los brazos y le salen flores nuevas.', lose: 'El enojo del guardián es demasiado. El equipo retrocede hasta la entrada.',
+    redLog: '¡Al guardián se le abren las flores de los hombros! El agua y el musgo ahora lo calman más.',
   },
 };
+const barName = () => foe.bar || 'Calor';
+const redName = () => foe.redName || 'al rojo';
 
 interface Intent { id: IntentId; target: number }
 interface Fighter { c: Crew; id: string; hp: number; max: number; home: THREE.Vector3; down: boolean }
@@ -96,12 +118,12 @@ function render() {
   const el = $('battle');
   el.querySelector('.bName')!.textContent = foe.name;
   (el.querySelector('.bHeat i') as HTMLElement).style.width = `${Math.max(0, heat) / foe.heat * 100}%`;
-  el.querySelector('.bHeat span')!.textContent = `Calor ${Math.max(0, Math.round(heat))}/${foe.heat}${phase === 2 ? ' · al rojo' : ''}`;
+  el.querySelector('.bHeat span')!.textContent = `${barName()} ${Math.max(0, Math.round(heat))}/${foe.heat}${phase === 2 ? ` · ${redName()}` : ''}`;
   el.classList.toggle('red', phase === 2);
   el.querySelector('.bIntent')!.innerHTML = state === 'end' ? '' : `<small>Lo próximo que hará:</small> ${INTENTS[intent.id].text(NAME[fighters[intent.target]?.id] || '')}`;
   el.querySelector('.bTeam')!.innerHTML = fighters.map((f, k) => `<div class="bF${k === turn && state === 'choose' ? ' on' : ''}${f.down ? ' down' : ''}"><b>${NAME[f.id]}</b><div class="bHp"><i style="width:${f.hp / f.max * 100}%"></i></div><small>${f.down ? 'caída' : `${f.hp}/${f.max}`}</small></div>`).join('');
   const f = fighters[turn];
-  el.querySelector('.bMoves')!.innerHTML = state === 'choose' && f ? (KIT[f.id] || KIT.arci).map(m => `<button data-move="${m}"><b>${MOVES[m].name}</b><small>${MOVES[m].desc}</small></button>`).join('') : '';
+  el.querySelector('.bMoves')!.innerHTML = state === 'choose' && f ? (KIT[f.id] || KIT.arci).map(m => `<button data-move="${m}"><b>${MOVES[m].name}</b><small>${MOVES[m].desc(barName().toLowerCase(), redName())}</small></button>`).join('') : '';
 }
 /** A number that floats up from a point in the world (damage, healing, heat). */
 function float(at: THREE.Vector3, text: string, cls: string) {
@@ -127,12 +149,12 @@ export function startBattle(opts: { party: Crew[]; homes: THREE.Vector3[]; golem
   render();
   (async () => {
     await wait(0.3);
-    log(foe.golem ? 'El suelo tiembla…' : 'Las brasas se mueven…'); shake = 0.6; sfx('fall', 0.6);
+    log(foe.golem ? 'El suelo tiembla…' : 'Algo se mueve…'); shake = 0.6; sfx('fall', 0.6);
     await wait(0.8);
     poseTo = 1; for (const e of golem!.eyes) e.material = GLOW.eyeOn; sfx('roar', foe.golem ? 1 : 0.6);
-    puff(gw.x, 1.2, gw.z, foe.golem ? '#3a2c24' : '#ff9a40', 18, 2.4, 1.6, 0);
+    puff(gw.x, 1.2, gw.z, foe.bar ? '#6fb04a' : foe.golem ? '#3a2c24' : '#ff9a40', 18, 2.4, 1.6, 0);
     await wait(1.2);
-    log(foe.golem ? '¡El gólem despierta! Elige qué hace cada figura. Arriba ves lo que hará el gólem después.' : `¡${foe.name}! Elige qué hace cada figura. Arriba ves lo que hará después.`);
+    log(foe === FOES.golem ? '¡El gólem despierta! Elige qué hace cada figura. Arriba ves lo que hará el gólem después.' : `¡${foe.name}! Elige qué hace cada figura. Arriba ves lo que hará después.`);
     intent = pickIntent(); turn = firstAlive(0); state = 'choose'; render();
   })();
 }
@@ -180,7 +202,7 @@ function choose(m: MoveId) {
 }
 const golemAt = (dy = 1.2) => golem!.g.getWorldPosition(new THREE.Vector3()).setY(dy);
 function cool(n: number) {
-  heat -= n; float(golemAt(foe.golem ? 1.9 : 1.2), `−${n} calor`, 'cool'); shake = 0.25;
+  heat -= n; float(golemAt(foe.golem ? 1.9 : 1.2), `−${n} ${barName().toLowerCase()}`, 'cool'); shake = 0.25;
   const g = golemAt(1); puff(g.x, foe.golem ? 1 : 0.5, g.z, '#d8d0c8', 10, 1.8, 1, 0);
   if (phase === 1 && foe.red && heat <= foe.red) { phase = 2; for (const c of golem!.cracks) c.material = GLOW.flameCore; log(foe.redLog); sfx('roar', 0.7); }
 }
@@ -202,13 +224,13 @@ async function act(f: Fighter, m: MoveId) {
     }
     case 'musgo': {
       const n = Math.round((red ? 15 : 8) * mult);
-      log(red ? 'Musgo lanza musgo húmedo sobre la piedra al rojo: ¡vapor!' : 'Musgo lanza musgo húmedo.');
+      log(red ? `Musgo lanza musgo húmedo sobre ${foe.redOn || 'la piedra al rojo'}: ¡vapor!` : 'Musgo lanza musgo húmedo.');
       await lunge(f); sfx('splash', 0.7); const g = golemAt(1); puff(g.x, 1.2, g.z, '#7ac060', 10, 1.6, 1, 0); if (red) puff(g.x, 1.4, g.z, '#f0f0f0', 16, 2.6, 1.2, 0);
       cool(n); if (mult > 1) boost = 0; await wait(0.5); break;
     }
     case 'agua': {
       const n = Math.round((red ? 16 : 9) * mult);
-      log(red ? 'Marea lanza un chorro de agua sobre la piedra al rojo: ¡una nube de vapor!' : 'Marea lanza un chorro de agua de mar.');
+      log(red ? `Marea lanza un chorro de agua sobre ${foe.redOn || 'la piedra al rojo'}: ¡una nube de vapor!` : 'Marea lanza un chorro de agua de mar.');
       await lunge(f); sfx('splash'); const g = golemAt(1);
       for (let k = 0; k < 6; k++) puff(f.home.x + (g.x - f.home.x) * k / 6, 0.9, f.home.z + (g.z - f.home.z) * k / 6, '#7ec8f0', 3, 0.6, 0.4, 0);
       puff(g.x, 1.2, g.z, '#f4f8ff', red ? 20 : 10, 2.4, 1.2, 0);
@@ -229,7 +251,7 @@ async function act(f: Fighter, m: MoveId) {
       await wait(0.8); break;
     }
     case 'absorber': {
-      log(`Brasa se pega ${foe.golem ? 'al gólem' : 'a la salamandra'} y se traga su calor.`);
+      log(`Brasa se pega ${foe.on || 'al gólem'} y se traga su ${barName().toLowerCase()}.`);
       await lunge(f); sfx('fire'); cool(9);
       const h = Math.min(5, f.max - f.hp); f.hp += h; if (h) float(f.home.clone().setY(1.3), `+${h}`, 'heal');
       const g = golemAt(1); for (let k = 0; k < 6; k++) puff(g.x + (f.home.x - g.x) * k / 6, 1, g.z + (f.home.z - g.z) * k / 6, '#ffb040', 2, 0.6, 0.4, 0);
@@ -261,13 +283,13 @@ async function foeTurn() {
     await hurt(target, d.n); await wait(0.7); armR = 0;
   } else if (d.kind === 'all') {
     armR = armL = 1; hop = 1; sfx('whoosh'); await wait(0.6); armR = armL = -0.5; shake = 0.8; sfx('bighit');
-    const g = golemAt(0), lava = intent.id !== 'pisoton';
-    for (let k = 0; k < 14; k++) { const a = Math.PI / 2 + (Math.random() - 0.5) * 1.6, r = 0.8 + Math.random() * 2; puff(g.x + Math.cos(a) * r, 0.1, g.z + Math.sin(a) * r, lava ? '#ff8a20' : '#6a5c50', 3, 1.2, 1, 0); }
+    const g = golemAt(0), lava = intent.id === 'ola' || intent.id === 'lluvia' || intent.id === 'escupir';
+    for (let k = 0; k < 14; k++) { const a = Math.PI / 2 + (Math.random() - 0.5) * 1.6, r = 0.8 + Math.random() * 2; puff(g.x + Math.cos(a) * r, 0.1, g.z + Math.sin(a) * r, lava ? '#ff8a20' : intent.id === 'esporas' || intent.id === 'polen' ? '#e8e070' : '#6a5c50', 3, 1.2, 1, 0); }
     for (const f of alive()) await hurt(f, d.n);
     await wait(0.7); armR = armL = 0;
   } else {
-    reheated = true; sfx('fire'); heat = Math.min(foe.heat, heat + d.n); float(golemAt(1.6), `+${d.n} calor`, 'dmg');
-    const g = golemAt(1); puff(g.x, 1, g.z, '#ffb040', 16, 2, 1, 0); await wait(1);
+    reheated = true; sfx(foe.bar ? 'heal' : 'fire'); heat = Math.min(foe.heat, heat + d.n); float(golemAt(1.6), `+${d.n} ${barName().toLowerCase()}`, 'dmg');
+    const g = golemAt(1); puff(g.x, 1, g.z, foe.bar ? '#8ad96b' : '#ffb040', 16, 2, 1, 0); await wait(1);
   }
   cover = false; mist = false; render();
 }
@@ -304,7 +326,7 @@ export function tickBattle(dt: number) {
   const fwd = Math.sin(strike * Math.PI) * 0.45;
   golem.g.position.z = golemBase.z + Math.cos(golemRotY) * fwd; golem.g.position.x = golemBase.x + Math.sin(golemRotY) * fwd;
   if (shake > 0) { shake = Math.max(0, shake - dt * 2); golem.g.position.x += (Math.random() - 0.5) * 0.06 * shake; camera.position.x += (Math.random() - 0.5) * 0.1 * shake; camera.position.y += (Math.random() - 0.5) * 0.08 * shake; }
-  if (phase === 2 && state !== 'off' && Math.random() < dt * 3) { const g = golemAt(1.2); puff(g.x + (Math.random() - 0.5) * 0.8, foe.golem ? 1.2 : 0.5, g.z, '#ff9a30', 2, 1.2, 0.6, 0); }
+  if (phase === 2 && state !== 'off' && Math.random() < dt * 3) { const g = golemAt(1.2); puff(g.x + (Math.random() - 0.5) * 0.8, foe.golem ? 1.2 : 0.5, g.z, foe.bar ? '#f8a8c8' : '#ff9a30', 2, 1.2, 0.6, 0); }
   for (const l of lunges) {
     l.t = Math.min(1, l.t + dt / l.d);
     const k = Math.sin(l.t * Math.PI) * (l.back ? 0.35 : 0.9);
@@ -320,6 +342,11 @@ export function golemPose(g: Golem, kind: 'sleep' | 'awake' | 'calm') {
   g.torso.rotation.x = lerp(0.42, -0.05, pose); g.head.rotation.x = lerp(0.35, -0.1, pose); g.torso.position.y = lerp(0.4, 0.62, pose);
   if (kind === 'calm') { for (const c of g.cracks) c.material = GLOW.orb; for (const e of g.eyes) e.material = GLOW.orbOn; }
   if (kind === 'awake') for (const e of g.eyes) e.material = GLOW.eyeOn;
+}
+/** After a fight the enemy is free to be moved (a calmed guardian stepping aside): stop holding it in place. */
+export function releaseFoe() {
+  calm = false; pose = poseTo;
+  if (golem && foe.golem) { golem.torso.rotation.x = lerp(0.42, -0.05, pose); golem.head.rotation.x = lerp(0.35, -0.1, pose); golem.torso.position.y = lerp(0.4, 0.62, pose); golem.g.position.copy(golemBase); }
 }
 /** A salamander resting (eyes dark, head down) or awake (eyes lit). */
 export function salamanderPose(g: Golem, awake: boolean) {

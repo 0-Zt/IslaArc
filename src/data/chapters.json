@@ -647,7 +647,69 @@
   {
     "id": "selva",
     "title": "La Selva Enredada",
-    "desc": "Desde la isla del faro se ve una isla verde, cubierta de enredaderas. Musgo dice que la conoce de un sueño. (Próximamente.)",
+    "desc": "Desde el faro se ve una isla verde, tan tupida que no se ve la arena. Musgo dice que la conoce de un sueño.",
+    "reward": {
+      "stars": 20,
+      "text": "La semilla del Ceibo y +20 ★"
+    },
+    "stages": [
+      {
+        "name": "El sueño",
+        "n": 2
+      },
+      {
+        "name": "La selva",
+        "n": 4
+      },
+      {
+        "name": "El Ceibo",
+        "n": 3
+      }
+    ],
+    "goals": [
+      {
+        "id": "selVer",
+        "text": "En la isla del faro, sube a la linterna y mira por la lente"
+      },
+      {
+        "id": "selLlegar",
+        "text": "Desde el muelle de tu isla, viaja a la Selva Enredada"
+      },
+      {
+        "id": "selRio",
+        "text": "Cruza el río: Marea riega los capullos y Musgo los hace florecer"
+      },
+      {
+        "id": "selPlanta",
+        "text": "Con Brasa, asusta a la planta carnívora que cierra el paso"
+      },
+      {
+        "id": "selTemplo",
+        "text": "Con Arci, deja una roca sobre la losa y abre la reja del templo"
+      },
+      {
+        "id": "selRaices",
+        "text": "Baja por el templo hasta las raíces del Ceibo"
+      },
+      {
+        "id": "selGuardian",
+        "text": "Calma al guardián de raíces"
+      },
+      {
+        "id": "selCeibo",
+        "text": "Con Musgo, despierta el corazón del Ceibo"
+      },
+      {
+        "id": "selPlantar",
+        "text": "En tu isla, planta el Ceibo (está en Construir)",
+        "hint": "build"
+      }
+    ]
+  },
+  {
+    "id": "profundidades",
+    "title": "Las Profundidades",
+    "desc": "Bajo el mar, frente a la isla del faro, algo brilla en el fondo. Para bajar hará falta una campana de vidrio. (Próximamente.)",
     "locked": true,
     "goals": []
   }

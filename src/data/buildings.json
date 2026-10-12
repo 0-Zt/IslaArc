@@ -253,5 +253,21 @@
     "cost": {},
     "work": 6,
     "hidden": true
+  },
+  "ceibo": {
+    "name": "El Ceibo",
+    "desc": "El árbol de Musgo, nacido de la semilla de la selva. Cada tanto suelta semillas a sus pies.",
+    "size": [
+      2,
+      2
+    ],
+    "cost": {
+      "tierra": 20,
+      "madera": 20,
+      "semilla": 5
+    },
+    "requires": "casa",
+    "work": 16,
+    "needsFlag": "semillaCeibo"
   }
 }

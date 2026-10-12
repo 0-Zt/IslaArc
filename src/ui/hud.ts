@@ -68,6 +68,9 @@ export const XICON: Record<string, string> = {
   sello: mkIcon(['..BBB..', '.BBBBB.', 'BBYYYBB', 'BBYBYBB', '.BBBBB.', '..BBB..'], { B: '#b08840', Y: '#f0d070' }),
   huella: mkIcon(['.......', '.GGGGG.', 'GHGHGHG', 'GGHHHGG', 'GGHHHGG', '.GGGGG.'], { G: '#6a6466', H: '#2a2628' }),
   yunque: mkIcon(['.......', 'GGGGGG.', '.GGGGGG', '..GGG..', '..GGG..', '.GGGGG.'], { G: '#7a7680' }),
+  flauta: mkIcon(['......B', '.....BL', '....BL.', '...BL..', '..BL...', '.BL....'], { B: '#a8843e', L: '#3a2a18' }),
+  brote: mkIcon(['...Q...', '..QGQ..', '.QQGQQ.', '.QGGGQ.', '..QQQ..', '...Q...'], { Q: '#bff0e8', G: '#4ea33c' }),
+  semillaCeibo: mkIcon(['...L...', '..LGL..', '.BBBBB.', 'BBHBBBB', 'BBBBBBB', '.BBBBB.'], { L: '#8ad96b', G: '#4ea33c', B: '#8a5a2e', H: '#c08a50' }),
   reliquia: mkIcon(['.......', '...?...', '..???..', '...?...', '.SSSSS.', '.SSSSS.'], { '?': '#4a4048', S: '#5e5650' }),
   hondo: mkIcon(['.......', '..DDD..', '.DDDDD.', '.D.D.D.', '.DDDDD.', '..D.D..'], { D: '#2a3a5a' }),
   invento: mkIcon(['..YYY..', '.YHYYY.', '.YHYYY.', '..YYY..', '..GGG..', '...G...'], { Y: '#f2c14e', H: '#fff3c0', G: '#8a8f9a' }),
@@ -211,7 +214,7 @@ export function refreshHUD(dt = 0) {
   const st = chapterStep();
   const gn = st ? `Cap. ${st.ch + 1}<span class="gp">${Array.from({ length: st.of }, (_, i) => `<i class="${i < st.done ? 'on' : i === st.done ? 'cur' : ''}"></i>`).join('')}</span>` : 'Listo';
   if ($('goalN').innerHTML !== gn) $('goalN').innerHTML = gn;
-  const gt = g ? goalText(g) : 'Sigue con los encargos del tablón. La Selva Enredada llega pronto.';
+  const gt = g ? goalText(g) : 'Sigue con los encargos del tablón. Las Profundidades llegan pronto.';
   if ($('goalT').textContent !== gt) $('goalT').textContent = gt;
   const hint = g && !place ? g.hint : undefined;
   // crew portraits
