@@ -66,6 +66,8 @@ export const XICON: Record<string, string> = {
   figurita: mkIcon(['...H...', '..HHH..', '...H...', '.HHHHH.', '..HHH..', '..H.H..'], { H: '#d4ac86' }),
   molde: mkIcon(['.......', 'SSSSSSS', 'SDDSDDS', 'SDDSDDS', 'SSSSSSS', '.......'], { S: '#8a8078', D: '#3a3430' }),
   sello: mkIcon(['..BBB..', '.BBBBB.', 'BBYYYBB', 'BBYBYBB', '.BBBBB.', '..BBB..'], { B: '#b08840', Y: '#f0d070' }),
+  huella: mkIcon(['.......', '.GGGGG.', 'GHGHGHG', 'GGHHHGG', 'GGHHHGG', '.GGGGG.'], { G: '#6a6466', H: '#2a2628' }),
+  yunque: mkIcon(['.......', 'GGGGGG.', '.GGGGGG', '..GGG..', '..GGG..', '.GGGGG.'], { G: '#7a7680' }),
   reliquia: mkIcon(['.......', '...?...', '..???..', '...?...', '.SSSSS.', '.SSSSS.'], { '?': '#4a4048', S: '#5e5650' }),
   hondo: mkIcon(['.......', '..DDD..', '.DDDDD.', '.D.D.D.', '.DDDDD.', '..D.D..'], { D: '#2a3a5a' }),
   invento: mkIcon(['..YYY..', '.YHYYY.', '.YHYYY.', '..YYY..', '..GGG..', '...G...'], { Y: '#f2c14e', H: '#fff3c0', G: '#8a8f9a' }),
@@ -209,7 +211,7 @@ export function refreshHUD(dt = 0) {
   const st = chapterStep();
   const gn = st ? `Cap. ${st.ch + 1}<span class="gp">${Array.from({ length: st.of }, (_, i) => `<i class="${i < st.done ? 'on' : i === st.done ? 'cur' : ''}"></i>`).join('')}</span>` : 'Listo';
   if ($('goalN').innerHTML !== gn) $('goalN').innerHTML = gn;
-  const gt = g ? goalText(g) : 'Sigue con los encargos del tablón. La Isla Ardiente llega pronto.';
+  const gt = g ? goalText(g) : 'Sigue con los encargos del tablón. La Selva Enredada llega pronto.';
   if ($('goalT').textContent !== gt) $('goalT').textContent = gt;
   const hint = g && !place ? g.hint : undefined;
   // crew portraits

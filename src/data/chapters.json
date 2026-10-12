@@ -586,8 +586,69 @@
   {
     "id": "ardiente",
     "title": "La Isla Ardiente",
+    "desc": "Detrás de la puerta de lava del islote, una isla que humea: tres chimeneas frías y una forja dormida dentro del volcán.",
+    "reward": {
+      "stars": 18,
+      "text": "Los planos del horno de forja y +18 ★"
+    },
+    "stages": [
+      {
+        "name": "La puerta",
+        "n": 2
+      },
+      {
+        "name": "Las tres chimeneas",
+        "n": 3
+      },
+      {
+        "name": "La forja",
+        "n": 4
+      }
+    ],
+    "goals": [
+      {
+        "id": "ardPuerta",
+        "text": "En el islote de las ruinas, toca el arco: Brasa abre la puerta de lava"
+      },
+      {
+        "id": "ardTablilla",
+        "text": "Lee la tablilla junto al camino de piedras"
+      },
+      {
+        "id": "ardVapor",
+        "text": "Con Arci, tapa el géiser que nunca para y enciende la chimenea del vapor"
+      },
+      {
+        "id": "ardRaices",
+        "text": "Con Musgo, ábrete paso entre los matorrales y enciende la chimenea de las raíces"
+      },
+      {
+        "id": "ardRio",
+        "text": "Con Marea, enfría el río de lava y enciende la chimenea del río"
+      },
+      {
+        "id": "ardCrater",
+        "text": "Cruza la puerta de basalto y baja al corazón del volcán"
+      },
+      {
+        "id": "ardMadre",
+        "text": "Calma a la salamandra madre que cuida la forja"
+      },
+      {
+        "id": "ardForja",
+        "text": "Con Brasa, aviva la forja de los Alfareros"
+      },
+      {
+        "id": "ardHorno",
+        "text": "En tu isla, mejora el horno a horno de forja (tócalo)"
+      }
+    ]
+  },
+  {
+    "id": "selva",
+    "title": "La Selva Enredada",
+    "desc": "Desde la isla del faro se ve una isla verde, cubierta de enredaderas. Musgo dice que la conoce de un sueño. (Próximamente.)",
     "locked": true,
-    "desc": "Al norte del faro, una isla que humea. El santuario del islote guarda una puerta de lava que solo Brasa sabe abrir. (Próximamente.)",
     "goals": []
   }
 ]

@@ -43,7 +43,7 @@ function tone(t: number, f0: number, f1: number, dur: number, gain: number, type
 }
 
 export type Sfx = 'chop' | 'pick' | 'dig' | 'hammer' | 'fall' | 'pop' | 'coin' | 'level' | 'solve' | 'splash' | 'fire' | 'tap' | 'cast' | 'plop' | 'nibble' | 'bite' | 'catch' | 'snap'
-  | 'flap' | 'squeak' | 'step' | 'bubble' | 'crack' | 'hit' | 'bighit' | 'heal' | 'roar' | 'whoosh' | 'shell' | 'guard';
+  | 'flap' | 'squeak' | 'step' | 'bubble' | 'crack' | 'hit' | 'bighit' | 'heal' | 'roar' | 'whoosh' | 'shell' | 'guard' | 'steam' | 'rumble';
 let lastPop = 0;
 export function sfx(kind: Sfx, vol = 1) {
   if (!ctx || !enabled) return;
@@ -71,6 +71,8 @@ export function sfx(kind: Sfx, vol = 1) {
     // the cave
     case 'flap': for (let k = 0; k < 7; k++) noise(t + k * 0.055 + Math.random() * 0.02, 0.05, 700 + Math.random() * 500, 1.2, 0.16 * vol, 'bandpass'); break;
     case 'squeak': { const f = 3800 + Math.random() * 1600; tone(t, f, f * 1.25, 0.05, 0.05 * vol, 'sine'); tone(t + 0.08, f * 1.1, f * 0.9, 0.04, 0.035 * vol, 'sine'); break; }
+    case 'steam': noise(t, 0.9, 3800, 0.5, 0.16 * vol, 'highpass'); noise(t, 0.6, 900, 0.8, 0.1 * vol, 'bandpass'); break;
+    case 'rumble': noise(t, 1.8, 120, 0.7, 0.45 * vol, 'lowpass'); tone(t, 48, 36, 1.6, 0.25 * vol, 'sine'); break;
     case 'step': noise(t, 0.045, 1400 * r, 1.4, 0.07 * vol, 'bandpass'); break;
     case 'bubble': tone(t, 140 * r, 320 * r, 0.12, 0.1 * vol, 'sine'); noise(t + 0.08, 0.08, 500, 1, 0.06 * vol, 'lowpass'); break;
     case 'crack': noise(t, 0.12, 2200, 1.5, 0.35 * vol, 'bandpass'); noise(t + 0.08, 0.6, 350, 0.7, 0.5 * vol, 'lowpass'); tone(t + 0.1, 110, 50, 0.4, 0.4 * vol, 'sine'); break;

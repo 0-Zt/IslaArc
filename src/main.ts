@@ -8,7 +8,7 @@ import { plantIsland, clearTrees, tickTrees, tickLeaves, treeDrawCalls, trees } 
 import { placeRocks, tickRocks, rocks } from './world/rocks';
 import { tickParticles } from './world/particles';
 import { updateWater, tickWater } from './world/water';
-import { buildIslet, spawnRuins, clearRuins, tickRuins, prepareBrazier, fixBrazierModels, brasaSpot, checkReach, rebuildBrazier, lightFlame, center as ruinCenter, slots as ruinSlots } from './game/ruins';
+import { buildIslet, spawnRuins, clearRuins, tickRuins, prepareBrazier, fixBrazierModels, brasaSpot, checkReach, rebuildBrazier, lightFlame, center as ruinCenter, slots as ruinSlots, archTap, archTile } from './game/ruins';
 import { buildHit , startUpgrade, levelOf } from './game/buildings';
 import { openFlame, openSheet } from './ui/sheets';
 import { unlockAudio, setSound, sfx, tickAmbience } from './audio/sfx';
@@ -30,7 +30,7 @@ import { restoreBeach, clearBeach, tickBeach } from './game/beach';
 import { $, initHUD, refreshHUD, toast, chapterCard, banner } from './ui/hud';
 import { initSheets, initSheetEvents, refreshSheet, closeSheet, openMessage, sheetOpen, openStory } from './ui/sheets';
 import { tickRaft, clearRaft, sailingActive, startSailing, fishHere, goBack, sailState, sailTap, blowShell } from './game/raft';
-import { battleState, battleChoose } from './game/battle';
+import { battleState, battleChoose, battleMoves } from './game/battle';
 import { tickSea, DEEP } from './world/sea';
 import { tickFishing, clearFishing, startFishing, stopFishing, castAt, fishState, useBait, shadows as fishShadows, bestShadow } from './game/fishing';
 import { initInput, centreTile, tickMarker, onTap, debugPick } from './ui/input';
@@ -41,7 +41,7 @@ import { capOf } from './game/state';
 import { tickCave, caveActive, enterCave, exitCave, caveAct, caveState, caveDebugFloor, switchLeader, tapCell, caveStepDir, caveFace, caveHold } from './game/cave';
 import { placeCaveMouth, tickCaveMouth, mouth, mouthTap } from './game/cavemouth';
 import { tickIslandLife } from './world/zonelife';
-import { setExitPoint, enterZone, zoneId } from './game/cave';
+import { setExitPoint, enterZone, zoneId, ardSave, caveWarp } from './game/cave';
 import { GOALS, CHAPTERS, currentChapter } from './game/goals';
 import { portrait } from './ui/portraits';
 import { setVolumes } from './audio/sfx';
@@ -141,6 +141,7 @@ function pierTile(): Tile | null {
   return null;
 }
 setExitPoint(() => { const p = pierTile(); return p ? new THREE.Vector3(p.wx, 0.5, p.wz) : null; }, 'faro');
+setExitPoint(() => { const t = archTile(); return t ? new THREE.Vector3(t.wx, 0.5, t.wz) : null; }, 'ardiente');
 on('mareaJoins', () => {
   if (crew.some(c => c.id === 'marea')) return;
   const p = pierTile() || tileUnder(crew[0].root.position.x, crew[0].root.position.z); if (!p) return;
@@ -274,6 +275,6 @@ if (location.hash === '#debug') {
     step: (n: number) => { for (let k = 0; k < n; k++) { T += 0.05; S.time += 0.05; if (running) tickDay(0.05); updateCrew(0.05, T); tickTrees(0.05, T, t => onTreeFallen(t, T)); tickForest(T); tickRuins(0.05); tickBeach(T); tickGrove(0.05, T); tickRocks(0.05, T); tickBuildings(0.05); tickFishing(0.05, T); tickRaft(0.05, T); tickCaveMouth(0.05, T); tickCave(0.05, T); tickParticles(0.05); tickLeaves(0.05); } refreshHUD(); },
     screen: (x: number, y: number, z: number) => { scene.updateMatrixWorld(); camera.updateMatrixWorld(); const v = camera.position.clone().set(x, y, z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; },
     scene, sites, marks, refreshDay, ruinCenter: () => ruinCenter, fillBoard, spawnCrew, rebuildBrazier, lightFlame, buildHit, openFlame, lockPixelRatio, benchRender, setGfx, sun, updateCrew, tickTrees, tickLabelsFn: tickLabels, growing, forestStats, onTap, debugPick, tickLabels, startPlace, movePlace, confirmPlace, smelt, footprint, footprintValid, openSheet, cheer, select, pointerTarget, sheetOpen, isNight, startSite, startInvention, ruinSlots, persist, cancelFly, startSailing, fishHere, goBack, sailState, DEEP, sailTo: (x: number, z: number) => { const r = new THREE.Raycaster(); r.ray.origin.set(x, 5, z); r.ray.direction.set(0, -1, 0); return sailTap(r); }, startFishing, stopFishing, castAt, fishState, useBait, fishShadows, bestShadow, waitForNight, waitingNight, startUpgrade, levelOf, capOf, nextGoal: () => GOALS[S.goal]?.id || null, achs: () => S.ach,
-    enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold, caveActive, mouthTap, blowShell, switchLeader, enterZone, zoneId, battleState, battleChoose, chapterCard, banner, toast, mouth: () => mouth && { i: mouth.tile.i, j: mouth.tile.j, open: mouth.open, x: mouth.tile.wx, z: mouth.tile.wz },
+    enterCave, exitCave, caveAct, caveState, caveDebugFloor, tapCell, caveStepDir, caveFace, caveHold, caveActive, mouthTap, blowShell, switchLeader, enterZone, zoneId, battleState, battleChoose, battleMoves, archTap, ardSave, caveWarp, chapterCard, banner, toast, mouth: () => mouth && { i: mouth.tile.i, j: mouth.tile.j, open: mouth.open, x: mouth.tile.wx, z: mouth.tile.wz },
   };
 }

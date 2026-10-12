@@ -6,7 +6,7 @@ import { rocks } from '../world/rocks';
 import { crew, selected, tileOf, type Crew, type JobKind } from '../game/crew';
 import { buildings, isDone, place, type Building } from '../game/buildings';
 import { ancients, mound } from '../game/grove';
-import { slots, center } from '../game/ruins';
+import { slots, center, archTile } from '../game/ruins';
 import { currentGoal } from '../game/goals';
 import { S } from '../game/state';
 import { fishingActive, fishState, bestShadow } from '../game/fishing';
@@ -58,6 +58,7 @@ const idleAt = (b: Building | undefined) => b && !b.jobs?.length ? overBuilding(
 const FISH_GOALS = new Set(['pescar1', 'pescar6', 'vasija', 'algas', 'llave', 'cofre', 'coleccion', 'hondo1', 'cobre', 'brujula', 'timon']);
 const CAVE_GOALS = new Set(['grieta', 'bajar', 'cvBraseros', 'cvSalon', 'cvEstatuas', 'cvRio', 'cvCruzar', 'cvCaracola', 'volverCueva', 'golem', 'fLider', 'fEnredadera', 'fSemilla', 'fPuente', 'fMural', 'fBrasas', 'fCorazon', 'fObsidiana']);
 const FARO_GOALS = new Set(['faroMarea', 'faroPasto', 'faroVapor', 'faroRoca', 'faroLuz', 'faroAgua']);
+const ARD_GOALS = new Set(['ardPuerta', 'ardTablilla', 'ardVapor', 'ardRaices', 'ardRio', 'ardCrater', 'ardMadre', 'ardForja']);
 const SEA_GOALS = new Set(['zarpar', 'hondo', 'hondo1', 'cobre', 'brujula', 'olas', 'timon', 'soplar', 'abrir', 'cruzar']);
 /** Out at sea: towards the nearest dark water, or the big waves. */
 function seaTarget(goal: string): THREE.Vector3 | null {
@@ -76,6 +77,8 @@ export function pointerTarget(): THREE.Vector3 | null {
     if (sailingActive()) return g.id === 'faroLlegar' ? new THREE.Vector3(Math.cos(SURGE.angle) * 38, 0.9, Math.sin(SURGE.angle) * 38) : null;
     const m = done('muelle'); return m ? overBuilding(m) : null;
   }
+  if (ARD_GOALS.has(g.id)) { const t = archTile(); return t && !sailingActive() ? new THREE.Vector3(t.wx, 2.6, t.wz) : null; }
+  if (g.id === 'ardHorno') { const b = done('horno'); return b && !b.up ? overBuilding(b) : null; }
   if (g.id === 'faroPesca') { if (fishingActive()) return null; const m = done('muelle'); return m ? overBuilding(m) : null; }
   if (CAVE_GOALS.has(g.id)) {
     if (g.id === 'grieta' && !S.tools.pico) return done('casa') ? overBuilding(done('casa')!) : null;

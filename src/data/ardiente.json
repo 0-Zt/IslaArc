@@ -1,0 +1,192 @@
+{
+  "floors": [
+    {
+      "name": "La costa de ceniza",
+      "theme": "volcan",
+      "door": "chimeneas",
+      "intro": "Arena negra, ceniza tibia y un volcán que respira. Alrededor de la montaña hay tres chimeneas de piedra, frías.",
+      "map": [
+        "wwwwwwwww#############wwww####",
+        "wwwwwwwww#############w####ww#",
+        "wwwwwwwww######>#####.#.E.#wK#",
+        "wwwwww.L..#####D###........ww#",
+        "w#E#######........llllllllllll",
+        "w#.#L..o##........llllllllllll",
+        "w#j##.####...........hhhhhhhhw",
+        "w#..q.q.q........#...hhh#hohhw",
+        "w#B.######..,........hhh#hh##w",
+        "w#..######...#....T..hhhh=.E#w",
+        "w#########..B..,.....hhohhh##w",
+        "w#########......,....hhhh#hhhw",
+        "w:....T....~~~...o...h#hhhhhhw",
+        "w:#....#..#~o~~....T.hhhhh#hhw",
+        "w:bbbbbb...~~~..............:w",
+        "w:Kbbbbb...#~.........#.....:w",
+        "wbbbNbbb........T..#.....##:ww",
+        "wwbbbbbb................XY#:ww",
+        "wwbbbbbb.::::::::::::T:::##www",
+        "www:::::::::T::::::::::::wwwww",
+        "wwwwww:::#::::::,::::::::wwwww",
+        "wwwwwww:::::::L::::::::wwwwwww",
+        "wwwwwwwwww:::::S::::::wwwwwwww",
+        "wwwwwwwwww::wwww:wwwwwwwwwwwww"
+      ],
+      "decor": {
+        "mushrooms": [],
+        "stalagmites": []
+      },
+      "lore": "«La forja duerme dentro de la montaña.»",
+      "loreAt": {
+        "14,21": {
+          "title": "Tablilla del camino de piedras",
+          "text": "«La forja de los Alfareros duerme dentro de la montaña. Su puerta se abre cuando tiran las tres chimeneas: la del vapor, la de las raíces y la del río. Cada una pide manos distintas, y todas piden fuego.»"
+        },
+        "4,5": {
+          "title": "Tablilla de los géiseres",
+          "text": "«El vapor que nunca para le roba el tiro a la chimenea. Tápalo con piedra y el vapor subirá por donde debe.»"
+        },
+        "7,3": {
+          "title": "Un grabado de Marea",
+          "text": "«Llegué nadando hasta esta playa. La lava no me dejó subir: el agua la enfría, pero yo sola no puedo encender nada. Volveré con alguien que no le tema al fuego. — M.»"
+        }
+      },
+      "chest": {
+        "gives": {
+          "carbon": 4
+        },
+        "stars": 1
+      },
+      "chestAt": {
+        "28,2": {
+          "gives": {
+            "cuarzo": 4,
+            "cobre": 4,
+            "algas": 8
+          },
+          "stars": 2,
+          "flag": "termas"
+        },
+        "2,15": {
+          "gives": {
+            "obsidiana": 4,
+            "carbon": 6,
+            "lingote": 3
+          },
+          "stars": 2,
+          "flag": "cofreBrasas"
+        }
+      },
+      "relic": {
+        "id": "huella",
+        "name": "Huella en la ceniza",
+        "text": "Un trozo de ceniza dura con la huella de una mano enorme, de dedos largos. No es de ninguna figura: es la mano de un Alfarero."
+      },
+      "chimneys": {
+        "2,4": {
+          "name": "la chimenea del vapor",
+          "flag": "chimVapor",
+          "plug": "2,6",
+          "blocked": "La chimenea no tira: el vapor se escapa por el géiser que nunca para."
+        },
+        "27,9": {
+          "name": "la chimenea de las raíces",
+          "flag": "chimRaices"
+        },
+        "24,2": {
+          "name": "la chimenea del río",
+          "flag": "chimRio"
+        }
+      },
+      "nest": "4,16"
+    },
+    {
+      "name": "El corazón del volcán",
+      "theme": "cueva",
+      "door": "",
+      "intro": "Adentro el calor se ve. Al fondo hay un yunque enorme, y frente a él algo grande duerme enroscado.",
+      "map": [
+        "#####################",
+        "#########.Z.#########",
+        "####L...##.##bbbKb###",
+        "#X........m.#bbbbb###",
+        "#Y#.o........bbbbb###",
+        "###...#.....#bbobb###",
+        "###.....,...#bbbbb###",
+        "###..........########",
+        "###l##~~~~~~~~#######",
+        "###l##~~~~~~~~#######",
+        "###.......#.......###",
+        "###...#..B.B....C.###",
+        "###.......,.......###",
+        "######.........######",
+        "#########.S.#########",
+        "#####################"
+      ],
+      "decor": {
+        "mushrooms": [],
+        "stalagmites": [
+          [
+            4,
+            6
+          ],
+          [
+            16,
+            10
+          ],
+          [
+            5,
+            12
+          ]
+        ]
+      },
+      "lore": "«La forja.»",
+      "loreAt": {
+        "4,2": {
+          "title": "El mural de la forja",
+          "text": "«Aquí hicimos a los primeros: arcilla de la isla, fuego de la montaña, agua del mar para templar y raíces para que crecieran. Cuando la montaña se enojó nos fuimos al norte, a la ciudad. La madre de las salamandras se quedó cuidando el fuego, para quien sepa volver a encenderlo.»"
+        }
+      },
+      "chest": {
+        "gives": {
+          "obsidiana": 6,
+          "lingote": 4,
+          "cuarzo": 3
+        },
+        "stars": 3
+      },
+      "relic": {
+        "id": "yunque",
+        "name": "Yunque de bolsillo",
+        "text": "Un yunque diminuto de hierro negro, del tamaño de un dedo, con cuatro marcas: una mano, una hoja, una llama y una ola. Lo usaban los aprendices de la forja."
+      },
+      "madre": "10,3",
+      "madreRest": "11,3"
+    }
+  ],
+  "story": {
+    "puertaLava": {
+      "title": "La puerta de lava",
+      "text": "Brasa apoya las manos en la lava del arco. El corazón de magma le late adentro, y la lava se abre como una cortina.\n\nDel otro lado hay piedras calientes sobre el mar, una tras otra, hasta una isla que humea: la Isla Ardiente."
+    },
+    "chimeneas": {
+      "title": "Las tres chimeneas",
+      "text": "Las tres chimeneas echan humo a la vez. La montaña ruge bajito y, al pie del volcán, la puerta de basalto se abre con un crujido.\n\nAdentro se ve un resplandor naranja."
+    },
+    "nido": {
+      "title": "El nido de las salamandras",
+      "text": "Las salamandras chicas se enfrían y se enroscan otra vez entre las brasas, como gatos al sol. Entre las piedras del nido dejaron algo para ti.\n\nCon el tiempo volverán a despertar."
+    },
+    "madreHola": {
+      "title": "Algo despierta",
+      "text": "Una salamandra enorme, del largo de tres figuras, levanta la cabeza. Tiene la piel de piedra negra y las grietas le brillan.\n\nNo ataca: se pone entre tú y la forja. Habrá que calmarla."
+    },
+    "madre": {
+      "title": "La salamandra madre",
+      "text": "La salamandra madre se enfría de a poco y se hace a un lado, tranquila. Te mira con ojos de brasa: te deja pasar hasta la forja.\n\nLas salamandras chicas salen de las grietas y se le suben al lomo."
+    },
+    "forjaViva": {
+      "title": "La forja de los Alfareros",
+      "text": "Brasa se mete en el fogón y la forja despierta: el fuego sube azul, después blanco.\n\nSobre el yunque, bajo la ceniza, hay unos planos de arcilla cocida: un horno de forja como el de los Alfareros, pero del tamaño de tu isla.\n\nEn el borde del yunque alguien rayó una flecha hacia el norte y una palabra: «ciudad»."
+    }
+  }
+}

@@ -193,8 +193,8 @@ export function tickBuildings(dt: number) {
       if (on) {
         // the furnace at level 2 has a second fire working on the next job at the same time
         const job2 = b.type === 'horno' && b.lvl >= 2 ? b.jobs[1] : undefined;
-        b.prog += dt / jobSeconds(b.type, job, b.stoked);
-        if (job2) b.prog2 += dt / jobSeconds(b.type, job2, b.stoked); else b.prog2 = 0;
+        b.prog += dt / jobSeconds(b.type, job, b.stoked, b.lvl);
+        if (job2) b.prog2 += dt / jobSeconds(b.type, job2, b.stoked, b.lvl); else b.prog2 = 0;
         if (b.prog >= 1) { b.prog = b.prog2; b.prog2 = 0; b.jobs.shift(); finishJob(b, job); }
         else if (job2 && b.prog2 >= 1) { b.prog2 = 0; b.jobs.splice(1, 1); finishJob(b, job2); }
         if (b.type === 'horno' && Math.random() < dt * (b.stoked ? 12 : 6)) { const v = smokePoint(b); smoke(v.x, v.y, v.z, Math.random() < 0.5 ? '#c8c4be' : '#a8a49e'); }

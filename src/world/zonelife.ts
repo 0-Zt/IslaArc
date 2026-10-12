@@ -51,8 +51,17 @@ for (const m of [bWing, gull, gWing, crab, crabClaw]) { m.frustumCulled = false;
 const WING_COL = ['#f2c14e', '#7ec8e8', '#e86a8a', '#ffffff', '#c890f0'];
 for (let k = 0; k < NB * 2; k++) bWing.setColorAt(k, new THREE.Color(WING_COL[Math.floor(k / 2) % WING_COL.length]));
 
-const group = new THREE.Group(); group.add(bWing, gull, gWing, crab, crabClaw);
-let on = false, OX = 0, OZ = 0, W = 0, H = 0, walk: Walk = () => false, kind: 'isla' | 'torre' = 'isla';
+/* the burning island: ash that falls, little salamanders that run from the party */
+const NA = 46, NS = 5;
+const ash = new THREE.InstancedMesh(new THREE.BoxGeometry(0.05, 0.012, 0.05), new THREE.MeshLambertMaterial({ color: '#9a9496' }), NA);
+const salB = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 0.06, 0.3), new THREE.MeshLambertMaterial({ color: '#2a2224' }), NS);
+const salT = new THREE.InstancedMesh(new THREE.BoxGeometry(0.05, 0.04, 0.22), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 0.55, 0.12) }), NS);
+for (const m of [ash, salB, salT]) { m.frustumCulled = false; m.count = 0; }
+const group = new THREE.Group(); group.add(bWing, gull, gWing, crab, crabClaw, ash, salB, salT);
+let on = false, OX = 0, OZ = 0, W = 0, H = 0, walk: Walk = () => false, kind: 'isla' | 'torre' | 'volcan' = 'isla';
+let flakes: { x: number; y: number; z: number; vx: number; ph: number }[] = [];
+let sals: { x: number; z: number; tx: number; tz: number; wait: number; ph: number; a: number }[] = [];
+let springs: [number, number][] = [], ashCells: [number, number][] = [];
 let grass: THREE.Mesh | null = null;
 let butterflies: { x: number; z: number; y: number; tx: number; tz: number; ph: number }[] = [];
 let gulls: { r: number; a: number; w: number; y: number; ph: number }[] = [];
@@ -60,11 +69,19 @@ let crabs: { x: number; z: number; tx: number; tz: number; wait: number; ph: num
 let vents: [number, number][] = [], flowers: [number, number][] = [], sand: [number, number][] = [], grassCells: [number, number][] = [];
 let steamT = 0;
 
-export function zoneLifeStart(map: string[], theme: 'isla' | 'torre', ox: number, oz: number, walkable: Walk) {
+export function zoneLifeStart(map: string[], theme: 'isla' | 'torre' | 'volcan', ox: number, oz: number, walkable: Walk, springCells: [number, number][] = [], _crater: THREE.Vector3 | null = null) {
   zoneLifeStop();
   on = true; OX = ox; OZ = oz; W = map[0].length; H = map.length; walk = walkable; kind = theme;
-  vents = []; flowers = []; sand = []; grassCells = [];
-  map.forEach((row, z) => [...row].forEach((c, x) => { if (c === 'b') vents.push([x, z]); if (c === ',') flowers.push([x, z]); if (c === ':') sand.push([x, z]); if (c === '.' || c === ',') grassCells.push([x, z]); }));
+  vents = []; flowers = []; sand = []; grassCells = []; springs = springCells; ashCells = [];
+  map.forEach((row, z) => [...row].forEach((c, x) => { if (c === 'b') vents.push([x, z]); if (c === ',') flowers.push([x, z]); if (c === ':') sand.push([x, z]); if (c === '.' || c === ',') grassCells.push([x, z]); if (c === '.' || c === ',' || c === ':') ashCells.push([x, z]); }));
+  flakes = []; sals = [];
+  if (theme === 'volcan') {
+    flakes = Array.from({ length: NA }, (_, k) => ({ x: 0, y: 1 + hash(k, 1, 341) * 5, z: 0, vx: 0.1 + hash(k, 2, 342) * 0.2, ph: k * 0.7 }));
+    sals = ashCells.length ? Array.from({ length: NS }, (_, k) => { const [x, z] = ashCells[Math.floor(hash(k, 9, 343) * ashCells.length)]; return { x: OX + x + 0.5, z: OZ + z + 0.5, tx: OX + x + 0.5, tz: OZ + z + 0.5, wait: k, ph: k * 1.9, a: 0 }; }) : [];
+    vents = vents.filter((_, k) => k % 2 === 0);   // the burning ground is wide: steam from fewer of its cells
+    butterflies = []; gulls = Array.from({ length: 1 }, () => ({ r: 9, a: 0, w: 0.18, y: 4.5, ph: 0 })); crabs = [];
+    scene.add(group); return;
+  }
   flies.forEach(f => { f.set = false; });
   if (theme === 'isla') {
     // tufts of grass on some meadow cells: one merged mesh, swaying in the shader
@@ -137,6 +154,30 @@ export function tickZoneLife(dt: number, T: number, lead: THREE.Vector3) {
     c++;
   }
   crab.count = c; crabClaw.count = c * 2; crab.instanceMatrix.needsUpdate = crabClaw.instanceMatrix.needsUpdate = true;
+  // the burning island: ash drifting down around the party, salamanders on the ash
+  if (kind === 'volcan') {
+    let a = 0;
+    for (const f of flakes) {
+      f.y -= dt * 0.35; f.x += f.vx * dt;
+      if (f.y < 0 || !f.x || Math.abs(f.x - lead.x) > 7 || Math.abs(f.z - lead.z) > 6) { f.x = lead.x + (Math.random() - 0.5) * 12; f.z = lead.z + (Math.random() - 0.5) * 10; f.y = f.y < 0 || !f.x ? 4 + Math.random() * 2 : f.y; }
+      _o.position.set(f.x + Math.sin(T + f.ph) * 0.2, f.y, f.z); _o.rotation.set(Math.sin(T * 2 + f.ph), f.ph, 0); _o.scale.setScalar(1); _o.updateMatrix(); ash.setMatrixAt(a++, _o.matrix);
+    }
+    ash.count = a; ash.instanceMatrix.needsUpdate = true;
+    let n2 = 0;
+    for (const q of sals) {
+      const dl = Math.hypot(q.x - lead.x, q.z - lead.z);
+      if (dl < 1.8) { const an = Math.atan2(q.z - lead.z, q.x - lead.x); q.tx = q.x + Math.cos(an) * 2; q.tz = q.z + Math.sin(an) * 2; q.wait = 0; }
+      else if ((q.wait -= dt) <= 0 && Math.hypot(q.tx - q.x, q.tz - q.z) < 0.05) { q.wait = 2 + Math.random() * 4; const [x, z] = ashCells[Math.floor(Math.random() * ashCells.length)]; if (Math.hypot(OX + x + 0.5 - q.x, OZ + z + 0.5 - q.z) < 5) { q.tx = OX + x + 0.5; q.tz = OZ + z + 0.5; } }
+      const dx = q.tx - q.x, dz = q.tz - q.z, d = Math.hypot(dx, dz);
+      if (d > 0.02) { const sp = Math.min(d, dt * (dl < 1.8 ? 2.6 : 0.9)); const nx = q.x + dx / d * sp, nz = q.z + dz / d * sp; if (walk(Math.floor(nx - OX), Math.floor(nz - OZ))) { q.x = nx; q.z = nz; q.a = Math.atan2(dx, dz); } else { q.tx = q.x; q.tz = q.z; } }
+      const wig = d > 0.02 ? Math.sin(T * 24 + q.ph) * 0.3 : Math.sin(T * 2 + q.ph) * 0.1;
+      _o.position.set(q.x, 0.04, q.z); _o.rotation.set(0, q.a + wig * 0.3, 0); _o.scale.setScalar(1); _o.updateMatrix(); salB.setMatrixAt(n2, _o.matrix);
+      _m.makeRotationY(-wig).multiply(new THREE.Matrix4().makeTranslation(0, 0, -0.24)); salT.setMatrixAt(n2, _o.matrix.clone().multiply(_m));
+      n2++;
+    }
+    salB.count = salT.count = n2; salB.instanceMatrix.needsUpdate = salT.instanceMatrix.needsUpdate = true;
+    if (springs.length && Math.random() < dt * 4) { const [x, z] = springs[Math.floor(Math.random() * springs.length)]; smoke(OX + x + 0.5 + (Math.random() - 0.5) * 0.6, 0, OZ + z + 0.5 + (Math.random() - 0.5) * 0.6, '#f4f8f8', 0.09, 1.6); }
+  } else { ash.count = 0; salB.count = salT.count = 0; }
   // steam from the hot vents
   steamT -= dt;
   if (steamT <= 0 && vents.length) { steamT = 0.18; const [x, z] = vents[Math.floor(Math.random() * vents.length)]; smoke(OX + x + 0.5 + (Math.random() - 0.5) * 0.4, 0.15, OZ + z + 0.5 + (Math.random() - 0.5) * 0.4, Math.random() < 0.7 ? '#f4f4f0' : '#e8e4c8', 0.1, 1.8); }

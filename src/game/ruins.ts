@@ -14,6 +14,7 @@ import { buildings, createBuilding, isDone, type Building } from './buildings';
 import { S, afford, pay, type Cost } from './state';
 import { lampK } from '../render/daynight';
 import RUINS from '../data/ruins.json';
+import { LAVA_MAT, GLOW, lightDecal } from '../world/cavebuild';
 
 /* The ruins islet, far out to the north-east.
    A raised platform of old slabs holds five ruined braziers. Each must be rebuilt (a construction
@@ -60,6 +61,8 @@ let walls: { group: THREE.Group; runes: THREE.MeshBasicMaterial } | null = null;
 let ring: { group: THREE.Group; runes: THREE.MeshBasicMaterial; basin: THREE.Mesh } | null = null;
 let borderRunes: THREE.MeshBasicMaterial | null = null;
 let archRunes: THREE.MeshBasicMaterial | null = null;
+/* the lava door inside the arch (v0.20): cold rock, then a curtain of lava, then a path of hot stones */
+let arch: { tile: Tile; lava: THREE.Mesh; crust: THREE.Group; glow: THREE.Mesh; stones: THREE.Group } | null = null;
 let channels: Channel[] = [];
 let flow = [0, 0, 0, 0, 0];                            // lava progress in each channel
 let statue: THREE.Group | null = null;
@@ -77,7 +80,7 @@ export function spawnRuins() {
   const ring1 = landTiles().filter(t => t.ruin && t.h === 1);
   // the arch at the back (away from the camera), pillars around the edge
   const back = ring1.slice().sort((a, b) => (a.i + a.j) - (b.i + b.j))[0];
-  if (back) { const g = modelArch(); g.position.set(back.wx, topY(back), back.wz); g.rotation.y = Math.PI / 4; archRunes = ((g as any).runes as THREE.Mesh).material as THREE.MeshBasicMaterial; g.userData.shrine = true; addProp(g); back.solid = true; }
+  if (back) { const g = modelArch(); g.position.set(back.wx, topY(back), back.wz); g.rotation.y = Math.PI / 4; archRunes = ((g as any).runes as THREE.Mesh).material as THREE.MeshBasicMaterial; g.userData.shrine = true; g.userData.arch = true; addProp(g); back.solid = true; lavaDoor(g, back, c); }
   let n = 0;
   for (const t of ring1.slice().sort((a, b) => hash(a.i, a.j, 7) - hash(b.i, b.j, 7))) {
     if (t.solid || n >= 5 || Math.abs(t.i - (back?.i ?? 0)) + Math.abs(t.j - (back?.j ?? 0)) < 2) continue;
@@ -121,6 +124,45 @@ export function spawnRuins() {
   setShrine(S.ruins.awake ? 1 : 0, S.ruins.awake ? 1 : 0, S.ruins.awake ? 1 : 0, S.ruins.awake);
 }
 
+function lavaDoor(g: THREE.Group, t: Tile, c: Tile) {
+  const lava = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.05), LAVA_MAT); lava.position.set(0, 0.72, 0); g.add(lava);
+  const crust = new THREE.Group(); crust.position.set(0, 0.72, 0);
+  const rock = new THREE.Mesh(new THREE.BoxGeometry(0.82, 1.42, 0.08), new THREE.MeshLambertMaterial({ color: '#2c2628' })); crust.add(rock);
+  for (const [a, b, w, h] of [[-0.1, 0.2, 0.03, 0.5], [0.12, -0.25, 0.03, 0.4], [0, 0.0, 0.3, 0.03], [-0.15, -0.4, 0.22, 0.03]]) { const k = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.09), GLOW.ember); k.position.set(a, b, 0); crust.add(k); }
+  g.add(crust);
+  const glow = lightDecal(2.6, '#ff8a40'); glow.position.set(0, 0.03, 0.7); g.add(glow);
+  // the stepping stones: from the arch out over the sea, away from the centre of the islet
+  const stones = new THREE.Group(), d = new THREE.Vector3(t.wx - c.wx, 0, t.wz - c.wz).normalize();
+  for (let k = 0; k < 6; k++) {
+    const s2 = 0.62 - k * 0.04, p = new THREE.Vector3(t.wx, 0, t.wz).addScaledVector(d, 1.2 + k * 1.15);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(s2, 0.3, s2), new THREE.MeshLambertMaterial({ color: '#3a3032' })); m.position.set(p.x + (k % 2 ? 0.15 : -0.15), 0.05, p.z); m.rotation.y = k * 0.7; stones.add(m);
+    const e = new THREE.Mesh(new THREE.BoxGeometry(s2 * 0.6, 0.012, 0.05), GLOW.ember); e.position.set(p.x + (k % 2 ? 0.15 : -0.15), 0.21, p.z); e.rotation.y = k * 0.7; stones.add(e);
+  }
+  addProp(stones);
+  arch = { tile: t, lava, crust, glow, stones };
+  setLavaDoor();
+}
+/** The lava door: asleep until Brasa has the heart of magma and the lighthouse shines; open after. */
+function setLavaDoor() {
+  if (!arch) return;
+  const awake = !!S.flags.corazon && !!S.flags.faroEncendido, open = !!S.flags.puertaLava;
+  arch.crust.visible = !awake && !open; arch.lava.visible = awake || open; arch.glow.visible = awake || open; arch.stones.visible = open;
+}
+export const archTile = () => arch?.tile || null;
+/** A tap on the arch: what it says, or 'open' (first time: the door opens) / 'enter' (cross to the burning island). */
+export function archTap(): string {
+  if (!S.ruins.awake) return 'Un arco de piedra antiguo. Entre sus columnas hay roca negra, tibia al tacto.';
+  if (!S.flags.corazon) return 'Entre las columnas del arco hay roca negra que late despacio, como un corazón dormido. Brasa la mira con ganas, pero todavía no sabe abrirla.';
+  if (!S.flags.faroEncendido) return 'La roca del arco late con fuerza: Brasa siente el corazón de magma en el pecho. Pero primero, la isla del faro.';
+  if (!S.crew.includes('brasa')) return 'Solo Brasa puede abrir la puerta de lava.';
+  if (!S.flags.puertaLava) {
+    S.flags.puertaLava = true; setLavaDoor();
+    if (arch) { const t = arch.tile; puff(t.wx, topY(t) + 0.8, t.wz, '#ffb040', 26, 2.4, 1.4); for (let k = 0; k < 8; k++) smoke(t.wx + (Math.random() - 0.5), topY(t) + 1.2, t.wz + (Math.random() - 0.5), '#ff8a40', 0.12, 1.6); }
+    emit('story', 'puertaLava'); emit('changed');
+    return 'open';
+  }
+  return 'enter';
+}
 /** Brasa as a sitting statue of dark, cold clay. */
 function makeStatue(c: Tile) {
   statueMat = (MAT.clay as THREE.MeshLambertMaterial).clone();
@@ -223,6 +265,7 @@ export const finaleRunning = () => !!finale;
 let fireAcc = 0;
 export function tickRuins(dt: number) {
   if (!center) return;
+  if (arch) { setLavaDoor(); if (arch.lava.visible) { const k = 1 + Math.sin(performance.now() / 300) * 0.08; (arch.glow.material as THREE.MeshBasicMaterial).opacity = 0.55 * k; } }
   // all five lit but asleep (also after loading a game saved in that moment): wake up after a breath
   if (finaleIn < 0 && !finale && !S.ruins.awake && S.ruins.lit.every(Boolean)) finaleIn = 1.8;
   if (finaleIn >= 0) { finaleIn -= dt; if (finaleIn < 0) startFinale(); }
@@ -275,7 +318,7 @@ export const brasaSpot = () => center;
 export function clearRuins() {
   for (const o of props) worldGroup.remove(o);
   props = []; ruinProps.clear(); walls = null; ring = null; statue = null; statueMat = null; statueGlow = []; statueFlame = null;
-  borderRunes = null; archRunes = null; channels = []; finale = null; finaleIn = -1;
+  borderRunes = null; archRunes = null; arch = null; channels = []; finale = null; finaleIn = -1;
 }
 
 /** Is there a walking path from the island to the islet? Checked when the island grows. */

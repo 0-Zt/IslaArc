@@ -16,10 +16,10 @@ export const recipesAt = (type: string, lvl = 1) => Object.entries(RECIPES).filt
 export const makesThings = (type: string) => type === 'horno' || type === 'aserradero' || type === 'taller';
 
 /** How long one job takes at this building, after inventions and helpers. */
-export function jobSeconds(type: string, job: string, stoked = false) {
+export function jobSeconds(type: string, job: string, stoked = false, lvl = 1) {
   if (job.startsWith('inv:')) return INV[job.slice(4)]?.seconds || 20;
   let s = RECIPES[job]?.seconds || 8;
-  if (type === 'horno') { if (S.inv.fuelle) s /= 1.5; if (stoked) s /= 2; }
+  if (type === 'horno') { if (S.inv.fuelle) s /= 1.5; if (stoked) s /= 2; if (lvl >= 3) s /= 2; }
   if (type === 'aserradero' && S.inv.sierra) s /= 2;
   return s;
 }

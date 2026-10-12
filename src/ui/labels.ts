@@ -79,7 +79,7 @@ export function tickLabels() {
       const at = _v.copy(smokePoint(b)); at.y += 0.35;
       const open = () => { if (!sheetOpen()) openSheet(b.type === 'taller' ? 'taller' : 'prod', b); };
       if (job) {
-        const info = jobInfo(job), pct = Math.round(b.prog * 100), secs = Math.ceil((1 - b.prog) * jobSeconds(b.type, job, b.stoked));
+        const info = jobInfo(job), pct = Math.round(b.prog * 100), secs = Math.ceil((1 - b.prog) * jobSeconds(b.type, job, b.stoked, b.lvl));
         const icon = info.out ? `<img src="${(ICON as any)[info.out]}" alt="">` : BULB;
         show(b, at.clone(), `${icon}<span class="meter"><i style="width:${pct}%"></i></span><small>${secs}s${b.jobs.length > 1 ? ` · ${b.jobs.length - 1} más` : ''}${b.stoked ? ' · 🔥' : ''}</small>`, '', `${info.name}, ${pct} por ciento`, open);
       } else {

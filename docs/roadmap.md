@@ -237,12 +237,28 @@ Ver también **docs/diseno-exploracion.md** (exploración, inventos y combates p
 - **Menú:** volumen de efectos y de ambiente por separado, tamaño del texto (normal o grande), y **respaldo**: un código con tu partida para guardarlo o seguir en otro navegador.
 - Arreglos: el texto final ya habla del faro y la Isla Ardiente; Marea aparece en el Equipo del Diario; los avisos ya no tapan los botones de la derecha.
 
+## La Isla Ardiente (v0.20)
+
+- **La puerta de lava:** el arco del santuario del islote ahora tiene roca negra que late. Cuando Brasa tiene el corazón de magma y el faro está encendido, al tocar el arco la lava se abre y aparece un camino de piedras calientes. Tocarlo de nuevo cruza a la isla.
+- **La costa de ceniza** (exterior, 30×24): arena negra, ceniza, columnas de basalto, árboles quemados con brasas en las puntas, ríos y un lago de lava, termas turquesa, y el volcán de fondo, con lava bajando y humo saliendo del cráter. A veces la montaña ruge y la cámara tiembla.
+- **Tres chimeneas, una por figura, y todas las enciende Brasa:**
+  - **Del vapor (Arci):** un pasillo de géiseres que soplan por turnos (si te quedas encima, te empujan hacia atrás) y un géiser que nunca para, que se tapa empujando una roca.
+  - **De las raíces (Musgo):** un matorral seco y espinoso que solo Musgo corta (sale carbón, obsidiana, semillas o mineral; vuelve a crecer) y una grieta para sus raíces.
+  - **Del río (Marea):** lava que corre y que Marea enfría con agua: queda una costra negra que todos pisan. La lava honda, en cambio, solo se tapa con rocas.
+- **Secretos de la costa:** el nido de las salamandras en el campo de brasas (combate corto que se repite cada 10 minutos y da obsidiana y carbón), un cofre entre las brasas (Brasa), un cofre en las termas (Marea), un grabado de Marea en una playa escondida a la que solo se llega nadando, obsidiana en medio del lago de lava (Arci la alcanza con una roca), una roca hueca con la **Huella en la ceniza**, y tres tablillas.
+- **El corazón del volcán** (interior): un río de lava que se cruza de dos maneras (las rocas de Arci o el agua de Marea), el mural de la forja (por qué se fueron los Alfareros), un cuarto de brasas con cofre, obsidiana, cristales y el **Yunque de bolsillo** detrás de una pared hueca.
+- **La salamandra madre** cuida la forja: el combate más difícil hasta ahora, con fase al rojo. Calmada, se hace a un lado.
+- **La forja de los Alfareros:** Brasa la aviva y aparecen los **planos del horno de forja**. En la isla, el horno sube a nivel 3 (obsidiana, ladrillos, lingotes): todo sale el doble de rápido.
+- **Combates nuevos:** las salamandras del nido y la madre. Marea tiene sus propios movimientos: **Chorro de agua** (enfría más si el enemigo está al rojo) y **Neblina** (el próximo golpe pega la mitad y el equipo se cura un poco).
+- **Vida:** ceniza que cae, salamandras chicas que escapan del equipo, vapor de géiseres y termas, humo de las chimeneas encendidas.
+- **Capítulo 11 · La Isla Ardiente** (9 metas, 3 etapas; premio +18 ★). El capítulo 12, **La Selva Enredada**, queda anunciado.
+
 ## Pendiente
 
 - **Linde del bosque:** postes fabricables para agrandar o achicar una zona de bosque.
 - **Volver a pasto:** semillas de pasto para deshacer un sendero.
 - **Hierba alta en la isla principal**, un modelo de verdad para el faro que se ve desde el mar, revisar la dificultad del gólem.
-- **Siguiente:** la Isla Ardiente (v0.20) y la Selva Enredada (v0.21). El orden completo está en docs/vision.md y docs/plan-figuras.md.
+- **Siguiente:** la Selva Enredada (v0.21) y las Profundidades con economía 2 (v0.22). El orden completo está en docs/vision.md y docs/plan-figuras.md.
 
 ## Decisiones tomadas
 

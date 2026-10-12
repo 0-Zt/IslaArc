@@ -46,6 +46,18 @@
         },
         "work": 14,
         "text": "Dos fuegos: hace dos cosas a la vez"
+      },
+      {
+        "title": "Horno de forja",
+        "cost": {
+          "obsidiana": 12,
+          "ladrillo": 20,
+          "lingote": 8
+        },
+        "work": 18,
+        "text": "El fuego de los Alfareros: todo sale el doble de rápido",
+        "needsFlag": "planosForja",
+        "lockedFlag": "Necesita los planos de la forja de los Alfareros, en la Isla Ardiente"
       }
     ]
   },

@@ -129,7 +129,7 @@ function render() {
     if (arg) h += upgradeHTML(arg);
   } else if (type === 'prod' && arg) {
     const b = arg, d = buildingDef(b.type);
-    h += `<h2>${d.name}${b.lvl > 1 ? ` · nivel ${b.lvl}` : ''}</h2><p>${b.type === 'horno' && b.lvl >= 2 ? 'Con dos fuegos hace dos cosas a la vez' : 'Cada cosa se hace una tras otra'}; puedes dejar hasta ${MAX_QUEUE} en cola.${b.type === 'horno' ? (S.crew.includes('brasa') ? ' Toca a Brasa y luego el horno: avivará el fuego y todo sale el doble de rápido.' : '') : ''}</p>`;
+    h += `<h2>${b.type === 'horno' && b.lvl >= 3 ? 'Horno de forja' : d.name}${b.lvl > 1 ? ` · nivel ${b.lvl}` : ''}</h2><p>${b.type === 'horno' && b.lvl >= 3 ? 'Fuego de los Alfareros: dos fuegos y todo sale el doble de rápido' : b.type === 'horno' && b.lvl >= 2 ? 'Con dos fuegos hace dos cosas a la vez' : 'Cada cosa se hace una tras otra'}; puedes dejar hasta ${MAX_QUEUE} en cola.${b.type === 'horno' ? (S.crew.includes('brasa') ? ' Toca a Brasa y luego el horno: avivará el fuego y todo sale el doble de rápido.' : '') : ''}</p>`;
     const fires = b.type === 'horno' && b.lvl >= 2 ? 2 : 1;
     if (!isDone(b)) h += '<p><b>En obra:</b> mientras se mejora no trabaja; la cola sigue después.</p>';
     if (b.jobs.length) h += `<div class="qline">${b.jobs.map((j, k) => { const o = jobInfo(j).out; return `<span class="q${k < fires ? ' now' : ''}">${o ? `<img src="${(ICON as any)[o]}" alt="">` : ''}</span>`; }).join('')}<div class="bar"><i id="hbar" style="width:${Math.round(b.prog * 100)}%"></i></div>${fires > 1 && b.jobs.length > 1 ? `<div class="bar"><i style="width:${Math.round(b.prog2 * 100)}%"></i></div>` : ''}</div>`;
@@ -247,8 +247,8 @@ function render() {
     h += diarioHTML();
   } else if (type === 'fin') {
     const m = Math.max(1, Math.round(S.time / 60));
-    h += `<h2>¡El faro está encendido!</h2><p>De la primera rama a la luz del faro en ${m < 120 ? `unos ${m} minutos` : `unas ${Math.round(m / 60)} horas`}: despertaste a Musgo y a Brasa, calmaste al guardián del volcán, cruzaste las olas y Marea se unió al equipo.</p>`
-      + '<p>Aquí termina esta versión. Lo que viene: la Isla Ardiente, detrás de la puerta de lava del islote. Mientras, sigue haciendo crecer tu isla y busca las reliquias que faltan.</p>'
+    h += `<h2>¡La forja arde otra vez!</h2><p>De la primera rama a la forja de los Alfareros en ${m < 120 ? `unos ${m} minutos` : `unas ${Math.round(m / 60)} horas`}: despertaste a Musgo y a Brasa, calmaste al guardián del volcán, encendiste el faro con Marea y cruzaste la puerta de lava hasta la Isla Ardiente.</p>`
+      + '<p>Aquí termina esta versión. Lo que viene: la Selva Enredada, la isla de Musgo. Mientras, sigue haciendo crecer tu isla, visita el nido de las salamandras y busca las reliquias que faltan.</p>'
       + '<button class="btn main" data-act="close" style="width:100%">Seguir jugando</button>';
   }
   $('sheet').innerHTML = h;

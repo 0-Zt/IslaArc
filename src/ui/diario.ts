@@ -1,4 +1,4 @@
-import { RELICS } from '../game/cave';
+import { RELICS, ARD_RELICS } from '../game/cave';
 import { S } from '../game/state';
 import { CHAPTERS, GOALS, goalText, goalDone, currentChapter, stagesOf } from '../game/goals';
 import { LEVELS, ACHIEVEMENTS, TIER_NAMES, levelProgress, achProgress, boardSlots } from '../game/progress';
@@ -124,7 +124,7 @@ const TEAM = [
   { id: 'golem', name: 'El gólem', color: '#4a3a30', skill: 'Guardián de la montaña', desc: 'Se quedó cuidando el corazón del volcán. Gracias a él, la caracola grande ya calma las olas.', how: 'Duerme en el río de lava, junto al pedestal de la caracola.', when: () => !!S.cave?.caracola },
   { id: 'espectro', name: '???', color: '#6a7488', skill: '???', desc: 'Dicen que un barco aparece de noche cuando el faro está apagado.', how: 'Más adelante.' },
 ];
-const FIELD: Record<string, string> = { arci: 'empuja rocas, tiende puentes de tablas.', musgo: 'aparta enredaderas, corta la hierba alta.', brasa: 'camina sobre las brasas.', marea: 'camina por el agua baja.' };
+const FIELD: Record<string, string> = { arci: 'empuja rocas (también al agua, a la lava y a los géiseres), tiende puentes de tablas.', musgo: 'aparta enredaderas, corta la hierba alta y los matorrales secos.', brasa: 'camina sobre las brasas y enciende el fuego (braseros, chimeneas, la forja).', marea: 'camina por el agua baja y enfría la lava que corre.' };
 const UPS: Record<string, { flag: string; text: string }> = {
   musgo: { flag: 'semilla', text: 'Semilla antigua: puentes de raíces sobre las grietas, y lo que planta nace dos pasos más crecido.' },
   brasa: { flag: 'corazon', text: 'Corazón de magma: su luz llega lejos en la oscuridad, y funde mineral el doble de seguido.' },
@@ -168,6 +168,12 @@ function mar() {
     const got = RELICS.filter(r => S.cave?.relics?.includes(r.id));
     h += `<div class="mtier"><b>Reliquias de la cueva</b><small>${got.length}/${RELICS.length} · tras paredes huecas</small></div><div class="mgrid">`;
     for (const r of RELICS) { const c = S.cave?.relics?.includes(r.id); h += `<div class="mcell${c ? ' got' : ''}"><img class="pix${c ? '' : ' sil'}" src="${XICON[c ? r.id : 'reliquia']}" alt=""><b>${c ? r.name : '???'}</b><small>${c ? 'Cueva del volcán' : 'En algún piso'}</small></div>`; }
+    h += '</div>';
+  }
+  if (S.flags.ardVisitado) {
+    const got = ARD_RELICS.filter(r => S.ardiente?.relics?.includes(r.id));
+    h += `<div class="mtier"><b>Reliquias de la Isla Ardiente</b><small>${got.length}/${ARD_RELICS.length}</small></div><div class="mgrid">`;
+    for (const r of ARD_RELICS) { const c = S.ardiente?.relics?.includes(r.id); h += `<div class="mcell${c ? ' got' : ''}"><img class="pix${c ? '' : ' sil'}" src="${XICON[c ? r.id : 'reliquia'] || XICON.reliquia}" alt=""><b>${c ? r.name : '???'}</b><small>${c ? 'Isla Ardiente' : 'Detrás de una roca hueca'}</small></div>`; }
     h += '</div>';
   }
   return h;

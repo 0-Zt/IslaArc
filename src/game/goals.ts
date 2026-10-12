@@ -110,6 +110,15 @@ const CHECK: Record<string, () => boolean> = {
   faroLuz: () => !!S.flags.faroEncendido,
   faroAgua: () => !!S.flags.islaConchas,
   faroPesca: () => !!S.flags.pescaMarea,
+  ardPuerta: () => !!S.flags.puertaLava,
+  ardTablilla: () => !!S.flags.ardTablilla,
+  ardVapor: () => !!S.flags.chimVapor,
+  ardRaices: () => !!S.flags.chimRaices,
+  ardRio: () => !!S.flags.chimRio,
+  ardCrater: () => (S.ardiente?.max ?? -1) >= 1,
+  ardMadre: () => !!S.flags.madreCalma,
+  ardForja: () => !!S.flags.forjaViva,
+  ardHorno: () => levelOf('horno') >= 3,
 };
 /** Guardians of the second cave floor already looking at the altar. */
 const statuesRight = () => { const f = S.cave?.f[1]; return f ? (CAVE.floors[1].statues || []).filter(s => f.dirs[`${s.x},${s.z}`] === s.want).length : 0; };

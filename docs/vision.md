@@ -41,6 +41,8 @@ Como las MO de Pokémon: cada objeto clave abre un tipo de obstáculo que el jug
 | Pico de metal | Casa | Roca volcánica, escombros → la cueva | Hecho |
 | Linterna | Taller | La oscuridad de la cueva | Hecho |
 | **La caracola grande** (afinada con cuarzo) | Fondo de la cueva + el permiso del gólem | Las olas grandes → la isla del faro | Hecho (v0.16) |
+| El corazón de magma + la puerta de lava | Cueva (cap. 9) + el arco del islote | La Isla Ardiente | Hecho (v0.20) |
+| Planos del horno de forja | La forja de los Alfareros | El horno nivel 3 | Hecho (v0.20) |
 | Campana de vidrio (buceo) | Taller, con cuarzo | Zonas bajo el agua | Idea |
 | Timón reforzado | Taller, con el timón de Marea | Remolinos (atajos entre zonas) | Idea |
 | Lente del faro | Faro, con cuarzo y vidrio | Ver islas escondidas en el mapa | Idea |
@@ -54,7 +56,7 @@ Cada figura nueva llega con una zona, una habilidad en la isla y un papel en com
 | Arci | Despierta sola (cap. 1) | Construye más rápido · afuera: empuja rocas, tiende puentes | Tierra: golpes y cubrir | Hecho |
 | Musgo | Enterrado en el claro (cap. 2) | Planta, cuida el bosque · afuera: enredaderas, hierba alta, raíces (semilla antigua) | Planta: curar y enfriar | Hecho |
 | Brasa | Santuario del islote (cap. 3) | Funde mineral, aviva el horno · afuera: suelo de brasas, luz (corazón de magma) | Fuego: absorber calor, potenciar | Hecho |
-| Marea | La isla del faro (cap. 10) | Pesca mejor · afuera: camina por el agua | Agua | Hecho |
+| Marea | La isla del faro (cap. 10) | Pesca mejor · afuera: camina por el agua y enfría la lava | Agua: chorro de agua y neblina | Hecho |
 | El gólem | Guardián de la cueva | Se queda cuidando la montaña; más adelante quizá ayude a mover rocas grandes | Roca | Calmado en v0.16 |
 | Espectro | Barco fantasma (de noche) | Trabaja de noche | Noche: esquivar | Idea |
 
@@ -100,7 +102,7 @@ Una sola regla: **todo es de arcilla**. Paneles claros con borde café y sombra 
 | Pesca y Colección del mar | Expedición | Hecho | — |
 | Navegar en la balsa | Expedición | Hecho | Remolinos |
 | Exploración por casillas (cueva) | Expedición | Hecho | Otras zonas (faro) |
-| Combate por turnos | Expedición | Hecho (primer jefe, v0.16) | Criaturas comunes |
+| Combate por turnos | Expedición | Hecho (gólem, salamandras del nido, salamandra madre) | Más criaturas comunes |
 | Ruta, encargos, logros, colecciones (mar y reliquias) | Diario | Hecho | — |
 
 ## Materiales: todo tiene un destino
@@ -142,8 +144,8 @@ Antes de agregar algo, cuatro preguntas. Si responde que sí a dos o más, entra
 | v0.17 · hecho | **Cada figura cuenta:** elegir quién va adelante, habilidades de campo, zonas nuevas de la cueva por figura, hierba alta, recursos que vuelven a crecer, semilla antigua, corazón de magma, obsidiana | Cap. 9 |
 | v0.18 · hecho | **La isla del faro:** primera isla exterior, Marea se une (agua), lente en tres trozos (uno por figura), pasto que se mece, luciérnagas, gaviotas y cangrejos | Cap. 10 |
 | v0.19 · hecho | **UI de arcilla:** paneles de arcilla, bandeja de recursos con bolsa, retratos de las figuras, listas cortas, portada, volumen, respaldo de la partida | — |
-| **v0.20** | **La Isla Ardiente:** la puerta de lava del islote, la isla de Brasa | Cap. 11 |
-| v0.21 | **La Selva Enredada:** la isla de Musgo | Cap. 12 |
+| v0.20 · hecho | **La Isla Ardiente:** la puerta de lava del islote, tres chimeneas (una por figura), géiseres, lava que Marea enfría, el nido y la salamandra madre, la forja y el horno de forja | Cap. 11 |
+| **v0.21** | **La Selva Enredada:** la isla de Musgo | Cap. 12 |
 | v0.22 | **Las Profundidades y economía 2:** pisos que cambian, figuras asignadas a edificios, trueques | — |
 | Después | **El origen:** la ciudad de los Alfareros, el Espectro, el final | — |
 

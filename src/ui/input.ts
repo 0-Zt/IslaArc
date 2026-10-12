@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { fishingActive, fishTap, startFishing } from '../game/fishing';
 import { sailingActive, sailTap } from '../game/raft';
-import { caveActive, caveTap } from '../game/cave';
+import { caveActive, caveTap, enterZone } from '../game/cave';
 import { mouth, mouthTap } from '../game/cavemouth';
 import { on, emit } from '../core/events';
 import { renderer, camera, scene, controls, flyTo } from '../render/renderer';
@@ -16,7 +16,7 @@ import { marks, markMode, toggleMark, exitMarkMode, nearestMark, type MarkKind }
 import { sites, expandMode, pickCell, exitExpandMode, startSite, cancelSite, refreshMarkers, expandCost, expandKind, setExpandKind, KINDS, type ExpandKind } from '../game/expansion';
 import { S } from '../game/state';
 import { ready as readyReq } from '../game/board';
-import { ruinPropMeshes, shrineMeshes, slotOf, isIslet } from '../game/ruins';
+import { ruinPropMeshes, shrineMeshes, slotOf, isIslet, archTap } from '../game/ruins';
 import { beachMeshes } from '../game/beach';
 import { $, toast, refreshHUD, img } from './hud';
 import { openSheet, closeSheet, sheetOpen, openRuin, openFlame, openDiario } from './sheets';
@@ -37,7 +37,7 @@ export function centreTile(): Tile | null {
   return h ? h.object.userData.tile : null;
 }
 
-type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'sprout' | 'mark' | 'site' | 'ruin' | 'shrine' | 'beach' | 'cave' | 'tile'; mk?: MarkKind; k?: number; tile?: Tile; id?: CharId; b?: any };
+type Hit = { d: number; kind: 'char' | 'building' | 'tree' | 'rock' | 'ancient' | 'mound' | 'stump' | 'sprout' | 'mark' | 'site' | 'ruin' | 'shrine' | 'arch' | 'beach' | 'cave' | 'tile'; mk?: MarkKind; k?: number; tile?: Tile; id?: CharId; b?: any };
 function pick(): Hit | null {
   const hits: Hit[] = [];
   const up = (o: THREE.Object3D | null, key: string) => { while (o && o.userData[key] === undefined) o = o.parent; return o ? o.userData[key] : undefined; };
@@ -53,7 +53,7 @@ function pick(): Hit | null {
   const mh2 = ray.intersectObjects(marks.map(m => m.group), true)[0]; if (mh2) { const m = up(mh2.object, 'mark'); if (m) hits.push({ d: mh2.distance - 0.3, kind: 'mark', tile: m.tile, mk: m.kind }); }
   const uh = ray.intersectObjects(ruinPropMeshes(), true)[0]; if (uh) hits.push({ d: uh.distance - 0.3, kind: 'ruin', k: up(uh.object, 'ruinSlot') });
   const bh2 = ray.intersectObjects(beachMeshes(), true)[0]; if (bh2) { const it = up(bh2.object, 'beachItem'); if (it) hits.push({ d: bh2.distance - 0.6, kind: 'beach', tile: tileAtIJ(it.i, it.j) }); }
-  const qh = ray.intersectObjects(shrineMeshes(), true)[0]; if (qh) hits.push({ d: qh.distance, kind: 'shrine' });
+  const qh = ray.intersectObjects(shrineMeshes(), true)[0]; if (qh) hits.push({ d: qh.distance, kind: up(qh.object, 'arch') ? 'arch' : 'shrine' });
   if (mouth) { const ch2 = ray.intersectObject(mouth.group, true)[0]; if (ch2) hits.push({ d: ch2.distance - 0.25, kind: 'cave', tile: mouth.tile }); }
   const gh = ray.intersectObjects(tileProxies, false)[0]; if (gh) hits.push({ d: gh.distance + 0.05, kind: 'tile', tile: gh.object.userData.tile });
   hits.sort((a, b) => a.d - b.d);
@@ -124,6 +124,7 @@ export function onTap(x: number, y: number) {
     const r = order(who, h.tile, 'recoger'); if (r !== true) toast(r); else { select(null); toast(`${who.def.name} va a recogerlo`); }
     return;
   }
+  if (h.kind === 'arch') { select(null); const r = archTap(); if (r === 'enter') enterZone('ardiente'); else if (r !== 'open') toast(r); return; }
   if (h.kind === 'shrine') { toast(S.ruins.awake ? 'El santuario de Brasa. La lava todavía tibia corre hacia el centro.' : 'Una estatua de arcilla oscura, sentada en el centro. Parece dormida.'); return; }
   if (h.kind === 'building') {
     const b = h.b; if (!b) return;
